@@ -23,9 +23,11 @@ use Yii;
  * @property string|null $nombre
  * @property string|null $telefono
  * @property string|null $tipo_entrega
+ * @property int|null $mesa_id
  *
  * @property Cliente $cliente
  * @property DetalleVenta[] $detalleVentas
+ * @property Mesa $mesa
  * @property Usuario $usuario
  */
 class Venta extends \yii\db\ActiveRecord
@@ -45,8 +47,8 @@ class Venta extends \yii\db\ActiveRecord
     {
         return [
             [['fecha'], 'safe'],
-            [['cantidad_total', 'cantidad_cancelada', 'usuario_id', 'numero_pedido', 'cliente_id'], 'default', 'value' => null],
-            [['cantidad_total', 'cantidad_cancelada', 'usuario_id', 'numero_pedido', 'cliente_id'], 'integer'],
+            [['cantidad_total', 'cantidad_cancelada', 'usuario_id', 'numero_pedido', 'cliente_id', 'mesa_id'], 'default', 'value' => null],
+            [['cantidad_total', 'cantidad_cancelada', 'usuario_id', 'numero_pedido', 'cliente_id', 'mesa_id'], 'integer'],
             [['usuario_id', 'numero_pedido', 'estado'], 'required'],
             [['tipo_pago', 'direccion', 'descripcion_direccion'], 'string'],
             [['estado', 'nombre'], 'string', 'max' => 50],
@@ -54,6 +56,7 @@ class Venta extends \yii\db\ActiveRecord
             [['hora'], 'string', 'max' => 20],
             [['telefono'], 'string', 'max' => 12],
             [['cliente_id'], 'exist', 'skipOnError' => true, 'targetClass' => Cliente::class, 'targetAttribute' => ['cliente_id' => 'id']],
+            [['mesa_id'], 'exist', 'skipOnError' => true, 'targetClass' => Mesa::class, 'targetAttribute' => ['mesa_id' => 'id']],
             [['usuario_id'], 'exist', 'skipOnError' => true, 'targetClass' => Usuario::class, 'targetAttribute' => ['usuario_id' => 'id']],
         ];
     }
@@ -80,6 +83,7 @@ class Venta extends \yii\db\ActiveRecord
             'nombre' => 'Nombre',
             'telefono' => 'Telefono',
             'tipo_entrega' => 'Tipo Entrega',
+            'mesa_id' => 'Mesa ID',
         ];
     }
 
@@ -101,6 +105,16 @@ class Venta extends \yii\db\ActiveRecord
     public function getDetalleVentas()
     {
         return $this->hasMany(DetalleVenta::class, ['venta_id' => 'id']);
+    }
+
+    /**
+     * Gets query for [[Mesa]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getMesa()
+    {
+        return $this->hasOne(Mesa::class, ['id' => 'mesa_id']);
     }
 
     /**
