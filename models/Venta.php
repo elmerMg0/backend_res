@@ -17,11 +17,7 @@ use Yii;
  * @property string $estado
  * @property string|null $tipo_pago
  * @property string|null $tipo
- * @property string|null $direccion
- * @property string|null $descripcion_direccion
  * @property string|null $hora
- * @property string|null $nombre
- * @property string|null $telefono
  * @property string|null $tipo_entrega
  * @property int|null $mesa_id
  *
@@ -50,11 +46,10 @@ class Venta extends \yii\db\ActiveRecord
             [['cantidad_total', 'cantidad_cancelada', 'usuario_id', 'numero_pedido', 'cliente_id', 'mesa_id'], 'default', 'value' => null],
             [['cantidad_total', 'cantidad_cancelada', 'usuario_id', 'numero_pedido', 'cliente_id', 'mesa_id'], 'integer'],
             [['usuario_id', 'numero_pedido', 'estado'], 'required'],
-            [['tipo_pago', 'direccion', 'descripcion_direccion'], 'string'],
-            [['estado', 'nombre'], 'string', 'max' => 50],
+            [['tipo_pago'], 'string'],
+            [['estado'], 'string', 'max' => 50],
             [['tipo', 'tipo_entrega'], 'string', 'max' => 15],
             [['hora'], 'string', 'max' => 20],
-            [['telefono'], 'string', 'max' => 12],
             [['cliente_id'], 'exist', 'skipOnError' => true, 'targetClass' => Cliente::class, 'targetAttribute' => ['cliente_id' => 'id']],
             [['mesa_id'], 'exist', 'skipOnError' => true, 'targetClass' => Mesa::class, 'targetAttribute' => ['mesa_id' => 'id']],
             [['usuario_id'], 'exist', 'skipOnError' => true, 'targetClass' => Usuario::class, 'targetAttribute' => ['usuario_id' => 'id']],
@@ -77,11 +72,7 @@ class Venta extends \yii\db\ActiveRecord
             'estado' => 'Estado',
             'tipo_pago' => 'Tipo Pago',
             'tipo' => 'Tipo',
-            'direccion' => 'Direccion',
-            'descripcion_direccion' => 'Descripcion Direccion',
             'hora' => 'Hora',
-            'nombre' => 'Nombre',
-            'telefono' => 'Telefono',
             'tipo_entrega' => 'Tipo Entrega',
             'mesa_id' => 'Mesa ID',
         ];

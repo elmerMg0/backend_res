@@ -3,6 +3,7 @@
 namespace app\controllers;
 
 use app\models\DetalleVenta;
+use app\models\Mesa;
 use app\models\Venta;
 use app\models\Periodo;
 use Yii;
@@ -453,6 +454,52 @@ class VentaController extends \yii\web\Controller
                 'message' => 'No existen reportes.',
                 'reports' => []
             ];
+        }
+        return $response;
+    }
+
+    public function actionCreateSale($idTable){
+        $sale = Venta::find()->where(['mesa_id' => $idTable, 'estado' => 'ocupado' ]) -> one();
+        if($sale){
+            /* Si ya hay mesa ocuapdo, recuperar detalle de venta(productos, cantidad) */
+            $response = [
+                'success' => true,
+                'message' => 'Info de venta',
+                'sale' => $sale
+            ];
+        }else{
+            /* Crear venta */
+            $params = Yii::$app -> getRequest() -> getBodyParams();
+            $newSale = new Venta();
+            $newSale -> load ($params, '');
+            $numberOrder = Venta::find()->all();
+            $newSale->numero_pedido = count($numberOrder) + 1;
+            
+            if($newSale -> save()){
+                /* Actualizar el estado de la mesa DISPONIBLE -> OCUPADO */
+                $table = Mesa::findOne($idTable);
+                $table -> estado = 'ocupado';
+
+                if($table -> save()){
+                    $response = [
+                        'success' => true,
+                        'message' => 'Info de venta',
+                        'sale' => $newSale
+                    ];
+                }else{
+                    $response = [
+                        'success' => false,
+                        'message' => 'Existe errores en los campos',
+                        'error' => $table->errors
+                    ];
+                }
+            }else{
+                $response = [
+                    'success' => false,
+                    'message' => 'Existe errores en los campos',
+                    'error' => $newSale->errors
+                ];
+            }
         }
         return $response;
     }
