@@ -459,15 +459,23 @@ class VentaController extends \yii\web\Controller
     }
 
     public function actionCreateSale($idTable){
-        $sale = Venta::find()->where(['mesa_id' => $idTable, 'estado' => 'ocupado' ]) -> one();
+        $sale = Venta::find()->where(['mesa_id' => $idTable, 'estado' => 'consumiendo' ]) -> one();
         if($sale){
             /* Si ya hay mesa ocuapdo, recuperar detalle de venta(productos, cantidad) */
-            $response = [
+                $saleDetails = Venta::find()
+                            ->select(['producto.*', 'detalle_venta.cantidad As cantidad', 'venta.id As idSale', 'detalle_venta.estado as estado'])
+                            ->where(['mesa_id' => $idTable, 'venta.estado' => 'consumiendo' ])
+                            ->innerJoin('detalle_venta', 'detalle_venta.venta_id=venta.id')
+                            ->innerJoin('producto', 'producto.id=detalle_venta.producto_id')
+                            ->asArray()
+                            ->all();
+                $response = [
                 'success' => true,
                 'message' => 'Info de venta',
+                'saleDetails' => $saleDetails,
                 'sale' => $sale
             ];
-        }else{
+        }else{ 
             /* Crear venta */
             $params = Yii::$app -> getRequest() -> getBodyParams();
             $newSale = new Venta();
@@ -479,11 +487,12 @@ class VentaController extends \yii\web\Controller
                 /* Actualizar el estado de la mesa DISPONIBLE -> OCUPADO */
                 $table = Mesa::findOne($idTable);
                 $table -> estado = 'ocupado';
-
+           
                 if($table -> save()){
                     $response = [
                         'success' => true,
                         'message' => 'Info de venta',
+                        'saleDetails' => [],
                         'sale' => $newSale
                     ];
                 }else{
@@ -500,6 +509,108 @@ class VentaController extends \yii\web\Controller
                     'error' => $newSale->errors
                 ];
             }
+        }
+        return $response;
+    }
+/* Eliminar detalle de venta y agregar nuevo detalle venta */
+    public function actionUpdateSale($idSale){
+        $params = Yii::$app->getRequest()->getBodyParams();
+        $orderDetail = $params['orderDetail'];
+        if($orderDetail){
+            $saleDetail = DetalleVenta::find()->where(['venta_id' => $idSale])->all();
+            for ($i=0; $i < count($saleDetail); $i++) { 
+                $detail = $saleDetail[$i];
+                $filterDetail = array_filter($orderDetail, function ($det) use ($detail) {
+                    return $det['id']  === $detail['id'];
+                });
+                if(count($filterDetail) > 0){
+                    //actualizar
+                    $detail -> cantidad = $filterDetail -> cantidad;
+                    if($detail -> save()){
+
+                    }else{
+                        return 'error';
+                    }
+                }else{
+                    //eliminar
+                    $newSaleDetail = new DetalleVenta();
+                    if($detail -> delete()){
+
+                    }else{
+                        return 'error';
+                    }
+                }
+            }
+
+            for ($i=0; $i < count($orderDetail); $i++) { 
+                $detail = $orderDetail[$i];
+                $filterDetail = array_filter($saleDetail, function ($det) use ($detail) {
+                    return $det['id']  === $detail['id'];
+                });
+                if(count($filterDetail) > 0){
+                    //actualizar
+                }else{
+                    //agregar
+                    $newSaleDetail = new DetalleVenta();
+                    $newSaleDetail -> cantidad = $detail['cantidad'];
+                    $newSaleDetail -> producto_id = $detail['id'];
+                    $newSaleDetail -> venta_id = $idSale;
+                    $newSaleDetail -> estado = 'enviado';
+                    if($newSaleDetail -> save()){
+
+                    }else{
+                        return $newSaleDetail->errors;
+                    }
+                }
+            }
+            $saleDetails = Venta::find()
+            ->select(['producto.*', 'detalle_venta.cantidad As cantidad', 'venta.id As idSale', 'detalle_venta.estado as estado'])
+            ->where(['venta.id' => $idSale ])
+            ->innerJoin('detalle_venta', 'detalle_venta.venta_id=venta.id')
+            ->innerJoin('producto', 'producto.id=detalle_venta.producto_id')
+            ->asArray()
+            ->all();
+
+            $response = [
+                'success' => true,
+                'message' => 'Pedidos enviados.',
+                'saleDetails' => $saleDetails
+            ];
+        }else{
+            $response = [
+                'success' => false,
+                'message' => 'No existen pedidos'
+            ];
+        }
+        return $response;
+    }
+
+    public function actionValidateTable($idSale){
+        $saleDetails = DetalleVenta::find()->where(['venta_id' => $idSale])->all();
+        if(!$saleDetails){
+            $sale = Venta::findOne($idSale);
+            if($sale -> delete()){
+                $table = Mesa::findOne($sale -> mesa_id);
+                $table -> estado = 'disponible';
+                if($table -> save()){
+                    $response = [ 
+                        'success' => true,
+                        'message' => 'Venta eliminada'
+                    ];
+                }
+            }else{
+                $response = [ 
+                    'success' => false,
+                    'message' => 'Ocurrio un error',
+                    'errors' => $sale -> errors
+                ];
+            }
+        }else{
+            $response = [ 
+                'success' => true,
+                'message' => 'Tiene ventas',
+                'errors' => $saleDetails
+            ];
         }
         return $response;
     }

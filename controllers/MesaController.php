@@ -43,7 +43,7 @@ class MesaController extends \yii\web\Controller
     {
         return $this->render('index');
     }
-
+/* Reserva(table_id) */
     public function actionGetTables ($idLounge){
         $lounge = Salon::findOne($idLounge);
         $tables = Mesa::find()
@@ -51,7 +51,7 @@ class MesaController extends \yii\web\Controller
                         ->orderBy(['id' => SORT_ASC])
                         ->all();
         if($tables){
-            $response = [
+                $response = [
                 'success' => true,
                 'message' => 'Lista de mesas',
                 'tables' => $tables,
