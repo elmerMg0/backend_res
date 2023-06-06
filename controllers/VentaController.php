@@ -614,4 +614,52 @@ class VentaController extends \yii\web\Controller
         }
         return $response;
     }
+    public function actionConfirmSale($userId, $idSale)
+    {
+        /* SI es pedido de app, entonces la venta se carga al ultimo periodo aperturado */
+   /*      if($userId === 0 ){
+            $period = Periodo::find()
+                           ->where(['estado' => true])
+                           ->one();
+            if($period){
+                $userId = $period -> usuario_id;
+            }else{
+                return  [
+                    'success' => false,
+                    'message' => 'Ocurrio un error',
+                ];
+            }
+        } */
+
+        $sale = Venta::findOne($idSale);
+        $params = Yii::$app->getRequest()->getBodyParams();
+        $sale->cantidad_total = intval($params['cantidadTotal']);
+        $sale->cantidad_cancelada = $params['cantidadPagada'];
+        $sale->usuario_id = $userId;
+        $sale->estado = $params['estado'];
+        $sale->tipo_pago = $params['tipoPago'];
+        $sale->tipo = $params['tipo'];
+      
+        //$sale->cliente_id = $customerId;
+        if ($sale->save()) {
+            $table = Mesa::findOne($sale -> mesa_id);
+            $table -> estado = 'disponible';
+            $table -> save();
+            Yii::$app->getResponse()->setStatusCode(201);
+            $response = [
+                'success' => true,
+                'message' => 'Su pedido se realizo exitosamente',
+                'sale' => $sale
+            ];
+        } else {
+            Yii::$app->getResponse()->setStatusCode(422, 'Data Validation Failed.');
+            $response = [
+                'success' => false,
+                'message' => 'failed update',
+                'data' => $sale->errors
+            ];
+        }
+        return $response;
+    }
+
 }
