@@ -5,7 +5,6 @@ namespace app\controllers;
 use Yii;
 use app\models\Producto;
 use app\models\Categoria;
-use app\models\d;
 use app\models\SubProducto;
 use Exception;
 use yii\web\UploadedFile;
@@ -25,7 +24,8 @@ class ProductoController extends \yii\web\Controller
                 'update' => ['put', 'post'],
                 'delete' => ['delete'],
                 'get-product' => ['get'],
-
+                'products' => ['get'],
+                'disable-product' => ['get']
             ]
         ];
         // add Bearer authentication filter     	
@@ -34,23 +34,22 @@ class ProductoController extends \yii\web\Controller
             'except' => ['options']
         ];
 
-        //  explicame este codigo: 
         $behaviors['access'] = [
             'class' => \yii\filters\AccessControl::class,
-            'only' => ['index','update','delete','create', 'getProduct'], // acciones a las que se aplicará el control
-            'except' => [''],    // acciones a las que no se aplicará el control
+            'only' => ['get-product', 'products'], // acciones a las que se aplicará el control
+            'except' => [],    // acciones a las que no se aplicará el control
             'rules' => [
                 [
                     'allow' => true, // permitido o no permitido
-                    'actions' => ['getProduct'], // acciones que siguen esta regla
-                    'roles' => ['administrador'] // control por roles  permisos
+                    'actions' => ['get-product', 'products'], // acciones que siguen esta regla
+                    'roles' => ['cajero'] // control por roles  permisos
                 ],
               /*   [
                     'allow' => true, // permitido o no permitido
                     'actions' => ['index','update','delete','create'], // acciones que siguen esta regla
                     'roles' => ['administrador'] // control por roles  permisos
                 ], */
-                [
+             /*    [
                     'allow' => true, // permitido o no permitido
                     'actions' => [''], // acciones que siguen esta regla
                     'matchCallback' => function ($rule, $action) {
@@ -66,7 +65,7 @@ class ProductoController extends \yii\web\Controller
                         // autenticado
                         return Yii::$app->user->identity ? true : false;
                     }
-                ],
+                ], */
                 //…
             ],
         ];
