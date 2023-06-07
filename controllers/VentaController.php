@@ -485,23 +485,23 @@ class VentaController extends \yii\web\Controller
             
             if($newSale -> save()){
                 /* Actualizar el estado de la mesa DISPONIBLE -> OCUPADO */
-                $table = Mesa::findOne($idTable);
-                $table -> estado = 'ocupado';
+                /* $table = Mesa::findOne($idTable); */
+           /*      $table -> estado = 'ocupado'; */
            
-                if($table -> save()){
+            /*     if($table -> save()){ */
                     $response = [
                         'success' => true,
                         'message' => 'Info de venta',
                         'saleDetails' => [],
                         'sale' => $newSale
                     ];
-                }else{
-                    $response = [
+             /*    }else{ */
+                    /* $response = [
                         'success' => false,
                         'message' => 'Existe errores en los campos',
                         'error' => $table->errors
-                    ];
-                }
+                    ]; */
+              //  }
             }else{
                 $response = [
                     'success' => false,
@@ -571,6 +571,11 @@ class VentaController extends \yii\web\Controller
             ->asArray()
             ->all();
 
+            /* Actulaliza restado de la mesa */
+            $reserve = Venta::findOne($idSale);
+            $table = Mesa::findOne($reserve -> mesa_id);
+            $table -> estado = 'ocupado';
+            $table ->save();
             $response = [
                 'success' => true,
                 'message' => 'Pedidos enviados.',

@@ -29,11 +29,47 @@ class ProductoController extends \yii\web\Controller
             ]
         ];
         // add Bearer authentication filter     	
-        $behaviors['authenticator'] = [         	
-            'class' => \yii\filters\auth\HttpBearerAuth::class,         	
-            'except' => ['options']     	
+        $behaviors['authenticator'] = [
+            'class' => \yii\filters\auth\HttpBearerAuth::class,
+            'except' => ['options']
         ];
-    
+
+        //  explicame este codigo: 
+        $behaviors['access'] = [
+            'class' => \yii\filters\AccessControl::class,
+            'only' => ['index','update','delete','create', 'getProduct'], // acciones a las que se aplicará el control
+            'except' => [''],    // acciones a las que no se aplicará el control
+            'rules' => [
+                [
+                    'allow' => true, // permitido o no permitido
+                    'actions' => ['getProduct'], // acciones que siguen esta regla
+                    'roles' => ['administrador'] // control por roles  permisos
+                ],
+              /*   [
+                    'allow' => true, // permitido o no permitido
+                    'actions' => ['index','update','delete','create'], // acciones que siguen esta regla
+                    'roles' => ['administrador'] // control por roles  permisos
+                ], */
+                [
+                    'allow' => true, // permitido o no permitido
+                    'actions' => [''], // acciones que siguen esta regla
+                    'matchCallback' => function ($rule, $action) {
+                        // control personalizado
+                        return true;
+                    }
+                ],
+                [
+                    'allow' => true, // permitido o no permitido
+                    'actions' => [''], // acciones que siguen esta regla
+                    'matchCallback' => function ($rule, $action) {
+                        // control personalizado equivalente a '@’ de usuario 
+                        // autenticado
+                        return Yii::$app->user->identity ? true : false;
+                    }
+                ],
+                //…
+            ],
+        ];
 
         return $behaviors;
     }
