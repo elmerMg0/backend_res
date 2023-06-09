@@ -22,13 +22,32 @@ class VentaController extends \yii\web\Controller
                 'create' => ['post'],
                 'update' => ['put', 'post'],
                 'delete' => ['delete'],
-                'get-product' => ['get'],
-
+                'get-sales' => ['get'],
+                'get-info-line-chart' => ['get'],
+                'get-sales-by-day' => ['get'],
+                'get-sale-detail' => ['get'],
+                'get-sale-detail-all' => ['get'],
+                'get-sale-detail-by-period' => ['get'],
+                'get-products-sale-by-day' => ['get'],
+                'create-sale' => ['post'],
+                'update-sale' => ['post'],
             ]
         ];
         $behaviors['authenticator'] = [
             'class' => \yii\filters\auth\HttpBearerAuth::class,
             'except' => ['options']
+        ];
+        $behaviors['access'] = [
+            'class' => \yii\filters\AccessControl::class,
+            'only' => ['get-sales', 'get-info-line-chart', 'get-sales-by-day', 'get-sale-detail','get-sale-detail-all','get-sale-detail-by-period', 'get-products-sale-by-day', 'create-sale', 'update-sale'], // acciones a las que se aplicará el control
+            'except' => [''],    // acciones a las que no se aplicará el control
+            'rules' => [
+                [
+                    'allow' => true, // permitido o no permitido
+                    'actions' => ['get-sales', 'get-info-line-chart', 'get-sales-by-day', 'get-sale-detail','get-sale-detail-all', 'get-sale-detail-by-period', 'get-products-sale-by-day', 'create-sale', 'update-sale'], // acciones que siguen esta regla
+                    'roles' => ['administrador'] // control por roles  permisos
+                ],
+            ],
         ];
         return $behaviors;
     }

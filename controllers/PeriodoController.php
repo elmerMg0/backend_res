@@ -15,13 +15,29 @@ class PeriodoController extends \yii\web\Controller
         $behaviors['verbs'] = [
             'class' => \yii\filters\VerbFilter::class,
             'actions' => [
-                'login' => ['POST'],
-                'create' => ['POST'],
-                'update' => ['POST'],
                 'start-period' => ['POST'],
-                'close-period' => ['POST']
+                'close-period' => ['POST'],
+                'get-detail-period' => ['GET'],
 
             ]
+        ];
+
+        $behaviors['authenticator'] = [
+            'class' => \yii\filters\auth\HttpBearerAuth::class,
+            'except' => ['options']
+        ];
+
+        $behaviors['access'] = [
+            'class' => \yii\filters\AccessControl::class,
+            'only' => ['get-detail-period','start-period', 'close-period'], // acciones a las que se aplicará el control
+            'except' => [''],    // acciones a las que no se aplicará el control
+            'rules' => [
+                [
+                    'allow' => true, // permitido o no permitido
+                    'actions' => ['get-detail-period', 'start-period', 'close-period'], // acciones que siguen esta regla
+                    'roles' => ['administrador', 'cajero'] // control por roles  permisos
+                ],
+            ],
         ];
         return $behaviors;
     }

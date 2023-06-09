@@ -15,16 +15,27 @@ class DetalleVentaController extends \yii\web\Controller
             "class" => \yii\filters\VerbFilter::class,
             "actions" => [
                 'index' => ['get'],
-                'create' => ['post'],
-                'update' => ['put', 'post'],
-                'delete' => ['delete'],
-                'get-product' => ['get'],
+                'get-detail-period' => ['GET'],
+                'get-sale-detail' => ['GET'],
 
             ]
         ];
         $behaviors['authenticator'] = [         	
             'class' => \yii\filters\auth\HttpBearerAuth::class,         	
             'except' => ['options']     	
+        ];
+
+        $behaviors['access'] = [
+            'class' => \yii\filters\AccessControl::class,
+            'only' => ['get-best-seller-product', 'index', 'get-sale-detail'], // acciones a las que se aplicará el control
+            'except' => [''],    // acciones a las que no se aplicará el control
+            'rules' => [
+                [
+                    'allow' => true, // permitido o no permitido
+                    'actions' => ['get-best-seller-product', 'index', 'get-sale-detail'], // acciones que siguen esta regla
+                    'roles' => ['administrador', 'cajero'] // control por roles  permisos
+                ],
+            ],
         ];
         return $behaviors;
     }
