@@ -47,6 +47,11 @@ class VentaController extends \yii\web\Controller
                     'actions' => ['get-sales', 'get-info-line-chart', 'get-sales-by-day', 'get-sale-detail','get-sale-detail-all', 'get-sale-detail-by-period', 'get-products-sale-by-day', 'create-sale', 'update-sale'], // acciones que siguen esta regla
                     'roles' => ['administrador'] // control por roles  permisos
                 ],
+                [
+                    'allow' => true, // permitido o no permitido
+                    'actions' => ['create-sale', 'update-sale'], // acciones que siguen esta regla
+                    'roles' => ['cajero'] // control por roles  permisos
+                ],
             ],
         ];
         return $behaviors;
@@ -331,6 +336,7 @@ class VentaController extends \yii\web\Controller
         $period = Periodo::findOne($idPeriod);
         $sales = Venta::find()
         ->join('LEFT JOIN','usuario', 'usuario.id = venta.usuario_id')
+        ->with('cliente')
         ->Where(['usuario_id' => $idUser, 'venta.estado' => 'pendiente', 'venta.tipo' => 'pedidoApp'])
         ->orWhere(['venta.estado' => 'enviado'])
         ->andWhere(['>=', 'fecha', $period -> fecha_inicio])
@@ -348,7 +354,7 @@ class VentaController extends \yii\web\Controller
         } else {
             $response = [
                 'success' => false,
-                'message' => 'Lista de ventas por dia',
+                'message' => 'No existen ventas delivery app',
                 'sales' => []
             ];
         }

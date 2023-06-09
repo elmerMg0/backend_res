@@ -56,43 +56,23 @@ class PeriodoController extends \yii\web\Controller
     public function actionStartPeriod($userId)
     {
         $params = Yii::$app->getRequest()->getBodyParams();
-        //validar que no exista un periodo 
-        $periodActive = Periodo::find()
-                                ->where(['estado' => true])
-                                ->one();
-        if (!$periodActive) {
-          //  if (!$lastRecord->estado) {
-                $period = new Periodo();
-                /* $period->fecha_inicio = Date('H-m-d H:i:s'); */
-                date_default_timezone_set('America/La_Paz');
-                $period->fecha_inicio = date('Y-m-d H:i:s');
-                $period->estado = true;
-                $period->caja_inicial = $params['cajaInicial'];
-                $period->usuario_id = $userId;
-                if ($period->save()) {
-                    $response = [
-                        'success' => true,
-                        'message' => 'Periodo iniciado con exito!',
-                        'period' => $period
-                    ];
-                } else {
-                    $response = [
-                        'success' => false,
-                        'message' => 'Existen parametros incorrectos',
-                        'errors' => $period->errors
-                    ];
-                }
-          /*   } else {
-                $response = [
-                    'success' => false,
-                    'message' => 'Existe ya un periodo activo',
-                    'periodActive' => $lastRecord
-                ];
-            } */
+        $period = new Periodo();
+        date_default_timezone_set('America/La_Paz');
+        $period->fecha_inicio = date('Y-m-d H:i:s');
+        $period->estado = true;
+        $period->caja_inicial = $params['cajaInicial'];
+        $period->usuario_id = $userId;
+        if ($period->save()) {
+            $response = [
+                'success' => true,
+                'message' => 'Periodo iniciado con exito!',
+                'period' => $period
+            ];
         } else {
             $response = [
                 'success' => false,
-                'message' => 'Existe un perido activo!',
+                'message' => 'Existen parametros incorrectos',
+                'errors' => $period->errors
             ];
         }
 
@@ -211,16 +191,5 @@ class PeriodoController extends \yii\web\Controller
             ];
         }
         return $response;
-    }
-    public function actionTest () {
-        $period = Periodo::findOne(2);
-       /*  $ventas = Venta::find()
-                 ->where(['id' => 1000])            
-                    ->all(); */
-                    $totalSaleCash = Venta::find()
-                    /* ->where(['>=', 'fecha', $period->fecha_inicio]) */
-                    ->andWhere([ 'usuario_id' => 1, 'tipo_pago' => 'efectivo'])
-                    ->all();
-        return $totalSaleCash;
     }
 }
