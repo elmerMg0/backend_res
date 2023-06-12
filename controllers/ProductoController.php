@@ -34,7 +34,7 @@ class ProductoController extends \yii\web\Controller
             'except' => ['options']
         ];
 
-        $behaviors['access'] = [
+        /*$behaviors['access'] = [
             'class' => \yii\filters\AccessControl::class,
             'only' => ['get-product', 'products'], // acciones a las que se aplicará el control
             'except' => [],    // acciones a las que no se aplicará el control
@@ -44,12 +44,12 @@ class ProductoController extends \yii\web\Controller
                     'actions' => ['get-product', 'products'], // acciones que siguen esta regla
                     'roles' => ['cajero'] // control por roles  permisos
                 ],
-              /*   [
+                 [
                     'allow' => true, // permitido o no permitido
                     'actions' => ['index','update','delete','create'], // acciones que siguen esta regla
                     'roles' => ['administrador'] // control por roles  permisos
-                ], */
-             /*    [
+                ], 
+                [
                     'allow' => true, // permitido o no permitido
                     'actions' => [''], // acciones que siguen esta regla
                     'matchCallback' => function ($rule, $action) {
@@ -65,9 +65,9 @@ class ProductoController extends \yii\web\Controller
                         // autenticado
                         return Yii::$app->user->identity ? true : false;
                     }
-                ], */
+                ],
                 //…
-            ],
+	    ],*/
         ];
 
         return $behaviors;
