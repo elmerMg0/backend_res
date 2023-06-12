@@ -35,7 +35,7 @@ class ProductoController extends \yii\web\Controller
         ];
 
         //  explicame este codigo: 
-        $behaviors['access'] = [
+     /*   $behaviors['access'] = [
             'class' => \yii\filters\AccessControl::class,
             'only' => ['index','update','delete','create', 'getProduct'], // acciones a las que se aplicará el control
             'except' => [''],    // acciones a las que no se aplicará el control
@@ -45,11 +45,11 @@ class ProductoController extends \yii\web\Controller
                     'actions' => ['getProduct'], // acciones que siguen esta regla
                     'roles' => ['administrador'] // control por roles  permisos
                 ],
-              /*   [
+                 [
                     'allow' => true, // permitido o no permitido
                     'actions' => ['index','update','delete','create'], // acciones que siguen esta regla
                     'roles' => ['administrador'] // control por roles  permisos
-                ], */
+                ], 
                 [
                     'allow' => true, // permitido o no permitido
                     'actions' => [''], // acciones que siguen esta regla
@@ -68,7 +68,7 @@ class ProductoController extends \yii\web\Controller
                     }
                 ],
                 //…
-            ],
+	    ],*/
         ];
 
         return $behaviors;
