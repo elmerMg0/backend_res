@@ -67,8 +67,8 @@ class ProductoController extends \yii\web\Controller
                     }
                 ],
                 //…
-	    ],*/
-        ];
+	    ],
+	];*/
 
         return $behaviors;
     }
