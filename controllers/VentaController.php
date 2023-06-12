@@ -25,10 +25,10 @@ class VentaController extends \yii\web\Controller
                 'get-sales' => ['get'],
                 'get-info-line-chart' => ['get'],
                 'get-sales-by-day' => ['get'],
-                'get-sale-detail' => ['get'],
+                'get-sale-detail' => ['post'],
                 'get-sale-detail-all' => ['get'],
-                'get-sale-detail-by-period' => ['get'],
-                'get-products-sale-by-day' => ['get'],
+                'get-sale-detail-by-period' => ['post'],
+                'get-products-sale-by-day' => ['post'],
                 'create-sale' => ['post'],
                 'update-sale' => ['post'],
             ]
