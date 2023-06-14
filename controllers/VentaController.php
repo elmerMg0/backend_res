@@ -541,7 +541,7 @@ class VentaController extends \yii\web\Controller
     public function actionUpdateSale($idSale){
         $params = Yii::$app->getRequest()->getBodyParams();
         $orderDetail = $params['orderDetail'];
-        if($orderDetail){
+     /*    if($orderDetail){ */
             $saleDetail = DetalleVenta::find()->where(['venta_id' => $idSale])->all();
             for ($i=0; $i < count($saleDetail); $i++) { 
                 $detail = $saleDetail[$i];
@@ -558,7 +558,6 @@ class VentaController extends \yii\web\Controller
                     }
                 }else{
                     //eliminar
-                    $newSaleDetail = new DetalleVenta();
                     if($detail -> delete()){
 
                     }else{
@@ -606,12 +605,12 @@ class VentaController extends \yii\web\Controller
                 'message' => 'Pedidos enviados.',
                 'saleDetails' => $saleDetails
             ];
-        }else{
+    /*     }else{
             $response = [
                 'success' => false,
                 'message' => 'No existen pedidos'
-            ];
-        }
+            ]; 
+        }*/
         return $response;
     }
 

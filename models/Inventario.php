@@ -9,12 +9,12 @@ use Yii;
  *
  * @property int $id
  * @property string $fecha
- * @property int $product_id
+ * @property int $producto_id
  * @property int|null $total
  * @property int|null $actual
  * @property string|null $diferencia
  *
- * @property Producto $product
+ * @property Producto $producto
  */
 class Inventario extends \yii\db\ActiveRecord
 {
@@ -32,12 +32,12 @@ class Inventario extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['fecha', 'product_id'], 'required'],
+            [['fecha', 'producto_id'], 'required'],
             [['fecha'], 'safe'],
-            [['product_id', 'total', 'actual'], 'default', 'value' => null],
-            [['product_id', 'total', 'actual'], 'integer'],
+            [['producto_id', 'total', 'actual'], 'default', 'value' => null],
+            [['producto_id', 'total', 'actual'], 'integer'],
             [['diferencia'], 'string'],
-            [['product_id'], 'exist', 'skipOnError' => true, 'targetClass' => Producto::class, 'targetAttribute' => ['product_id' => 'id']],
+            [['producto_id'], 'exist', 'skipOnError' => true, 'targetClass' => Producto::class, 'targetAttribute' => ['producto_id' => 'id']],
         ];
     }
 
@@ -49,7 +49,7 @@ class Inventario extends \yii\db\ActiveRecord
         return [
             'id' => 'ID',
             'fecha' => 'Fecha',
-            'product_id' => 'Product ID',
+            'producto_id' => 'Producto ID',
             'total' => 'Total',
             'actual' => 'Actual',
             'diferencia' => 'Diferencia',
@@ -57,12 +57,12 @@ class Inventario extends \yii\db\ActiveRecord
     }
 
     /**
-     * Gets query for [[Product]].
+     * Gets query for [[Producto]].
      *
      * @return \yii\db\ActiveQuery
      */
-    public function getProduct()
+    public function getProducto()
     {
-        return $this->hasOne(Producto::class, ['id' => 'product_id']);
+        return $this->hasOne(Producto::class, ['id' => 'producto_id']);
     }
 }
