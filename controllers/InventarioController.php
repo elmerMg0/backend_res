@@ -3,6 +3,7 @@
 namespace app\controllers;
 
 use app\models\Inventario;
+use app\models\Producto;
 use Yii;
 use yii\data\Pagination;
 
@@ -54,6 +55,7 @@ class InventarioController extends \yii\web\Controller
         $inventaries = $query 
                         ->offset($pagination -> offset)
                         -> limit($pagination -> limit)
+                        ->asArray()
                         ->all();
         $currentPage = $pagination->getPage() + 1;
         $totalPages = $pagination->getPageCount();
@@ -82,7 +84,10 @@ class InventarioController extends \yii\web\Controller
         date_default_timezone_set('America/La_Paz');
         $inventary -> fecha = date('Y-m-d H:i:s');
 
-        if($inventary -> save()){
+        $product = Producto::findOne($params['producto_id']);
+        $product -> stock = $params['total'];
+
+        if($inventary -> save() && $product -> save()){
             $response = [
                 'success' => true,
                 'message' => 'Periodo iniciado con exito!',

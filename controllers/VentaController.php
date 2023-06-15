@@ -6,6 +6,7 @@ use app\models\DetalleVenta;
 use app\models\Mesa;
 use app\models\Venta;
 use app\models\Periodo;
+use app\models\Producto;
 use Yii;
 use yii\db\Query;
 use yii\data\Pagination;
@@ -120,7 +121,14 @@ class VentaController extends \yii\web\Controller
                 $saleDetail->cantidad = $order['cantidad'];
                 $saleDetail->producto_id = $order['id'];
                 $saleDetail->venta_id =  $sale->id;
-                if ($saleDetail->save()) {
+                
+                $product = Producto::findOne($order['id']);
+                if($product -> tipo === 'bebida'){
+                    /*Si es bebida validar el stock */
+                    $total = $product -> stock - $order['cantidad'];
+                    $product -> stock = $total;
+                }
+                if ($saleDetail->save() && $product -> save()) {
                    
                 }else{
                     Yii::$app->getResponse()->setStatusCode(422, 'Data Validation Failed.');
@@ -540,18 +548,32 @@ class VentaController extends \yii\web\Controller
 /* Eliminar detalle de venta y agregar nuevo detalle venta */
     public function actionUpdateSale($idSale){
         $params = Yii::$app->getRequest()->getBodyParams();
-        $orderDetail = $params['orderDetail'];
+        $orderDetail = $params['orderDetail']; //actualizado
      /*    if($orderDetail){ */
             $saleDetail = DetalleVenta::find()->where(['venta_id' => $idSale])->all();
             for ($i=0; $i < count($saleDetail); $i++) { 
                 $detail = $saleDetail[$i];
                 $filterDetail = array_filter($orderDetail, function ($det) use ($detail) {
-                    return $det['id']  === $detail['id'];
+                    return $det['id']  === $detail['producto_id'];
                 });
                 if(count($filterDetail) > 0){
                     //actualizar
-                    $detail -> cantidad = $filterDetail -> cantidad;
-                    if($detail -> save()){
+                    $currentQuantity = $filterDetail[0]["cantidad"];
+                    $oldQuantity = $detail -> cantidad;
+                    
+                    $total = $currentQuantity - $oldQuantity;
+
+                    $product =  Producto::findOne($filterDetail[0]['id']);
+                    
+                    if($total > 0){
+                        //stock++
+                        $product -> stock = $product -> stock - $total;
+                    }else if($total < 0){
+                        //stock --
+                        $product -> stock = $product -> stock + $total;
+                    }
+                    $detail -> cantidad = $filterDetail[0]["cantidad"];
+                    if($detail -> save() && $product -> save()){
 
                     }else{
                         return 'error';
@@ -569,7 +591,7 @@ class VentaController extends \yii\web\Controller
             for ($i=0; $i < count($orderDetail); $i++) { 
                 $detail = $orderDetail[$i];
                 $filterDetail = array_filter($saleDetail, function ($det) use ($detail) {
-                    return $det['id']  === $detail['id'];
+                    return $det['producto_id']  === $detail['id'];
                 });
                 if(count($filterDetail) > 0){
                     //actualizar
