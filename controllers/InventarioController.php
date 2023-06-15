@@ -41,7 +41,7 @@ class InventarioController extends \yii\web\Controller
         return parent::beforeAction($action);
     }
 
-    public function actionIndex($pageSize=10)
+    public function actionIndex($pageSize=5)
     {
         $query = Inventario::find() 
                             ->with('producto');
@@ -55,6 +55,7 @@ class InventarioController extends \yii\web\Controller
         $inventaries = $query 
                         ->offset($pagination -> offset)
                         -> limit($pagination -> limit)
+                        ->orderBy(['id' => SORT_DESC])
                         ->asArray()
                         ->all();
         $currentPage = $pagination->getPage() + 1;
@@ -77,30 +78,87 @@ class InventarioController extends \yii\web\Controller
     }
 
     public function actionCreate (){
-        $params = Yii::$app->getRequest() -> getBodyParams();
+        $inventaries = Yii::$app->getRequest() -> getBodyParams();
+     /*    $inventaries = $params['productsToEdit']; */
 
-        $inventary = new Inventario();
-        $inventary -> load($params, '');
-        date_default_timezone_set('America/La_Paz');
-        $inventary -> fecha = date('Y-m-d H:i:s');
+        if($inventaries){
+            for ($i=0; $i < count($inventaries); $i++) { 
+                $inventary = $inventaries[$i];
+                $inventaryNew = new Inventario();
 
-        $product = Producto::findOne($params['producto_id']);
-        $product -> stock = $params['total'];
+                date_default_timezone_set('America/La_Paz');
+                $inventaryNew -> fecha = date('Y-m-d H:i:s');
+                $inventaryNew -> producto_id = $inventary['id'] ;
+                $inventaryNew -> stock = $inventary['stock'] ;
+                $inventaryNew -> nuevo_stock = $inventary['newStock'] ;
+                $inventaryNew -> total = $inventary['stock'] + $inventary['newStock'] ;
+                $inventaryNew -> last_one = true ;
 
-        if($inventary -> save() && $product -> save()){
-            $response = [
-                'success' => true,
-                'message' => 'Periodo iniciado con exito!',
-                'period' => $inventary
-            ];
+                $inventaryOld = Inventario::find() 
+                                    ->where(['producto_id' => $inventary['id'], 'last_one' => true])
+                                    ->one();
+                $inventaryOld -> last_one = false;
+
+                $product = Producto::findOne($inventary['id']);
+                $product -> stock = $inventary['stock'] + $inventary['newStock'];
+                
+                if($inventaryNew -> save() && $product -> save() && $inventaryOld -> save()){
+                $response = [
+                    'success' => true,
+                    'message' => 'Periodo iniciado con exito!',
+                    'period' => $inventaryNew
+                ];
+                }else{
+                    $response = [
+                        'success' => false,
+                        'message' => 'Existen parametros incorrectos',
+                        'errors' => $inventaryNew->errors
+                    ];
+                }
+             }
         }else{
             $response = [
-                'success' => false,
-                'message' => 'Existen parametros incorrectos',
-                'errors' => $inventary->errors
+                'succes' => false,
+                'message' => 'No existen inventarios'
             ];
         }
         return $response;
+    }
+
+    public function actionGetCurrentInventary ($pageSize=10){
+        $query = Inventario::find() 
+                       ->with('producto')
+                       ->where(['last_one' => true] );
+
+        $pagination = new Pagination([
+            'defaultPageSize' => $pageSize,
+            'totalCount' => $query->count()
+            ]
+        );
+
+        $inventaries = $query 
+            ->offset($pagination -> offset)
+            -> limit($pagination -> limit)
+            ->orderBy(['id' => SORT_DESC])
+            ->asArray()
+            ->all();
+        $currentPage = $pagination->getPage() + 1;
+        $totalPages = $pagination->getPageCount();
+
+        $response = [
+            'success' => true,
+            'inventaries' => $inventaries,
+            'pageInfo' => [
+            'next' => $currentPage == $totalPages ? null  : $currentPage + 1,
+            'previus' => $currentPage == 1 ? null : $currentPage - 1,
+            'count' => count($inventaries),
+            'page' => $currentPage,
+            'start' => $pagination->getOffset(),
+            'totalPages' => $totalPages,
+            ],
+        ];
+
+return $response; 
     }
 
 }

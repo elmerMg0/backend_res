@@ -558,12 +558,13 @@ class VentaController extends \yii\web\Controller
                 });
                 if(count($filterDetail) > 0){
                     //actualizar
-                    $currentQuantity = $filterDetail[0]["cantidad"];
+                    $filterDetailValues = array_values($filterDetail);
+                    $currentQuantity = $filterDetailValues[0]["cantidad"];
                     $oldQuantity = $detail -> cantidad;
                     
                     $total = $currentQuantity - $oldQuantity;
 
-                    $product =  Producto::findOne($filterDetail[0]['id']);
+                    $product =  Producto::findOne($filterDetailValues[0]['id']);
                     
                     if($total > 0){
                         //stock++
@@ -572,7 +573,7 @@ class VentaController extends \yii\web\Controller
                         //stock --
                         $product -> stock = $product -> stock + $total;
                     }
-                    $detail -> cantidad = $filterDetail[0]["cantidad"];
+                    $detail -> cantidad = $filterDetailValues[0]["cantidad"];
                     if($detail -> save() && $product -> save()){
 
                     }else{
@@ -602,8 +603,11 @@ class VentaController extends \yii\web\Controller
                     $newSaleDetail -> producto_id = $detail['id'];
                     $newSaleDetail -> venta_id = $idSale;
                     $newSaleDetail -> estado = 'enviado';
-                    if($newSaleDetail -> save()){
 
+                    $product =  Producto::findOne($detail['id']);
+                    $product -> stock = $product -> stock - $detail ['cantidad'];
+                    if($newSaleDetail -> save() && $product -> save()){
+                        
                     }else{
                         return $newSaleDetail->errors;
                     }
