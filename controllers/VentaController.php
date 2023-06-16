@@ -515,6 +515,8 @@ class VentaController extends \yii\web\Controller
             $newSale -> load ($params, '');
             $numberOrder = Venta::find()->all();
             $newSale->numero_pedido = count($numberOrder) + 1;
+            date_default_timezone_set('America/La_Paz');
+            $newSale -> fecha = date('Y-m-d H:i:s');
             
             if($newSale -> save()){
                 /* Actualizar el estado de la mesa DISPONIBLE -> OCUPADO */
