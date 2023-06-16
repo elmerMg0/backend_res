@@ -9,10 +9,11 @@ use Yii;
  *
  * @property int $id
  * @property string $fecha
- * @property int $producto_id
+ * @property int $stock
+ * @property int|null $nuevo_stock
  * @property int|null $total
- * @property int|null $actual
- * @property string|null $diferencia
+ * @property int $producto_id
+ * @property bool|null $last_one
  *
  * @property Producto $producto
  */
@@ -32,11 +33,11 @@ class Inventario extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['fecha', 'producto_id'], 'required'],
+            [['fecha', 'stock', 'producto_id'], 'required'],
             [['fecha'], 'safe'],
-            [['producto_id', 'total', 'actual'], 'default', 'value' => null],
-            [['producto_id', 'total', 'actual'], 'integer'],
-            [['diferencia'], 'string'],
+            [['stock', 'nuevo_stock', 'total', 'producto_id'], 'default', 'value' => null],
+            [['stock', 'nuevo_stock', 'total', 'producto_id'], 'integer'],
+            [['last_one'], 'boolean'],
             [['producto_id'], 'exist', 'skipOnError' => true, 'targetClass' => Producto::class, 'targetAttribute' => ['producto_id' => 'id']],
         ];
     }
@@ -49,10 +50,11 @@ class Inventario extends \yii\db\ActiveRecord
         return [
             'id' => 'ID',
             'fecha' => 'Fecha',
-            'producto_id' => 'Producto ID',
+            'stock' => 'Stock',
+            'nuevo_stock' => 'Nuevo Stock',
             'total' => 'Total',
-            'actual' => 'Actual',
-            'diferencia' => 'Diferencia',
+            'producto_id' => 'Producto ID',
+            'last_one' => 'Last One',
         ];
     }
 

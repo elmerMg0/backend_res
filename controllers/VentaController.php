@@ -50,7 +50,7 @@ class VentaController extends \yii\web\Controller
                 ],
                 [
                     'allow' => true, // permitido o no permitido
-                    'actions' => ['create-sale', 'update-sale','get-sale-detail-by-period'], // acciones que siguen esta regla
+                    'actions' => ['create-sale', 'update-sale','get-sale-detail-by-period', 'get-'], // acciones que siguen esta regla
                     'roles' => ['cajero'] // control por roles  permisos
                 ],
             ],

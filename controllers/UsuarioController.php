@@ -41,6 +41,11 @@ class UsuarioController extends \yii\web\Controller
                     'actions' => ['index', 'create-user', 'edit-user', 'get-all-users'], // acciones que siguen esta regla
                     'roles' => ['administrador'] // control por roles  permisos
                 ],
+                [
+                    'allow' => true, // permitido o no permitido
+                    'actions' => ['get-all-users'], // acciones que siguen esta regla
+                    'roles' => ['cajero'] // control por roles  permisos
+                ],
             ],
         ];
 

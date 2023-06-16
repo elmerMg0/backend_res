@@ -97,12 +97,15 @@ class InventarioController extends \yii\web\Controller
                 $inventaryOld = Inventario::find() 
                                     ->where(['producto_id' => $inventary['id'], 'last_one' => true])
                                     ->one();
-                $inventaryOld -> last_one = false;
+                if($inventaryOld){
+                    $inventaryOld -> last_one = false;
+                    $inventaryOld -> save();
+                }
 
                 $product = Producto::findOne($inventary['id']);
                 $product -> stock = $inventary['stock'] + $inventary['newStock'];
                 
-                if($inventaryNew -> save() && $product -> save() && $inventaryOld -> save()){
+                if($inventaryNew -> save() && $product -> save()){
                 $response = [
                     'success' => true,
                     'message' => 'Periodo iniciado con exito!',
