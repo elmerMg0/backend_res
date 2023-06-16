@@ -24,7 +24,7 @@ class VentaController extends \yii\web\Controller
                 'update' => ['put', 'post'],
                 'delete' => ['delete'],
                 'get-sales' => ['get'],
-                'get-info-line-chart' => ['get'],
+                'get-info-line-chart' => ['post'],
                 'get-sales-by-day' => ['get'],
                 'get-sale-detail' => ['post'],
                 'get-sale-detail-all' => ['get'],
