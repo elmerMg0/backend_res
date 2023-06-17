@@ -88,7 +88,8 @@ class ClienteController extends \yii\web\Controller
         $params = Yii::$app->getRequest()->getBodyParams();
         $cliente = new Cliente();
         $cliente -> load($params,"");
-        $cliente -> fecha_crecion = Date("H-m-d H:i:s");
+	date_default_timezone_set('America/La_Paz');
+	$cliente -> fecha_crecion = Date("Y-m-d H:i:s");
         try{
             if($cliente->save()){
                 //todo ok
