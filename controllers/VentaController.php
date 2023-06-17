@@ -24,8 +24,8 @@ class VentaController extends \yii\web\Controller
                 'update' => ['put', 'post'],
                 'delete' => ['delete'],
                 'get-sales' => ['get'],
-                'get-info-line-chart' => ['get'],
-                'get-sales-by-day' => ['get'],
+                'get-info-line-chart' => ['post'],
+                'get-sales-by-day' => ['post'],
                 'get-sale-detail' => ['post'],
                 'get-sale-detail-all' => ['get'],
                 'get-sale-detail-by-period' => ['post'],
@@ -77,7 +77,7 @@ class VentaController extends \yii\web\Controller
     public function actionCreate($userId=0)
     {
         /* SI es pedido de app, entonces la venta se carga al ultimo periodo aperturado */
-        if($userId === 0 ){
+     /*    if($userId === 0 ){
             $period = Periodo::find()
                            ->where(['estado' => true])
                            ->one();
@@ -90,11 +90,12 @@ class VentaController extends \yii\web\Controller
                 ];
             }
         }
-
+ */
         $params = Yii::$app->getRequest()->getBodyParams();
         $numberOrder = Venta::find()->all();
         $orderDetail = $params['orderDetail'];
         $sale = new Venta();
+
         date_default_timezone_set('America/La_Paz');
         $sale -> fecha = date('Y-m-d H:i:s');
         $sale->cantidad_total = intval($params['cantidadTotal']);
@@ -104,7 +105,8 @@ class VentaController extends \yii\web\Controller
         $sale->estado = $params['estado'];
         $sale->tipo_pago = $params['tipoPago'];
         $sale->tipo = $params['tipo'];
-        $sale->nombre = $params['nombre'];
+        $sale->cliente_id = $params['cliente_id'];
+        $sale->mesa_id = $params['mesa_id'];
         if($params['tipo'] === 'pedidoApp'){
             $sale->tipo_entrega = $params['tipo_entrega'];
             $sale->telefono = $params['telefono'];
@@ -121,6 +123,7 @@ class VentaController extends \yii\web\Controller
                 $saleDetail->cantidad = $order['cantidad'];
                 $saleDetail->producto_id = $order['id'];
                 $saleDetail->venta_id =  $sale->id;
+                $saleDetail->estado =  'enviado';
                 
                 $product = Producto::findOne($order['id']);
                 if($product -> tipo === 'bebida'){
@@ -135,7 +138,7 @@ class VentaController extends \yii\web\Controller
                     return $response = [
                         'success' => false,
                         'message' => 'Existen errores en los parametros',
-                        'data' => $saleDetail->errors
+                        'errors' => $saleDetail->errors
                     ];
                 }
             }
@@ -151,7 +154,7 @@ class VentaController extends \yii\web\Controller
             $response = [
                 'success' => false,
                 'message' => 'failed update',
-                'data' => $sale->errors
+                'errors' => $sale->errors
             ];
         }
         return $response;
@@ -373,8 +376,10 @@ class VentaController extends \yii\web\Controller
         $params = Yii::$app->getRequest()->getBodyParams();
         $period = Periodo::findOne($params['idPeriod']);
         $query = Venta::find()
-                ->select(['venta.*', 'usuario.username'])
+                ->select(['venta.*', 'usuario.username', 'mesa.nombre as mesa', 'cliente.nombre as cliente'])
                 ->join('LEFT JOIN', 'usuario','usuario.id = venta.usuario_id')
+                ->innerJoin('mesa', 'mesa.id=venta.mesa_id')
+                ->innerJoin('cliente', 'cliente.id=venta.cliente_id')
                 ->Where(['usuario_id' => $params['idUser']])
                 ->andWhere(['>=', 'fecha', $period->fecha_inicio])
                 ->orderBy(['venta.id' => SORT_DESC])
@@ -492,7 +497,11 @@ class VentaController extends \yii\web\Controller
     }
 
     public function actionCreateSale($idTable){
-        $sale = Venta::find()->where(['mesa_id' => $idTable, 'estado' => 'consumiendo' ]) -> one();
+        $sale = Venta::find()->select(['venta.*', 'usuario.nombres as usuario'])
+                            ->where(['mesa_id' => $idTable, 'venta.estado' => 'consumiendo' ])
+                            ->innerJoin('usuario', 'usuario.id=venta.usuario_id')
+                            ->asArray()
+                            -> one();
         if($sale){
             /* Si ya hay mesa ocuapdo, recuperar detalle de venta(productos, cantidad) */
                 $saleDetails = Venta::find()
@@ -642,7 +651,7 @@ class VentaController extends \yii\web\Controller
 
     public function actionValidateTable($idSale){
         $saleDetails = DetalleVenta::find()->where(['venta_id' => $idSale])->all();
-        if(!$saleDetails){
+        if(count($saleDetails) === 0){
             $sale = Venta::findOne($idSale);
             if($sale -> delete()){
                 $table = Mesa::findOne($sale -> mesa_id);
@@ -694,6 +703,7 @@ class VentaController extends \yii\web\Controller
         $sale->estado = $params['estado'];
         $sale->tipo_pago = $params['tipoPago'];
         $sale->tipo = $params['tipo'];
+        $sale->cliente_id = $params['cliente_id'];
       
         //$sale->cliente_id = $customerId;
         if ($sale->save()) {
