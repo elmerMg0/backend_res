@@ -192,4 +192,49 @@ class PeriodoController extends \yii\web\Controller
         }
         return $response;
     }
+
+    public function actionGetDetailSaleByUser($idUser, $idPeriod){
+        $period = Periodo::findOne($idPeriod);
+        if ($period) {
+             $user = Usuario::findOne($idUser);
+            if ($user) {
+                //vetnas totales hasta el momento 
+                $sales = Venta::find()
+                        ->select(['SUM(detalle_venta.cantidad)', 'producto.nombre', 'sum(producto.precio_venta) as total'])
+                        ->where(['>=', 'fecha', $period-> fecha_inicio])
+                        ->innerJoin('detalle_venta', 'detalle_venta.venta_id=venta.id')
+                        ->innerJoin('producto', 'producto.id= detalle_venta.producto_id')
+                        ->andWhere(['usuario_id' => $idUser])
+                        ->groupBy(['producto_id', 'producto.nombre'])
+                        ->asArray()
+                        ->all();
+/* 
+                $totalSale = Venta::find()
+                    ->where(['>=', 'fecha', $period->fecha_inicio])
+                    ->andWhere(['usuario_id' => $user->id , 'estado' => 'pagado'])
+                    ->sum('cantidad_total'); */
+                $response = [
+                    'success' => true,
+                    'message' => 'detalle de periodo por usuario',
+                    'info' => [
+                        'fechaInicio' => $period->fecha_inicio,
+                        'sales' => $sales,
+                        ]   
+                    ];
+            } else {
+                $response = [
+                    'success' => false,
+                    'message' => 'No existe usuario',
+                    'user' => $idUser
+                ];
+            }
+        } else {
+            $response = [
+                'success' => false,
+                'message' => 'No existe periodo',
+                'period' => $idPeriod
+            ];
+        }
+        return $response;
+    }
 }
