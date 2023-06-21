@@ -18,8 +18,8 @@ class PeriodoController extends \yii\web\Controller
                 'start-period' => ['POST'],
                 'close-period' => ['POST'],
                 'get-detail-period' => ['GET'],
-
-            ]
+                'get-detail-sale-by-user' => ['GET']
+            ]   
         ];
 
         $behaviors['authenticator'] = [
@@ -34,7 +34,7 @@ class PeriodoController extends \yii\web\Controller
             'rules' => [
                 [
                     'allow' => true, // permitido o no permitido
-                    'actions' => ['get-detail-period', 'start-period', 'close-period'], // acciones que siguen esta regla
+                    'actions' => ['get-detail-period', 'start-period', 'close-period', 'get-detail-sale-by-user'], // acciones que siguen esta regla
                     'roles' => ['administrador', 'cajero'] // control por roles  permisos
                 ],
             ],
@@ -200,25 +200,46 @@ class PeriodoController extends \yii\web\Controller
             if ($user) {
                 //vetnas totales hasta el momento 
                 $sales = Venta::find()
-                        ->select(['SUM(detalle_venta.cantidad)', 'producto.nombre', 'sum(producto.precio_venta) as total'])
+                        ->select(['SUM(detalle_venta.cantidad)', 'producto.nombre', 'sum(producto.precio_venta*detalle_venta.cantidad) as total'])
                         ->where(['>=', 'fecha', $period-> fecha_inicio])
+                        ->andWhere(['venta.estado' => 'pagado'])
                         ->innerJoin('detalle_venta', 'detalle_venta.venta_id=venta.id')
                         ->innerJoin('producto', 'producto.id= detalle_venta.producto_id')
                         ->andWhere(['usuario_id' => $idUser])
                         ->groupBy(['producto_id', 'producto.nombre'])
                         ->asArray()
                         ->all();
-/* 
-                $totalSale = Venta::find()
-                    ->where(['>=', 'fecha', $period->fecha_inicio])
-                    ->andWhere(['usuario_id' => $user->id , 'estado' => 'pagado'])
-                    ->sum('cantidad_total'); */
+
+                $salesDrinks = Venta::find()
+                        ->select(['sum(producto.precio_venta*detalle_venta.cantidad) as total'])
+                        ->where(['>=', 'fecha', $period-> fecha_inicio])
+                        ->andWhere(['venta.estado' => 'pagado', 'producto.tipo' => 'bebida'])
+                        ->innerJoin('detalle_venta', 'detalle_venta.venta_id=venta.id')
+                        ->innerJoin('producto', 'producto.id= detalle_venta.producto_id')
+                        ->andWhere(['usuario_id' => $idUser])
+                        ->groupBy(['producto.tipo'])
+                        ->asArray()
+                        ->all();
+
+                $salesFoods = Venta::find()
+                        ->select(['sum(producto.precio_venta*detalle_venta.cantidad) as total'])
+                        ->where(['>=', 'fecha', $period-> fecha_inicio])
+                        ->andWhere(['venta.estado' => 'pagado', 'producto.tipo' => 'comida'])
+                        ->innerJoin('detalle_venta', 'detalle_venta.venta_id=venta.id')
+                        ->innerJoin('producto', 'producto.id= detalle_venta.producto_id')
+                        ->andWhere(['usuario_id' => $idUser])
+                        ->groupBy(['producto.tipo'])
+                        ->asArray()
+                        ->all();
+              
                 $response = [
                     'success' => true,
                     'message' => 'detalle de periodo por usuario',
                     'info' => [
                         'fechaInicio' => $period->fecha_inicio,
                         'sales' => $sales,
+                        'salesDrinks' => $salesDrinks,
+                        'salesFoods' =>  $salesFoods
                         ]   
                     ];
             } else {
