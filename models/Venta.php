@@ -20,6 +20,7 @@ use Yii;
  * @property string|null $hora
  * @property string|null $tipo_entrega
  * @property int|null $mesa_id
+ * @property bool|null $finalizado
  *
  * @property Cliente $cliente
  * @property DetalleVenta[] $detalleVentas
@@ -47,6 +48,7 @@ class Venta extends \yii\db\ActiveRecord
             [['cantidad_total', 'cantidad_cancelada', 'usuario_id', 'numero_pedido', 'cliente_id', 'mesa_id'], 'integer'],
             [['usuario_id', 'numero_pedido', 'estado'], 'required'],
             [['tipo_pago'], 'string'],
+            [['finalizado'], 'boolean'],
             [['estado'], 'string', 'max' => 50],
             [['tipo', 'tipo_entrega'], 'string', 'max' => 15],
             [['hora'], 'string', 'max' => 20],
@@ -75,6 +77,7 @@ class Venta extends \yii\db\ActiveRecord
             'hora' => 'Hora',
             'tipo_entrega' => 'Tipo Entrega',
             'mesa_id' => 'Mesa ID',
+            'finalizado' => 'Finalizado',
         ];
     }
 

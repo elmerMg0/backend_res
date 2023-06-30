@@ -72,7 +72,21 @@ class VentaController extends \yii\web\Controller
 
     public function actionIndex()
     {
-        return $this->render('index');
+        $sales = Venta::find()
+                        ->select(['venta.*', 'usuario.username', 'mesa.nombre as nroMesa'])
+                        ->where(['finalizado' => false])
+                        ->innerJoin('usuario', 'usuario.id= venta.usuario_id')
+                        ->innerJoin('mesa', 'mesa.id= venta.mesa_id')
+                        ->with('detalleVentas', 'detalleVentas.producto')
+                        ->asArray()
+                        ->all();
+
+        $response = [
+            "success" => true,
+            'message' => 'Lista de pedidos',
+            'orders' => $sales 
+        ];
+        return $response;
     }
     public function actionCreate($userId=0)
     {
