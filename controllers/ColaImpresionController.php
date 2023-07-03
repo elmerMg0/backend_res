@@ -67,10 +67,25 @@ class ColaImpresionController extends \yii\web\Controller
                                 ->innerJoin('producto' , 'producto.id=detalle_venta.producto_id')
                                 ->asArray()
                                 ->all();
+                /* actulizar el estado de nuevo a enviado */
+                for($i = 0; $i < count($orderDetail); $i++){
+                    $order = $orderDetail[$i];
+                    $order -> estado = 'enviado';
+                    if(!$order -> save()){
+                        return [
+                            'success' => false,
+                            'message' => 'Existen errores en los parametros',
+                            'errros' => $order -> errors
+                        ];
+                    }
+                }
             }else{
                 $orderDetail = DetalleVenta::find()
-                ->where(['venta_id' => $print -> venta_id])
-                ->all();
+                                ->select(['detalle_venta.cantidad', 'producto.*'])
+                                ->where(['venta_id' => $print -> venta_id])
+                                ->innerJoin('producto' , 'producto.id=detalle_venta.producto_id')
+                                ->asArray()
+                                ->all();
             }
             $printer = Impresora::find()->where(['lugar' => $print -> area])->one();
             $infoSale = [
