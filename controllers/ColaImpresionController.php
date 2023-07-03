@@ -62,7 +62,7 @@ class ColaImpresionController extends \yii\web\Controller
 
             if($print -> area == 'cocina'){
                 $orderDetail = DetalleVenta::find()
-                                ->select(['detalle_venta.cantidad', 'producto.*'])
+                                ->select(['detalle_venta.cantidad', 'producto.*', 'detalle_venta.id'])
                                 ->where(['venta_id' => $print -> venta_id, 'detalle_venta.estado' => 'nuevo'])
                                 ->innerJoin('producto' , 'producto.id=detalle_venta.producto_id')
                                 ->asArray()
@@ -70,6 +70,7 @@ class ColaImpresionController extends \yii\web\Controller
                 /* actulizar el estado de nuevo a enviado */
                 for($i = 0; $i < count($orderDetail); $i++){
                     $order = $orderDetail[$i];
+                    $order = DetalleVenta::findOne($order['id']);
                     $order -> estado = 'enviado';
                     if(!$order -> save()){
                         return [
