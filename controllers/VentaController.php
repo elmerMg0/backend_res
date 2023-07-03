@@ -438,6 +438,18 @@ class VentaController extends \yii\web\Controller
     public function actionCancelSale ($idSale) {
         $sale = Venta::findOne($idSale);
         if($sale){
+            $orderDetail = DetalleVenta::find()->where(['venta_id' => $idSale])->all();
+            
+            for($i = 0; $i < count($orderDetail); $i++){
+                $order  = $orderDetail[$i];
+                if($order -> tipo === 'bebida'){
+                    $product = Producto::findOne($order->producto_id);
+                    $product -> stock = $product -> stock + $order -> cantidad;
+                    $product -> save();
+                }
+            }
+
+
             $sale -> estado = 'cancelado';
             if($sale -> save()){
                 $response = [
