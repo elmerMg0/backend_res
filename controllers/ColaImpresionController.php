@@ -4,6 +4,7 @@ namespace app\controllers;
 
 use app\models\ColaImpresion;
 use app\models\DetalleVenta;
+use app\models\DetalleVentaImprimir;
 use app\models\Impresora;
 use app\models\Venta;
 use Yii;
@@ -61,25 +62,12 @@ class ColaImpresionController extends \yii\web\Controller
             $orderDetail = [];
 
             if($print -> area == 'cocina'){
-                $orderDetail = DetalleVenta::find()
-                                ->select(['detalle_venta.cantidad', 'producto.*', 'detalle_venta.id'])
-                                ->where(['venta_id' => $print -> venta_id, 'detalle_venta.estado' => 'nuevo'])
-                                ->innerJoin('producto' , 'producto.id=detalle_venta.producto_id')
+                $orderDetail = DetalleVentaImprimir::find()
+                                ->select(['detalle_venta_imprimir.cantidad', 'producto.*', 'detalle_venta_imprimir.id'])
+                                ->where(['cola_impresion_id' => $print -> id, 'producto.tipo' => 'comida'])
+                                ->innerJoin('producto' , 'producto.id=detalle_venta_imprimir.producto_id')
                                 ->asArray()
                                 ->all();
-                /* actulizar el estado de nuevo a enviado */
-                for($i = 0; $i < count($orderDetail); $i++){
-                    $order = $orderDetail[$i];
-                    $order = DetalleVenta::findOne($order['id']);
-                    $order -> estado = 'enviado';
-                    if(!$order -> save()){
-                        return [
-                            'success' => false,
-                            'message' => 'Existen errores en los parametros',
-                            'errros' => $order -> errors
-                        ];
-                    }
-                }
             }else{
                 $orderDetail = DetalleVenta::find()
                                 ->select(['detalle_venta.cantidad', 'producto.*'])
@@ -121,6 +109,7 @@ class ColaImpresionController extends \yii\web\Controller
             $response = [ 
                 'success' => true,
                 'message' => 'Se agrego correctamente',
+                'printSpooler' => $printSpooler
             ];
         }else{
             $response = [ 

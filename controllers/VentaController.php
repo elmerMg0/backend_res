@@ -640,11 +640,11 @@ class VentaController extends \yii\web\Controller
                     $newSaleDetail -> producto_id = $detail['id'];
                     $newSaleDetail -> venta_id = $idSale;
                     /*  */
-                    if($params['operativeSystem'] === 'windows'){
-                        $newSaleDetail -> estado = 'enviado';
+                    $newSaleDetail -> estado = 'enviado';
+                 /*    if($params['operativeSystem'] === 'windows'){
                     }else{
                         $newSaleDetail -> estado = 'nuevo';
-                    }
+                    } */
 
                     $product =  Producto::findOne($detail['id']);
                     $product -> stock = $product -> stock - $detail ['cantidad'];
