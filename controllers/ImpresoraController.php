@@ -68,4 +68,21 @@ class ImpresoraController extends \yii\web\Controller
         return $response;
     }
 
+    public function actionDelete( $idPrinter ){
+        $printer = Impresora::findOne($idPrinter);
+        if($printer -> delete()){
+            $response = [
+                'success' => true,
+                'message' => 'Impresora eliminada exitosamente.',
+            ];
+        }else{
+            $response = [
+                'success' => false,
+                'message' => 'Ocurrio un error',
+                'errors' => $printer -> errors
+            ];
+        }
+        return $response;
+    }
+
 }
