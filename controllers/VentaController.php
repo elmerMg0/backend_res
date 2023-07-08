@@ -699,7 +699,6 @@ class VentaController extends \yii\web\Controller
                 $response = [ 
                     'success' => false,
                     'message' => 'Ocurrio un error',
-                    'errors' => $sale -> errors
                 ];
             }
         }else{
