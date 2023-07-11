@@ -60,7 +60,7 @@ class ColaImpresionController extends \yii\web\Controller
             ->one();
             /* Si es cocina, solo agregamos los nuevos pedidios, si es salon todos */
             $orderDetail = [];
-
+            $send = true;
             if($print -> area == 'cocina'){
                 $orderDetail = DetalleVentaImprimir::find()
                                 ->select(['detalle_venta_imprimir.cantidad', 'producto.*', 'detalle_venta_imprimir.id'])
@@ -68,6 +68,9 @@ class ColaImpresionController extends \yii\web\Controller
                                 ->innerJoin('producto' , 'producto.id=detalle_venta_imprimir.producto_id')
                                 ->asArray()
                                 ->all();
+                if(!$orderDetail){
+                    $send = false;
+                }
             }else{
                 $orderDetail = DetalleVenta::find()
                                 ->select(['detalle_venta.cantidad', 'producto.*'])
@@ -87,9 +90,11 @@ class ColaImpresionController extends \yii\web\Controller
                 'username' => $sale ["username"],
                 'cantidad_total' => $sale ['cantidad_total']
             ];
-            $print -> estado = true;
-            $print -> save();
-            $printSpooler[] = $infoSale;
+            if(!$send){
+                $print -> estado = true;
+                $print -> save();
+                $printSpooler[] = $infoSale;
+            }
         }
         
         $response = [ 
