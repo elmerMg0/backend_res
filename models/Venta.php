@@ -9,8 +9,8 @@ use Yii;
  *
  * @property int $id
  * @property string $fecha
- * @property int|null $cantidad_total
- * @property int|null $cantidad_cancelada
+ * @property float|null $cantidad_total
+ * @property float|null $cantidad_cancelada
  * @property int $usuario_id
  * @property int $numero_pedido
  * @property int|null $cliente_id
@@ -23,6 +23,7 @@ use Yii;
  * @property bool|null $finalizado
  *
  * @property Cliente $cliente
+ * @property ColaImpresion[] $colaImpresions
  * @property DetalleVenta[] $detalleVentas
  * @property Mesa $mesa
  * @property Usuario $usuario
@@ -44,9 +45,10 @@ class Venta extends \yii\db\ActiveRecord
     {
         return [
             [['fecha'], 'safe'],
-            [['cantidad_total', 'cantidad_cancelada', 'usuario_id', 'numero_pedido', 'cliente_id', 'mesa_id'], 'default', 'value' => null],
-            [['cantidad_total', 'cantidad_cancelada', 'usuario_id', 'numero_pedido', 'cliente_id', 'mesa_id'], 'integer'],
+            [['cantidad_total', 'cantidad_cancelada'], 'number'],
             [['usuario_id', 'numero_pedido', 'estado'], 'required'],
+            [['usuario_id', 'numero_pedido', 'cliente_id', 'mesa_id'], 'default', 'value' => null],
+            [['usuario_id', 'numero_pedido', 'cliente_id', 'mesa_id'], 'integer'],
             [['tipo_pago'], 'string'],
             [['finalizado'], 'boolean'],
             [['estado'], 'string', 'max' => 50],
@@ -89,6 +91,16 @@ class Venta extends \yii\db\ActiveRecord
     public function getCliente()
     {
         return $this->hasOne(Cliente::class, ['id' => 'cliente_id']);
+    }
+
+    /**
+     * Gets query for [[ColaImpresions]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getColaImpresions()
+    {
+        return $this->hasMany(ColaImpresion::class, ['venta_id' => 'id']);
     }
 
     /**

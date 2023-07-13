@@ -729,7 +729,7 @@ class VentaController extends \yii\web\Controller
 
         $sale = Venta::findOne($idSale);
         $params = Yii::$app->getRequest()->getBodyParams();
-        $sale->cantidad_total = intval($params['cantidadTotal']);
+        $sale->cantidad_total = $params['cantidadTotal'];
         $sale->cantidad_cancelada = $params['cantidadPagada'];
         $sale->usuario_id = $userId;
         $sale->estado = $params['estado'];
