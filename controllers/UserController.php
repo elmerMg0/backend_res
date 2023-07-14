@@ -56,7 +56,8 @@ class UserController extends Controller
                         'accessToken' => $user->access_token,
                         'role' => $role,
                         'id' => $user->id,
-                        'period' => $period
+                        'period' => $period,
+                        'tipo' => $user -> tipo
                     ];
                 } else {
                     $response = [

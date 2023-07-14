@@ -78,6 +78,7 @@ class VentaController extends \yii\web\Controller
                         ->innerJoin('usuario', 'usuario.id= venta.usuario_id')
                         ->innerJoin('mesa', 'mesa.id= venta.mesa_id')
                         ->with('detalleVentas', 'detalleVentas.producto')
+                        ->orderBy(['id' => SORT_DESC])
                         ->asArray()
                         ->all();
 
@@ -754,6 +755,31 @@ class VentaController extends \yii\web\Controller
                 'success' => false,
                 'message' => 'failed update',
                 'data' => $sale->errors
+            ];
+        }
+        return $response;
+    }
+
+    public function actionServe($idSale){
+        $sale = Venta::findOne($idSale);
+        if( $sale ){
+            $sale -> finalizado = true;
+            if( $sale -> save()){
+                $response = [
+                    'success' => true,
+                    'message' => 'Venta servida'
+                ];
+            }else{
+                $response = [
+                    'success' => false,
+                    'message' => 'existen parametros incorrectos',
+                    'errors' => $sale -> errors
+                ];
+            }
+        }else{
+            $response = [
+                'success' => false,
+                'message' => 'No existe la venta',
             ];
         }
         return $response;
