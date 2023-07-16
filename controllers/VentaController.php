@@ -443,8 +443,8 @@ class VentaController extends \yii\web\Controller
             
             for($i = 0; $i < count($orderDetail); $i++){
                 $order  = $orderDetail[$i];
-                if($order -> tipo === 'bebida'){
-                    $product = Producto::findOne($order->producto_id);
+                $product = Producto::findOne($order->producto_id);
+                if($product -> tipo === 'bebida'){
                     $product -> stock = $product -> stock + $order -> cantidad;
                     $product -> save();
                 }
