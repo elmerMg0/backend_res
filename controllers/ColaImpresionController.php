@@ -85,6 +85,7 @@ class ColaImpresionController extends \yii\web\Controller
                 'nro_mesa' => $sale ["mesa"],
                 'cliente' => $sale ["cliente"],
                 'orderDetail' => $orderDetail,
+                'note' => $sale['nota'],
                 'printerName' => $printer -> nombre,
                 'place' => $printer -> lugar,
                 'username' => $sale ["username"],

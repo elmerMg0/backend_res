@@ -640,13 +640,8 @@ class VentaController extends \yii\web\Controller
                     $newSaleDetail -> cantidad = $detail['cantidad'];
                     $newSaleDetail -> producto_id = $detail['id'];
                     $newSaleDetail -> venta_id = $idSale;
-                    /*  */
                     $newSaleDetail -> estado = 'enviado';
-                 /*    if($params['operativeSystem'] === 'windows'){
-                    }else{
-                        $newSaleDetail -> estado = 'nuevo';
-                    } */
-
+               
                     $product =  Producto::findOne($detail['id']);
                     $product -> stock = $product -> stock - $detail ['cantidad'];
                     if($newSaleDetail -> save() && $product -> save()){
@@ -662,6 +657,7 @@ class VentaController extends \yii\web\Controller
             ->innerJoin('detalle_venta', 'detalle_venta.venta_id=venta.id')
             ->innerJoin('producto', 'producto.id=detalle_venta.producto_id')
             ->asArray()
+            ->orderBy(['id' => SORT_DESC])
             ->all();
 
             /* Actulaliza restado de la mesa */
@@ -680,6 +676,16 @@ class VentaController extends \yii\web\Controller
                 'message' => 'No existen pedidos'
             ]; 
         }*/
+        /* Agregar note */
+        /* Agregar cliente */
+        $sale = Venta::findOne($idSale);
+        $sale -> nota = $params['note'];
+        
+        if($params['customer_id'] !== 24){
+            $sale -> cliente_id = $params ['customer_id'];
+        }
+        $sale -> save();
+
         return $response;
     }
 
