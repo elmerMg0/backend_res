@@ -193,8 +193,9 @@ class PeriodoController extends \yii\web\Controller
         return $response;
     }
 
-    public function actionGetDetailSaleByUser($idUser, $idPeriod){
-        $period = Periodo::findOne($idPeriod);
+    public function actionGetDetailSaleByUser($idUser){
+        $period = Periodo::find() -> where(['usuario_id' => $idUser, 'estado' => true])->one();
+
         if ($period) {
              $user = Usuario::findOne($idUser);
             if ($user) {
@@ -253,7 +254,6 @@ class PeriodoController extends \yii\web\Controller
             $response = [
                 'success' => false,
                 'message' => 'No existe periodo',
-                'period' => $idPeriod
             ];
         }
         return $response;

@@ -742,7 +742,6 @@ class VentaController extends \yii\web\Controller
         $sale->estado = $params['estado'];
         $sale->tipo_pago = $params['tipoPago'];
         $sale->tipo = $params['tipo'];
-        $sale->cliente_id = $params['cliente_id'];
       
         //$sale->cliente_id = $customerId;
         if ($sale->save()) {
