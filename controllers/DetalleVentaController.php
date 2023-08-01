@@ -57,14 +57,14 @@ class DetalleVentaController extends \yii\web\Controller
         return $this->render('index');
     }
 
-    public function actionGetBestSellerProduct(){
+    public function actionGetBestSellerProduct($quantity){
         $detail = DetalleVenta::find()
                     ->select(['sum(cantidad) as cantidad', 'producto.nombre' ])
                     ->join('LEFT JOIN', 'producto', 'producto.id=detalle_venta.producto_id')
                     ->groupBy(['producto_id', 'producto.nombre' ])
                     ->orderBy(['cantidad' => SORT_DESC])
                     ->asArray()
-                    ->limit(5)
+                    ->limit($quantity)
                     ->all();
         if($detail){
             $response = [

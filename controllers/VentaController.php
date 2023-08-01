@@ -693,6 +693,7 @@ class VentaController extends \yii\web\Controller
         $saleDetails = DetalleVenta::find()->where(['venta_id' => $idSale])->all();
         if(count($saleDetails) === 0){
             $sale = Venta::findOne($idSale);
+            /* En vez de eliminar para no poder en nroVenta, actualizar */
             if($sale && $sale -> delete()){
                 $table = Mesa::findOne($sale -> mesa_id);
                 $table -> estado = 'disponible';
