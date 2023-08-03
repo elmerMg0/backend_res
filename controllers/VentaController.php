@@ -3,6 +3,7 @@
 namespace app\controllers;
 
 use app\models\DetalleVenta;
+use app\models\LogVenta;
 use app\models\Mesa;
 use app\models\Venta;
 use app\models\Periodo;
@@ -588,6 +589,8 @@ class VentaController extends \yii\web\Controller
         $params = Yii::$app->getRequest()->getBodyParams();
         $orderDetail = $params['orderDetail']; //actualizado
      /*    if($orderDetail){ */
+        $sale = Venta::findOne($idSale);
+
             $saleDetail = DetalleVenta::find()->where(['venta_id' => $idSale])->all();
             for ($i=0; $i < count($saleDetail); $i++) { 
                 $detail = $saleDetail[$i];
@@ -601,15 +604,30 @@ class VentaController extends \yii\web\Controller
                     $oldQuantity = $detail -> cantidad;
                     
                     $total = $currentQuantity - $oldQuantity;
-
                     $product =  Producto::findOne($filterDetailValues[0]['id']);
+                    /* agregar al log, idSale, idProduct, cantidad */
+                    if($total !== 0){
+                        $logSale = new LogVenta();
+                        $logSale -> venta_id = $idSale;
+                        $logSale -> producto_id = $product -> id;
+                        $logSale -> cantidad = $total;
+                        $logSale -> numero_pedido = $sale -> numero_pedido;
+                        $logSale -> nombre_producto = $product -> nombre;
+                        $logSale -> save();
+                    }
+
                     
                     if($total > 0){
+                        if($product -> tipo === "bebida"){
+                            $product -> stock = $product -> stock - $total;
+                        }
                         //stock++
-                        $product -> stock = $product -> stock - $total;
                     }else if($total < 0){
+                        /* agregar log */
                         //stock --
-                        $product -> stock = $product -> stock + $total;
+                        if($product -> tipo === 'bebida'){
+                            $product -> stock = $product -> stock + $total;
+                        }
                     }
                     $detail -> cantidad = $filterDetailValues[0]["cantidad"];
                     if($detail -> save() && $product -> save()){
@@ -645,7 +663,13 @@ class VentaController extends \yii\web\Controller
                     $product =  Producto::findOne($detail['id']);
                     $product -> stock = $product -> stock - $detail ['cantidad'];
                     if($newSaleDetail -> save() && $product -> save()){
-                        
+                        $logSale = new LogVenta();
+                        $logSale -> venta_id = $idSale;
+                        $logSale -> producto_id = $product -> id;
+                        $logSale -> cantidad = $detail['cantidad'];
+                        $logSale -> numero_pedido = $sale['numero_pedido'];
+                        $logSale -> nombre_producto = $product['nombre'];
+                        $logSale -> save();
                     }else{
                         return $newSaleDetail->errors;
                     }
