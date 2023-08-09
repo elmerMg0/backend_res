@@ -5,6 +5,9 @@ namespace app\controllers;
 use app\models\Mesa;
 use app\models\Salon;
 use Yii;
+use yii\helpers\Json;
+use yii\web\UploadedFile;
+
 class SalonController extends \yii\web\Controller
 {
     public function behaviors()
@@ -47,12 +50,19 @@ class SalonController extends \yii\web\Controller
     }
 
     public function actionCreateLounge(){
-        $params = Yii::$app->getRequest()->getBodyParams();
         $lounge = new Salon();
-        $lounge -> load($params, '');
+        $data = Json::decode(Yii::$app->request->post('data'));
+        $lounge -> load($data, '');
+        $file = UploadedFile::getInstanceByName('file');
+        if($file){
+            $fileName = uniqid().'.'.$file -> getExtension();
+            $file -> saveAs(Yii::getAlias('@app/web/upload/').$fileName);
+            $lounge -> url_image = $fileName;
+        }
+
         if($lounge -> save()){
             /* Creamos los espacios segun el nrofilas y columnas */
-            $nroTables = $params['nro_filas']* $params['nro_columnas'];
+            $nroTables = $data['nro_filas']* $data['nro_columnas'];
             for($i = 0; $i < $nroTables; $i++){
                 $table = new Mesa();
                 $table -> salon_id = $lounge -> id;
@@ -81,7 +91,9 @@ class SalonController extends \yii\web\Controller
     }
 
     public function actionGetLounges (){
-        $lounges = Salon::find()->all();
+        $lounges = Salon::find()
+                        ->where(['estado' => true])
+                        ->all();
         if($lounges){
             $response = [
                 'success' => true,
@@ -98,5 +110,48 @@ class SalonController extends \yii\web\Controller
         return $response;
     }
 
-
+    public function actionGetLounge ($idLounge){
+        $lounge =  Salon::findOne($idLounge);
+        if($lounge){
+            $response = [
+                'success' => true,
+                'message' => 'Salon',
+                'lounge' => $lounge
+            ];
+        }else{
+            $response = [
+                'success' => false,
+                'message' => 'No existe el salon',
+                'errors' => []
+            ];
+        }
+        return $response;
+    }
+    public function actionUpdate($idLounge){
+        $lounge = Salon::findOne($idLounge);
+        if($lounge){
+            $params = Yii::$app->getRequest()->getBodyParams();
+            $lounge -> load($params, '');
+            if($lounge -> save()){
+                $response = [
+                    'success' => true,
+                    'message' => 'Se actualizo exitosamente',
+                    'lounge' => $lounge
+                ];
+            }else{
+                $response = [
+                    'success' => false,
+                    'message' => 'Existe errores en los parametros',
+                    'lounge' => $lounge
+                ];
+            }
+        }else{
+              $response = [
+                'success' => false,
+                'message' => 'No se encontro el salon',
+                'lounge' => []
+            ];
+        }
+        return $response;
+    }
 }
