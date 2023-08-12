@@ -63,6 +63,7 @@ class DetalleVentaController extends \yii\web\Controller
                     ->join('LEFT JOIN', 'producto', 'producto.id=detalle_venta.producto_id')
                     ->groupBy(['producto_id', 'producto.nombre' ])
                     ->orderBy(['cantidad' => SORT_DESC])
+                    ->where(['producto.tipo' => 'comida'])
                     ->asArray()
                     ->limit($quantity)
                     ->all();

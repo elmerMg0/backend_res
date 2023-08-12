@@ -130,19 +130,41 @@ class SalonController extends \yii\web\Controller
     public function actionUpdate($idLounge){
         $lounge = Salon::findOne($idLounge);
         if($lounge){
-            $params = Yii::$app->getRequest()->getBodyParams();
-            $lounge -> load($params, '');
+            $data = JSON::decode(Yii::$app->request->post('data'));
+            $lounge->load($data, '');
+
+            $image = UploadedFile::getInstanceByName('file');
+            if ($image) {
+                $url_image = $lounge->url_image;
+                $imageOld = Yii::getAlias('@app/web/upload/' . $url_image);
+                if(file_exists($imageOld) && $url_image){
+                    unlink($imageOld);
+                    /* Eliminar */
+                }
+                $fileName = uniqid().'.'.$image->getExtension();
+                $image->saveAs(Yii::getAlias('@app/web/upload/') . $fileName);
+                $imageNew = Yii::getAlias('@app/web/upload/' . $fileName);
+                if(file_exists($imageNew)){
+                    $lounge -> url_image = $fileName;
+                }else{
+                    return $response = [
+                        'success' => false,
+                        'message' => 'Ocurrio un error!',
+                    ];
+                }
+                /* Si existe ya una imagen, borrarl y cargar la nueva */
+            }
+
             if($lounge -> save()){
                 $response = [
                     'success' => true,
-                    'message' => 'Se actualizo exitosamente',
-                    'lounge' => $lounge
+                    'message' => 'Actualizado exitosamente',
                 ];
             }else{
                 $response = [
                     'success' => false,
-                    'message' => 'Existe errores en los parametros',
-                    'lounge' => $lounge
+                    'message' => 'Existe errores en los campos',
+                    'error' => $lounge->errors
                 ];
             }
         }else{
