@@ -15,16 +15,27 @@ class DetalleVentaController extends \yii\web\Controller
             "class" => \yii\filters\VerbFilter::class,
             "actions" => [
                 'index' => ['get'],
-                'create' => ['post'],
-                'update' => ['put', 'post'],
-                'delete' => ['delete'],
-                'get-product' => ['get'],
+                'get-detail-period' => ['GET'],
+                'get-sale-detail' => ['GET'],
 
             ]
         ];
         $behaviors['authenticator'] = [         	
             'class' => \yii\filters\auth\HttpBearerAuth::class,         	
             'except' => ['options']     	
+        ];
+
+        $behaviors['access'] = [
+            'class' => \yii\filters\AccessControl::class,
+            'only' => ['get-best-seller-product', 'index', 'get-sale-detail'], // acciones a las que se aplicará el control
+            'except' => [''],    // acciones a las que no se aplicará el control
+            'rules' => [
+                [
+                    'allow' => true, // permitido o no permitido
+                    'actions' => ['get-best-seller-product', 'index', 'get-sale-detail'], // acciones que siguen esta regla
+                    'roles' => ['administrador', 'cajero'] // control por roles  permisos
+                ],
+            ],
         ];
         return $behaviors;
     }
@@ -46,14 +57,15 @@ class DetalleVentaController extends \yii\web\Controller
         return $this->render('index');
     }
 
-    public function actionGetBestSellerProduct(){
+    public function actionGetBestSellerProduct($quantity){
         $detail = DetalleVenta::find()
                     ->select(['sum(cantidad) as cantidad', 'producto.nombre' ])
                     ->join('LEFT JOIN', 'producto', 'producto.id=detalle_venta.producto_id')
                     ->groupBy(['producto_id', 'producto.nombre' ])
                     ->orderBy(['cantidad' => SORT_DESC])
+                    ->where(['producto.tipo' => 'comida'])
                     ->asArray()
-                    ->limit(5)
+                    ->limit($quantity)
                     ->all();
         if($detail){
             $response = [
@@ -73,10 +85,11 @@ class DetalleVentaController extends \yii\web\Controller
 
     public function actionGetSaleDetail( $idSale ){
         $saleInfo = Venta::find()
-                    ->select(['venta.*', 'usuario.username', 'cliente.nombre as cliente'])
+                    ->select(['venta.*', 'usuario.username', 'cliente.nombre as cliente', 'cliente.celular', 'cliente.direccion', 'cliente.descripcion_domicilio', 'mesa.nombre as mesa'])
                     ->where(['venta.id' => $idSale])
-                    ->leftJoin('usuario', 'usuario.id = venta.usuario_id')
-                    ->leftJoin('cliente', 'cliente.id = venta.cliente_id')
+                    ->innerJoin('usuario', 'usuario.id = venta.usuario_id')
+                    ->innerJoin('cliente', 'cliente.id = venta.cliente_id')
+                    ->innerJoin('mesa','mesa.id = venta.mesa_id')
                     ->asArray()
                     ->one();
 

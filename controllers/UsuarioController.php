@@ -21,7 +21,8 @@ class UsuarioController extends \yii\web\Controller
             'actions' => [
                 'login' => [ 'POST' ],
                 'create-user'=>['POST'],
-                'edit-user'=>['POST']
+                'edit-user'=>['POST'],
+                'get-all-users'=>['GET']
 
             ]
          ];
@@ -29,6 +30,26 @@ class UsuarioController extends \yii\web\Controller
             'class' => \yii\filters\auth\HttpBearerAuth::class,
             'except' => ['options']
         ];
+
+        $behaviors['access'] = [
+            'class' => \yii\filters\AccessControl::class,
+            'only' => ['index', 'create-user', 'edit-user', 'get-all-users'], // acciones a las que se aplicará el control
+            'except' => [''],    // acciones a las que no se aplicará el control
+            'rules' => [
+                [
+                    'allow' => true, // permitido o no permitido
+                    'actions' => ['index', 'create-user', 'edit-user', 'get-all-users'], // acciones que siguen esta regla
+                    'roles' => ['administrador'] // control por roles  permisos
+                ],
+                [
+                    'allow' => true, // permitido o no permitido
+                    'actions' => ['get-all-users'], // acciones que siguen esta regla
+                    'roles' => ['cajero'] // control por roles  permisos
+                ],
+            ],
+        ];
+
+
         return $behaviors;
     }
 

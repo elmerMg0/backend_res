@@ -15,13 +15,29 @@ class PeriodoController extends \yii\web\Controller
         $behaviors['verbs'] = [
             'class' => \yii\filters\VerbFilter::class,
             'actions' => [
-                'login' => ['POST'],
-                'create' => ['POST'],
-                'update' => ['POST'],
                 'start-period' => ['POST'],
-                'close-period' => ['POST']
+                'close-period' => ['POST'],
+                'get-detail-period' => ['GET'],
+                'get-detail-sale-by-user' => ['GET']
+            ]   
+        ];
 
-            ]
+        $behaviors['authenticator'] = [
+            'class' => \yii\filters\auth\HttpBearerAuth::class,
+            'except' => ['options']
+        ];
+
+        $behaviors['access'] = [
+            'class' => \yii\filters\AccessControl::class,
+            'only' => ['get-detail-period','start-period', 'close-period'], // acciones a las que se aplicará el control
+            'except' => [''],    // acciones a las que no se aplicará el control
+            'rules' => [
+                [
+                    'allow' => true, // permitido o no permitido
+                    'actions' => ['get-detail-period', 'start-period', 'close-period', 'get-detail-sale-by-user'], // acciones que siguen esta regla
+                    'roles' => ['administrador', 'cajero'] // control por roles  permisos
+                ],
+            ],
         ];
         return $behaviors;
     }
@@ -40,43 +56,23 @@ class PeriodoController extends \yii\web\Controller
     public function actionStartPeriod($userId)
     {
         $params = Yii::$app->getRequest()->getBodyParams();
-        //validar que no exista un periodo 
-        $periodActive = Periodo::find()
-                                ->where(['estado' => true])
-                                ->one();
-        if (!$periodActive) {
-          //  if (!$lastRecord->estado) {
-                $period = new Periodo();
-                /* $period->fecha_inicio = Date('H-m-d H:i:s'); */
-                date_default_timezone_set('America/La_Paz');
-                $period->fecha_inicio = date('Y-m-d H:i:s');
-                $period->estado = true;
-                $period->caja_inicial = $params['cajaInicial'];
-                $period->usuario_id = $userId;
-                if ($period->save()) {
-                    $response = [
-                        'success' => true,
-                        'message' => 'Periodo iniciado con exito!',
-                        'period' => $period
-                    ];
-                } else {
-                    $response = [
-                        'success' => false,
-                        'message' => 'Existen parametros incorrectos',
-                        'errors' => $period->errors
-                    ];
-                }
-          /*   } else {
-                $response = [
-                    'success' => false,
-                    'message' => 'Existe ya un periodo activo',
-                    'periodActive' => $lastRecord
-                ];
-            } */
+        $period = new Periodo();
+        date_default_timezone_set('America/La_Paz');
+        $period->fecha_inicio = date('Y-m-d H:i:s');
+        $period->estado = true;
+        $period->caja_inicial = $params['cajaInicial'];
+        $period->usuario_id = $userId;
+        if ($period->save()) {
+            $response = [
+                'success' => true,
+                'message' => 'Periodo iniciado con exito!',
+                'period' => $period
+            ];
         } else {
             $response = [
                 'success' => false,
-                'message' => 'Existe un perido activo!',
+                'message' => 'Existen parametros incorrectos',
+                'errors' => $period->errors
             ];
         }
 
@@ -196,15 +192,70 @@ class PeriodoController extends \yii\web\Controller
         }
         return $response;
     }
-    public function actionTest () {
-        $period = Periodo::findOne(2);
-       /*  $ventas = Venta::find()
-                 ->where(['id' => 1000])            
-                    ->all(); */
-                    $totalSaleCash = Venta::find()
-                    /* ->where(['>=', 'fecha', $period->fecha_inicio]) */
-                    ->andWhere([ 'usuario_id' => 1, 'tipo_pago' => 'efectivo'])
-                    ->all();
-        return $totalSaleCash;
+
+    public function actionGetDetailSaleByUser($idUser){
+        $period = Periodo::find() -> where(['usuario_id' => $idUser, 'estado' => true])->one();
+
+        if ($period) {
+             $user = Usuario::findOne($idUser);
+            if ($user) {
+                //vetnas totales hasta el momento 
+                $sales = Venta::find()
+                        ->select(['SUM(detalle_venta.cantidad)', 'producto.nombre', 'sum(producto.precio_venta*detalle_venta.cantidad) as total'])
+                        ->where(['>=', 'fecha', $period-> fecha_inicio])
+                        ->andWhere(['venta.estado' => 'pagado'])
+                        ->innerJoin('detalle_venta', 'detalle_venta.venta_id=venta.id')
+                        ->innerJoin('producto', 'producto.id= detalle_venta.producto_id')
+                        ->andWhere(['usuario_id' => $idUser])
+                        ->groupBy(['producto_id', 'producto.nombre'])
+                        ->asArray()
+                        ->all();
+
+                $salesDrinks = Venta::find()
+                        ->select(['sum(producto.precio_venta*detalle_venta.cantidad) as total'])
+                        ->where(['>=', 'fecha', $period-> fecha_inicio])
+                        ->andWhere(['venta.estado' => 'pagado', 'producto.tipo' => 'bebida'])
+                        ->innerJoin('detalle_venta', 'detalle_venta.venta_id=venta.id')
+                        ->innerJoin('producto', 'producto.id= detalle_venta.producto_id')
+                        ->andWhere(['usuario_id' => $idUser])
+                        ->groupBy(['producto.tipo'])
+                        ->asArray()
+                        ->all();
+
+                $salesFoods = Venta::find()
+                        ->select(['sum(producto.precio_venta*detalle_venta.cantidad) as total'])
+                        ->where(['>=', 'fecha', $period-> fecha_inicio])
+                        ->andWhere(['venta.estado' => 'pagado', 'producto.tipo' => 'comida'])
+                        ->innerJoin('detalle_venta', 'detalle_venta.venta_id=venta.id')
+                        ->innerJoin('producto', 'producto.id= detalle_venta.producto_id')
+                        ->andWhere(['usuario_id' => $idUser])
+                        ->groupBy(['producto.tipo'])
+                        ->asArray()
+                        ->all();
+              
+                $response = [
+                    'success' => true,
+                    'message' => 'detalle de periodo por usuario',
+                    'info' => [
+                        'fechaInicio' => $period->fecha_inicio,
+                        'sales' => $sales,
+                        'salesDrinks' => $salesDrinks,
+                        'salesFoods' =>  $salesFoods
+                        ]   
+                    ];
+            } else {
+                $response = [
+                    'success' => false,
+                    'message' => 'No existe usuario',
+                    'user' => $idUser
+                ];
+            }
+        } else {
+            $response = [
+                'success' => false,
+                'message' => 'No existe periodo',
+            ];
+        }
+        return $response;
     }
 }

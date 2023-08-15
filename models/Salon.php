@@ -12,6 +12,7 @@ use Yii;
  * @property int $nro_filas
  * @property int $nro_columnas
  * @property string $nombre
+ * @property string|null $url_image
  *
  * @property Mesa[] $mesas
  */
@@ -36,6 +37,7 @@ class Salon extends \yii\db\ActiveRecord
             [['nro_filas', 'nro_columnas'], 'default', 'value' => null],
             [['nro_filas', 'nro_columnas'], 'integer'],
             [['nombre'], 'string', 'max' => 20],
+            [['url_image'], 'string', 'max' => 30],
         ];
     }
 
@@ -50,6 +52,7 @@ class Salon extends \yii\db\ActiveRecord
             'nro_filas' => 'Nro Filas',
             'nro_columnas' => 'Nro Columnas',
             'nombre' => 'Nombre',
+            'url_image' => 'Url Image',
         ];
     }
 

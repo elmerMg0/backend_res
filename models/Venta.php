@@ -20,8 +20,11 @@ use Yii;
  * @property string|null $hora
  * @property string|null $tipo_entrega
  * @property int|null $mesa_id
+ * @property bool|null $finalizado
+ * @property string|null $nota
  *
  * @property Cliente $cliente
+ * @property ColaImpresion[] $colaImpresions
  * @property DetalleVenta[] $detalleVentas
  * @property Mesa $mesa
  * @property Usuario $usuario
@@ -46,7 +49,8 @@ class Venta extends \yii\db\ActiveRecord
             [['cantidad_total', 'cantidad_cancelada', 'usuario_id', 'numero_pedido', 'cliente_id', 'mesa_id'], 'default', 'value' => null],
             [['cantidad_total', 'cantidad_cancelada', 'usuario_id', 'numero_pedido', 'cliente_id', 'mesa_id'], 'integer'],
             [['usuario_id', 'numero_pedido', 'estado'], 'required'],
-            [['tipo_pago'], 'string'],
+            [['tipo_pago', 'nota'], 'string'],
+            [['finalizado'], 'boolean'],
             [['estado'], 'string', 'max' => 50],
             [['tipo', 'tipo_entrega'], 'string', 'max' => 15],
             [['hora'], 'string', 'max' => 20],
@@ -75,6 +79,8 @@ class Venta extends \yii\db\ActiveRecord
             'hora' => 'Hora',
             'tipo_entrega' => 'Tipo Entrega',
             'mesa_id' => 'Mesa ID',
+            'finalizado' => 'Finalizado',
+            'nota' => 'Nota',
         ];
     }
 
@@ -86,6 +92,16 @@ class Venta extends \yii\db\ActiveRecord
     public function getCliente()
     {
         return $this->hasOne(Cliente::class, ['id' => 'cliente_id']);
+    }
+
+    /**
+     * Gets query for [[ColaImpresions]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getColaImpresions()
+    {
+        return $this->hasMany(ColaImpresion::class, ['venta_id' => 'id']);
     }
 
     /**

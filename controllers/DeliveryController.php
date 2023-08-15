@@ -1,14 +1,15 @@
 <?php
 
 namespace app\controllers;
-use Yii;
-use \app\models\Cliente;
-use Exception;
-use yii\data\Pagination;
-class ClienteController extends \yii\web\Controller
-{
- 
 
+use app\models\Cliente;
+use app\models\Delivery;
+use Exception;
+use Yii;
+use yii\data\Pagination;
+
+class DeliveryController extends \yii\web\Controller
+{
     public function behaviors(){
         $behaviors = parent::behaviors();
         $behaviors["verbs"] = [
@@ -18,8 +19,8 @@ class ClienteController extends \yii\web\Controller
                 'create' => [ 'post' ],
                 'update' => [ 'put', 'post' ],
                 'delete' => [ 'delete' ],
-                'get-customer' => [ 'get' ],
-                'customers' => [ 'get' ],
+                'get-delivery' => [ 'get' ],
+                'deliveries' => [ 'get' ],
             ]   
         ];
         $behaviors['authenticator'] = [         	
@@ -44,14 +45,14 @@ class ClienteController extends \yii\web\Controller
 
     public function actionIndex( $pageSize = 5)
     {
-        $query = Cliente::find();
+        $query = Delivery::find();
 
         $pagination = new Pagination([
             'defaultPageSize' => $pageSize,
             'totalCount' => $query->count(),
         ]);
 
-        $customers = $query
+        $deliveries = $query
                         ->orderBy('id DESC')
                         ->offset($pagination->offset)
                         ->limit($pagination->limit)        
@@ -61,43 +62,42 @@ class ClienteController extends \yii\web\Controller
         $totalPages = $pagination->getPageCount();
         $response = [
         'success' => true,
-        'message' => 'lista de clientes',
+        'message' => 'lista de Deliverys',
         'pageInfo' => [
             'next' => $currentPage == $totalPages ? null  : $currentPage + 1,
             'previus' => $currentPage == 1 ? null: $currentPage - 1,
-            'count' => count($customers),
+            'count' => count($deliveries),
             'page' => $currentPage,
             'start' => $pagination->getOffset(),
             'totalPages' => $totalPages,
-            'customers' => $customers
+            'deliveries' => $deliveries
             ]
         ];
         return $response;
     }
-    public function actionCustomers(){
-        $customers = Cliente::find()->all();
+    public function actionDeliveries(){
+        $deliveries = Delivery::find()->all();
         $response = [
             'success' => true,
             'message' => 'Todos los clientes',
-            'customers' => $customers
+            'deliveries' => $deliveries
         ];
         return $response;
     }
 
     public function actionCreate(){
         $params = Yii::$app->getRequest()->getBodyParams();
-        $cliente = new Cliente();
-        $cliente -> load($params,"");
-	date_default_timezone_set('America/La_Paz');
-	$cliente -> fecha_crecion = Date("Y-m-d H:i:s");
+        $delivery = new Delivery();
+        $delivery -> load($params,"");
+     /*    $delivery -> fecha_crecion = Date("H-m-d H:i:s") */;
         try{
-            if($cliente->save()){
+            if($delivery->save()){
                 //todo ok
                 Yii::$app->getResponse()->setStatusCode(201);
                 $response = [
                     "success" => true,
-                    "message" => "Cliente agreado exitosamente",
-                    'cliente' => $cliente
+                    "message" => "delivery agreado exitosamente",
+                    'delivery' => $delivery
                 ];
             }else{
                 //Cuando hay error en los tipos de datos ingresados 
@@ -105,7 +105,7 @@ class ClienteController extends \yii\web\Controller
                 $response = [
                     "success" => false,
                     "message" => "Existen parametros incorrectos",
-                    'errors' => $cliente->errors
+                    'errors' => $delivery->errors
                 ];
             }
         }catch(Exception $e){
@@ -120,77 +120,77 @@ class ClienteController extends \yii\web\Controller
         return $response;
     }
 
-    public function actionUpdate( $idCustomer ){
-        $customer = Cliente::findOne($idCustomer);
-        if($customer){
+    public function actionUpdate( $idDelivery ){
+        $delivery = Delivery::findOne($idDelivery);
+        if($delivery){
             $params = Yii::$app->getRequest()->getBodyParams();
-            $customer -> load($params, '');
+            $delivery -> load($params, '');
                 try{
 
-                    if($customer->save()){
+                    if($delivery->save()){
                         $response = [
                             'success' => true,
                             'message' => 'Cliente actualizado correctamente',
-                            'customer' => $customer
+                            'delivery' => $delivery
                         ];
                     }else{
                         Yii::$app->getResponse()->setStatusCode(422, 'Data Validation Failed');
                         $response = [
                             'success' => false,
                             'message' => 'Existe errores en los campos',
-                            'error' => $customer->errors
+                            'error' => $delivery->errors
                         ];
                     }
                 }catch(Exception $e){
                     $response = [
                         'success' => false,
-                        'message' => 'Cliente no encontrado',
+                        'message' => 'Delivery no encontrado',
                     ];
                 }
         }else{
             $response = [
                 'success' => false,
-                'message' => 'Cliente no encontrado',
+                'message' => 'Delivery no encontrado',
             ];
         }
         return $response;
     }
 
-    public function actionGetCustomer($idCustomer){
-        $customer = Cliente::findOne($idCustomer);
-        if($customer){
+    public function actionGetDelivery($idDelivery){
+        $delivery = Delivery::findOne($idDelivery);
+        if($delivery){
             $response = [
                 'success' => true,
                 'message' => 'Accion realizada correctamente',
-                'customer' => $customer
+                'delivery' => $delivery
             ];
         }else{
             Yii::$app->getResponse()->setStatusCode(404);
             $response = [
                 'success' => false,
                 'message' => 'No existe el cliente',
-                'customer' => $customer
+                'delivery' => $delivery
             ];
         }
         return $response;
     }
 
-    public function actionDelete( $idCustomer ){
-        $customer = Cliente::findOne($idCustomer);
+    public function actionDelete( $idDelivery ){
+        $delivery = Cliente::findOne($idDelivery);
 
-        if($customer){
+        if($delivery){
             try{
-                $customer->delete();
+                $delivery->delete();
                 $response = [
                     "success" => true,
-                    "message" => "cliente eliminado correctamente",
-                    "data" => $customer
+                    "message" => "Delivery eliminado correctamente",
+                    "data" => $delivery
                 ];
             }catch(yii\db\IntegrityException $ie){
                 Yii::$app->getResponse()->setStatusCode(409, "");
                 $response = [
                     "success" => false,
-                    "message" =>  "El cliente esta siendo usado",
+                    "message" =>  "El delivery esta siendo usado",
                     "code" => $ie->getCode()
                 ];
             }catch(\Exception $e){
@@ -205,9 +205,10 @@ class ClienteController extends \yii\web\Controller
             Yii::$app->getResponse()->setStatusCode(404);
             $response = [
                 "success" => false,
-                "message" => "Cliente no encontrado"
+                "message" => "Delivery no encontrado"
             ];
         }
         return $response;
     }
+
 }
