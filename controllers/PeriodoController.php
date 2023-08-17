@@ -148,11 +148,11 @@ class PeriodoController extends \yii\web\Controller
                     'info' => [
                         'fechaInicio' => $period->fecha_inicio,
                         'cajaInicial' => $period->caja_inicial,
-                        'totalSaleCash' => $totalSaleCash,
-                        'totalSaleCard' => $totalSaleCard,
-                        'totalSaleTransfer' => $totalSaleTransfer,
-                        'totalSale' => $totalSale,
-                        'totalSaleApp' => $totalSaleApp
+                        'totalSaleCash' => $totalSaleCash ? $totalSaleCash : 0,
+                        'totalSaleCard' => $totalSaleCard ? $totalSaleCard : 0,
+                        'totalSaleTransfer' => $totalSaleTransfer ? $totalSaleTransfer : 0,
+                        'totalSale' => $totalSale ? $totalSale: 0,
+                        'totalSaleApp' => $totalSaleApp ? $totalSaleApp : 0
                         ]   
                     ];
             } else {
@@ -220,7 +220,7 @@ class PeriodoController extends \yii\web\Controller
                         ->andWhere(['usuario_id' => $idUser])
                         ->groupBy(['producto.tipo'])
                         ->asArray()
-                        ->all();
+                        ->one();
 
                 $salesFoods = Venta::find()
                         ->select(['sum(producto.precio_venta*detalle_venta.cantidad) as total'])
@@ -231,7 +231,7 @@ class PeriodoController extends \yii\web\Controller
                         ->andWhere(['usuario_id' => $idUser])
                         ->groupBy(['producto.tipo'])
                         ->asArray()
-                        ->all();
+                        ->one();
               
                 $response = [
                     'success' => true,
