@@ -523,8 +523,65 @@ class VentaController extends \yii\web\Controller
         }
         return $response;
     }
+    public function actionCreateSale(){
+        $sale = new Venta();
+        $params = Yii::$app->getRequest()->getBodyParams();
+        $sale -> load($params, '');
+        date_default_timezone_set('America/La_Paz');
+        $sale -> fecha = date('Y-m-d H:i:s');
+        $numberOrder = Venta::find()->all();
+        $sale->numero_pedido = count($numberOrder) + 1;
+        if($sale -> save()){
+            //actulalizar estado de la mesa
+            $table = Mesa::findOne($sale -> mesa_id);
+            $table -> estado = 'ocupado';
+            $table -> save();
+            $response = [
+                'success' => true,
+                'message' => 'Venta creada venta',
+                'sale' => $sale
+            ];
+        }else{
+            $response = [
+                'success' => true,
+                'message' => 'Existen errores en los parametros',
+            ];
+        }
+        return $response;
+    }
 
-    public function actionCreateSale($idTable){
+    public function actionGetInformationSale($idTable){
+        $sale = Venta::find()->select(['venta.*', 'usuario.nombres as usuario'])
+            ->where(['mesa_id' => $idTable, 'venta.estado' => 'consumiendo' ])
+            ->innerJoin('usuario', 'usuario.id=venta.usuario_id')
+            ->asArray()
+            -> one();
+        if( $sale ){
+            $saleDetails = Venta::find()
+            ->select(['producto.*', 'detalle_venta.cantidad As cantidad', 'venta.id As idSale', 'detalle_venta.estado as estado'])
+            ->where(['mesa_id' => $idTable, 'venta.estado' => 'consumiendo' ])
+            ->innerJoin('detalle_venta', 'detalle_venta.venta_id=venta.id')
+            ->innerJoin('producto', 'producto.id=detalle_venta.producto_id')
+            ->asArray()
+            ->all();
+            $response = [
+                'success' => true,
+                'message' => 'Info de venta',
+                'saleDetails' => $saleDetails,
+                'sale' => $sale
+            ];
+        }else{
+            $response = [
+                'success' => false,
+                'message' => 'No existe venta asociada a la mesa',
+                'saleDetails' => []
+            ];
+        }
+        return $response;
+    }
+
+
+    public function actionCreateSaleOld($idTable){
         $sale = Venta::find()->select(['venta.*', 'usuario.nombres as usuario'])
                             ->where(['mesa_id' => $idTable, 'venta.estado' => 'consumiendo' ])
                             ->innerJoin('usuario', 'usuario.id=venta.usuario_id')
