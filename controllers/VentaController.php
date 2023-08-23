@@ -585,14 +585,13 @@ class VentaController extends \yii\web\Controller
     }
 
 
-    public function actionCreateSaleOld($idTable){
+ /*    public function actionCreateSaleOld($idTable){
         $sale = Venta::find()->select(['venta.*', 'usuario.nombres as usuario'])
                             ->where(['mesa_id' => $idTable, 'venta.estado' => 'consumiendo' ])
                             ->innerJoin('usuario', 'usuario.id=venta.usuario_id')
                             ->asArray()
                             -> one();
         if($sale){
-            /* Si ya hay mesa ocuapdo, recuperar detalle de venta(productos, cantidad) */
                 $saleDetails = Venta::find()
                             ->select(['producto.*', 'detalle_venta.cantidad As cantidad', 'venta.id As idSale', 'detalle_venta.estado as estado'])
                             ->where(['mesa_id' => $idTable, 'venta.estado' => 'consumiendo' ])
@@ -607,7 +606,6 @@ class VentaController extends \yii\web\Controller
                 'sale' => $sale
             ];
         }else{ 
-            /* Crear venta */
             $params = Yii::$app -> getRequest() -> getBodyParams();
             $newSale = new Venta();
             $newSale -> load ($params, '');
@@ -617,24 +615,14 @@ class VentaController extends \yii\web\Controller
             $newSale -> fecha = date('Y-m-d H:i:s');
             
             if($newSale -> save()){
-                /* Actualizar el estado de la mesa DISPONIBLE -> OCUPADO */
-                /* $table = Mesa::findOne($idTable); */
-           /*      $table -> estado = 'ocupado'; */
-           
-            /*     if($table -> save()){ */
+         
                     $response = [
                         'success' => true,
                         'message' => 'Info de venta',
                         'saleDetails' => [],
                         'sale' => $newSale
                     ];
-             /*    }else{ */
-                    /* $response = [
-                        'success' => false,
-                        'message' => 'Existe errores en los campos',
-                        'error' => $table->errors
-                    ]; */
-              //  }
+      
             }else{
                 $response = [
                     'success' => false,
@@ -644,7 +632,7 @@ class VentaController extends \yii\web\Controller
             }
         }
         return $response;
-    }
+    } */
 /* Eliminar detalle de venta y agregar nuevo detalle venta */
     public function actionUpdateSale($idSale){
         $params = Yii::$app->getRequest()->getBodyParams();
@@ -740,28 +728,28 @@ class VentaController extends \yii\web\Controller
                     }
                 }
             }
-            $saleDetails = Venta::find()
+       /*      $saleDetails = Venta::find()
             ->select(['producto.*', 'detalle_venta.cantidad As cantidad', 'venta.id As idSale', 'detalle_venta.estado as estado'])
             ->where(['venta.id' => $idSale ])
             ->innerJoin('detalle_venta', 'detalle_venta.venta_id=venta.id')
             ->innerJoin('producto', 'producto.id=detalle_venta.producto_id')
             ->asArray()
             ->orderBy(['id' => SORT_DESC])
-            ->all();
+            ->all(); */
 
             $response = [
                 'success' => true,
                 'message' => 'Pedidos enviados.',
-                'saleDetails' => $saleDetails
+          //     'saleDetails' => $saleDetails
             ];
         return $response;
     }
 
-    public function actionValidateTable($idSale){
+/*     public function actionValidateTable($idSale){
         $saleDetails = DetalleVenta::find()->where(['venta_id' => $idSale])->all();
         if(count($saleDetails) === 0){
             $sale = Venta::findOne($idSale);
-            /* En vez de eliminar para no poder en nroVenta, actualizar */
+ 
             if($sale && $sale -> delete()){
                 $table = Mesa::findOne($sale -> mesa_id);
                 $table -> estado = 'disponible';
@@ -785,34 +773,13 @@ class VentaController extends \yii\web\Controller
             ];
         }
         return $response;
-    }
-    public function actionConfirmSale($userId, $idSale)
+    } */
+    public function actionConfirmSale($idSale)
     {
-        /* SI es pedido de app, entonces la venta se carga al ultimo periodo aperturado */
-   /*      if($userId === 0 ){
-            $period = Periodo::find()
-                           ->where(['estado' => true])
-                           ->one();
-            if($period){
-                $userId = $period -> usuario_id;
-            }else{
-                return  [
-                    'success' => false,
-                    'message' => 'Ocurrio un error',
-                ];
-            }
-        } */
-
         $sale = Venta::findOne($idSale);
         $params = Yii::$app->getRequest()->getBodyParams();
-        $sale->cantidad_total = $params['cantidadTotal'];
-        $sale->cantidad_cancelada = $params['cantidadPagada'];
-        $sale->usuario_id = $userId;
-        $sale->estado = $params['estado'];
-        $sale->tipo_pago = $params['tipoPago'];
-        $sale->tipo = $params['tipo'];
+        $sale -> load($params, '');
       
-        //$sale->cliente_id = $customerId;
         if ($sale->save()) {
             $table = Mesa::findOne($sale -> mesa_id);
             $table -> estado = 'disponible';
