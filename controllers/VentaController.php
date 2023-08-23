@@ -2,6 +2,7 @@
 
 namespace app\controllers;
 
+use app\models\Cliente;
 use app\models\DetalleVenta;
 use app\models\LogVenta;
 use app\models\Mesa;
@@ -564,11 +565,14 @@ class VentaController extends \yii\web\Controller
             ->innerJoin('producto', 'producto.id=detalle_venta.producto_id')
             ->asArray()
             ->all();
+
+            $customer = Cliente::findOne($sale['cliente_id']);
             $response = [
                 'success' => true,
                 'message' => 'Info de venta',
                 'saleDetails' => $saleDetails,
-                'sale' => $sale
+                'sale' => $sale,
+                'customer' => $customer
             ];
         }else{
             $response = [
@@ -645,8 +649,12 @@ class VentaController extends \yii\web\Controller
     public function actionUpdateSale($idSale){
         $params = Yii::$app->getRequest()->getBodyParams();
         $orderDetail = $params['orderDetail']; //actualizado
-     /*    if($orderDetail){ */
+        
+        //nota y cliente
         $sale = Venta::findOne($idSale);
+        $sale -> cliente_id = $params['cliente_id'];
+        $sale -> nota = $params['note'];
+        $sale -> save();
 
             $saleDetail = DetalleVenta::find()->where(['venta_id' => $idSale])->all();
             for ($i=0; $i < count($saleDetail); $i++) { 
@@ -741,32 +749,11 @@ class VentaController extends \yii\web\Controller
             ->orderBy(['id' => SORT_DESC])
             ->all();
 
-            /* Actulaliza restado de la mesa */
-            $reserve = Venta::findOne($idSale);
-            $table = Mesa::findOne($reserve -> mesa_id);
-            $table -> estado = 'ocupado';
-            $table ->save();
             $response = [
                 'success' => true,
                 'message' => 'Pedidos enviados.',
                 'saleDetails' => $saleDetails
             ];
-    /*     }else{
-            $response = [
-                'success' => false,
-                'message' => 'No existen pedidos'
-            ]; 
-        }*/
-        /* Agregar note */
-        /* Agregar cliente */
-        $sale = Venta::findOne($idSale);
-        $sale -> nota = $params['note'];
-        
-        if($params['customer_id'] !== 24){
-            $sale -> cliente_id = $params ['customer_id'];
-        }
-        $sale -> save();
-
         return $response;
     }
 
