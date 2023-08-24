@@ -92,7 +92,6 @@ class SalonController extends \yii\web\Controller
 
     public function actionGetLounges (){
         $lounges = Salon::find()
-                        ->where(['estado' => true])
                         ->all();
         if($lounges){
             $response = [
