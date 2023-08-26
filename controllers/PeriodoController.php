@@ -66,7 +66,16 @@ class PeriodoController extends \yii\web\Controller
             $response = [
                 'success' => true,
                 'message' => 'Periodo iniciado con exito!',
-                'period' => $period
+                'period' => $period,
+                'info' => [
+                    'fechaInicio' => $period->fecha_inicio,
+                    'cajaInicial' => $period->caja_inicial,
+                    'totalSaleCash' => 0,
+                    'totalSaleCard' =>  0,
+                    'totalSaleTransfer' => 0,
+                    'totalSale' => 0,
+                    'totalSaleApp' => 0
+                    ]   
             ];
         } else {
             $response = [
