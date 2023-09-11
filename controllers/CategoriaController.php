@@ -47,9 +47,11 @@ class CategoriaController extends \yii\web\Controller
         return parent::beforeAction($action);
     }
 
-    public function actionIndex($pageSize = 5)
+    public function actionIndex($pageSize = 5, $name)
     {
-        $query = Categoria::find();
+        if($name === 'undefined')$name = null;
+        $query = Categoria::find()
+                    ->andFilterWhere(['LIKE', 'UPPER(nombre)',  strtoupper($name)]);
 
         $pagination = new Pagination([
             'defaultPageSize' => $pageSize,
