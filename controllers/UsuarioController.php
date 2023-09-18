@@ -3,11 +3,8 @@
 namespace app\controllers;
 
 use app\models\Usuario;
-use GuzzleHttp\Psr7\Response;
-use PhpParser\Node\Stmt\Catch_;
 use Yii;
 use Exception;
-use PhpParser\Node\Stmt\Break_;
 use yii\data\Pagination;
 use yii\helpers\Json;
 use yii\web\UploadedFile;
@@ -92,7 +89,7 @@ class UsuarioController extends \yii\web\Controller
                 Yii::$app->getResponse()->getStatusCode(201);
                 $response = [
                     'success'=> true,
-                    'message'=> 'registered user',
+                    'message'=> 'Usuario registrado con exito',
                     'usuario'=>$user
                 ];
                 
@@ -100,15 +97,15 @@ class UsuarioController extends \yii\web\Controller
                 Yii::$app->getResponse()->setStatusCode(422,'Data Validation Failed.');
                 $response = [
                     'success' => false,
-                    'message' => 'Wrong parameters',
+                    'message' => 'Parametros incorrectos',
                     'usuario' => $user->errors,
                 ];
             }
         } catch(Exception $e){
-            Yii::$app->getResponse()->getStatusCode();
+            Yii::$app->getResponse()->getStatusCode(500);
             $response = [
                 'success'=>false,
-                'message'=> 'Error Registering User',
+                'message'=> 'Error registrando el usuario',
                 'errors'=> $e->getMessage()
             ];
         }
@@ -154,15 +151,22 @@ class UsuarioController extends \yii\web\Controller
     } */
     public function actionEditUser($id){
         $user = Usuario::findOne($id);
+        $auth = Yii::$app->authManager;
         if ($user) {
             $data = JSON::decode(Yii::$app->request->post('data'));
             $user->load($data, '');
+            $roleAssigment = $auth -> getRolesByUser($id);
+            foreach($roleAssigment as $role){
+                $auth -> revoke($role, $id);
+            }
+            $newRole = $auth->getRole($data['tipo']);
+            $auth -> assign($newRole, $id);
             
            /*  if(isset($data["password"])){
                 $user->password_hash = Yii::$app->getSecurity()->generatePasswordHash($data["password"]);
             }            
+            $
             $user->access_token = Yii::$app->security->generateRandomString(); */
-            
             $image = UploadedFile::getInstanceByName('file');
             if ($image) {
                 $url_image = $user->url_image;
@@ -217,9 +221,11 @@ class UsuarioController extends \yii\web\Controller
         }
         return $response;
     }
-    public function actionIndex($pageSize = 5){
+    public function actionIndex($name, $pageSize = 5){
+        if($name === 'undefined')$name = null;
         $query = Usuario::find()
-        ->select(['usuario.id', 'usuario.nombres', 'usuario.tipo', 'usuario.url_image', 'usuario.estado', 'usuario.username']);
+        ->select(['usuario.id', 'usuario.nombres', 'usuario.tipo', 'usuario.url_image', 'usuario.estado', 'usuario.username'])
+        ->andFilterWhere(['LIKE', 'UPPER(nombres)',  strtoupper($name)]);
 
         $pagination = new Pagination([
             'defaultPageSize' => $pageSize,
@@ -227,10 +233,10 @@ class UsuarioController extends \yii\web\Controller
         ]);
 
         $users = $query
-                        ->orderBy('id DESC')
-                        ->offset($pagination->offset)
-                        ->limit($pagination->limit)        
-                        ->all();
+                    ->orderBy('id DESC')
+                    ->offset($pagination->offset)
+                    ->limit($pagination->limit)        
+                    ->all();
         
         $currentPage = $pagination->getPage() + 1;
         $totalPages = $pagination->getPageCount();
