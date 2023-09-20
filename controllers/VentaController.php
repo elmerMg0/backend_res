@@ -566,11 +566,18 @@ class VentaController extends \yii\web\Controller
             ->asArray()
             ->all();
 
+            $saleDetailFull = DetalleVenta::find()
+                    ->select(['detalle_venta.*', 'producto.nombre', 'producto.stock', 'producto.precio_venta', 'producto.precio_compra'
+                                ,'producto.tipo'])
+                    ->where(['venta_id' => $sale['id']])
+                    ->innerJoin('producto', 'producto.id=detalle_venta.producto_id')
+                    ->asArray()
+                    ->all();
             $customer = Cliente::findOne($sale['cliente_id']);
             $response = [
                 'success' => true,
                 'message' => 'Info de venta',
-                'saleDetails' => $saleDetails,
+                'saleDetails' => $saleDetailFull,
                 'sale' => $sale,
                 'customer' => $customer
             ];
@@ -733,7 +740,7 @@ class VentaController extends \yii\web\Controller
             ->where(['venta.id' => $idSale ])
             ->innerJoin('detalle_venta', 'detalle_venta.venta_id=venta.id')
             ->innerJoin('producto', 'producto.id=detalle_venta.producto_id')
-            ->asArray()
+            ->asArray()"enviado"
             ->orderBy(['id' => SORT_DESC])
             ->all(); */
 
@@ -745,35 +752,127 @@ class VentaController extends \yii\web\Controller
         return $response;
     }
 
-/*     public function actionValidateTable($idSale){
-        $saleDetails = DetalleVenta::find()->where(['venta_id' => $idSale])->all();
-        if(count($saleDetails) === 0){
-            $sale = Venta::findOne($idSale);
- 
-            if($sale && $sale -> delete()){
-                $table = Mesa::findOne($sale -> mesa_id);
-                $table -> estado = 'disponible';
-                if($table -> save()){
-                    $response = [ 
-                        'success' => true,
-                        'message' => 'Venta eliminada'
-                    ];
+
+    public function actionUpdateSaleImproved($idSale){
+        $params = Yii::$app->getRequest()->getBodyParams();
+        $orderDetail = $params['orderDetail']; //actualizado con estado nuevo/enviado/enviado-impresora
+        
+        //nota y cliente
+        $sale = Venta::findOne($idSale);
+        $sale -> cliente_id = $params['cliente_id'];
+        $sale -> nota = $params['note'];
+        $sale -> save();
+
+            $saleDetail = DetalleVenta::find()->where(['venta_id' => $idSale])->all(); //detalle de venta existente en la VENTA
+            for ($i=0; $i < count($saleDetail); $i++) { 
+                $detail = $saleDetail[$i];
+                //Si en nuestras ventas existe el mismo producto ENVIADO
+                $filterDetail = array_filter($orderDetail, function ($det) use ($detail) {
+                    return $det['producto_id']  === $detail['producto_id'] && $det['estado'] === $detail['estado'];
+                });
+                //nunca va a entrar poque los pedidos siempre seran nuevos.
+                //va a entrar cuando em: pedodo 3 -> tiene el mismo id y mismo estado;
+                if(count($filterDetail) > 0){
+                    //actualizar  dividir el detalle de venta.
+                    //detail  $filterDetail 
+                    $filterDetailValues = array_values($filterDetail);
+                    if($filterDetailValues[0]['cantidad'] !== $detail -> cantidad){
+                        //Si no es igual, es que se ha decrementado.
+                        $difference = $detail -> cantidad - $filterDetailValues[0]['cantidad'];
+                        //con la diferencia cremos un nuevo registro 
+                        $detail -> cantidad = $filterDetailValues[0]['cantidad'];
+                        $detail -> save();
+                        //crate
+                        $newOrderDetailCancel = new DetalleVenta();
+                        $newOrderDetailCancel -> cantidad = $difference;
+                        $newOrderDetailCancel -> producto_id = $detail['producto_id'];
+                        $newOrderDetailCancel -> venta_id = $idSale;
+                        $newOrderDetailCancel -> estado = 'cancelado';
+                        $newOrderDetailCancel -> save();
+                        
+                        //Si es bebida disminuir el stcok
+                        $product =  Producto::findOne($detail['producto_id']);
+                        if($product -> tipo === 'bebida'){
+                            $product -> stock = $product -> stock + $difference;
+                            $product -> save();
+                        }
+                    }
+                   /*  $currentQuantity = $filterDetailValues[0]["cantidad"];
+                    $oldQuantity = $detail -> cantidad;
+                    
+                    $total = $currentQuantity - $oldQuantity;
+                    $product =  Producto::findOne($filterDetailValues[0]['id']); */
+
+                   /*  if($total > 0){
+                        if($product -> tipo === "bebida"){
+                            $product -> stock = $product -> stock - $total;
+                        }
+                        //stock++
+                    }else if($total < 0){
+                        //stock --
+                        if($product -> tipo === 'bebida'){
+                            $product -> stock = $product -> stock + $total;
+                        }
+                    }
+                    $detail -> cantidad = $filterDetailValues[0]["cantidad"];
+                    if($detail -> save() && $product -> save()){
+
+                    }else{
+                        return 'error';
+                    } */
+                }else{
+                    //cambiar de estado
+                    $detail -> estado = 'cancelado';
+                    if($detail -> save()){
+                        
+                    }else{
+                        return 'error';
+                    }
                 }
-            }else{
-                $response = [ 
-                    'success' => false,
-                    'message' => 'Ocurrio un error',
-                ];
             }
-        }else{
-            $response = [ 
+
+            for ($i=0; $i < count($orderDetail); $i++) { 
+                $detail = $orderDetail[$i];
+                //SI ORDER DETATIL ES CANCELADO NO HACER NADA.
+                $filterDetail = array_filter($saleDetail, function ($det) use ($detail) {
+                    return $det['producto_id']  === $detail['producto_id'] && $det['estado'] === $detail['estado'];
+                });
+                if(count($filterDetail) > 0){
+                    //Si filterDetail > 1
+                    $filterDetailValues = array_values($filterDetail);
+                    for($i = 0; $i < count($filterDetailValues); $i++){
+                        $value = $filterDetailValues[$i];
+                        if($value['id'] !== $detail["id"]){
+                            $value["estado"] = 'cancelado';
+                            $value -> save();
+                        }
+                    }
+
+                }else{
+                    //agregar
+                    $newSaleDetail = new DetalleVenta();
+                    $newSaleDetail -> cantidad = $detail['cantidad'];
+                    $newSaleDetail -> producto_id = $detail['id'];
+                    $newSaleDetail -> venta_id = $idSale;
+                    if($params['userAgent'] === 'windows'){
+                        $newSaleDetail -> estado = 'enviado-impresora';
+                    }else{
+                        $newSaleDetail -> estado = 'enviado';
+                    }
+                    $product =  Producto::findOne($detail['producto_id']);
+                    if($product -> tipo === 'bebida'){
+                        $product -> stock = $product -> stock - $detail ['cantidad'];
+                        $product -> save();
+                    }
+                    $newSaleDetail -> save();
+                }
+            }
+            $response = [
                 'success' => true,
-                'message' => 'Tiene ventas',
-                'errors' => $saleDetails
+                'message' => 'Pedidos enviados.',
             ];
-        }
         return $response;
-    } */
+    }
     public function actionConfirmSale($idSale)
     {
         $sale = Venta::findOne($idSale);
