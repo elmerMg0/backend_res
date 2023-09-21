@@ -763,7 +763,10 @@ class VentaController extends \yii\web\Controller
         $sale -> nota = $params['note'];
         $sale -> save();
 
-            $saleDetail = DetalleVenta::find()->where(['venta_id' => $idSale])->all(); //detalle de venta existente en la VENTA
+            $saleDetail = DetalleVenta::find()
+                                ->where(['venta_id' => $idSale])
+                                ->andWhere(['<>', 'estado', 'cancelado'])
+                                ->all();                    
             for ($i=0; $i < count($saleDetail); $i++) { 
                 $detail = $saleDetail[$i];
                 //Si en nuestras ventas existe el mismo producto ENVIADO
@@ -779,47 +782,29 @@ class VentaController extends \yii\web\Controller
                     if($filterDetailValues[0]['cantidad'] !== $detail -> cantidad){
                         //Si no es igual, es que se ha decrementado.
                         $difference = $detail -> cantidad - $filterDetailValues[0]['cantidad'];
-                        //con la diferencia cremos un nuevo registro 
-                        $detail -> cantidad = $filterDetailValues[0]['cantidad'];
-                        $detail -> save();
-                        //crate
-                        $newOrderDetailCancel = new DetalleVenta();
-                        $newOrderDetailCancel -> cantidad = $difference;
-                        $newOrderDetailCancel -> producto_id = $detail['producto_id'];
-                        $newOrderDetailCancel -> venta_id = $idSale;
-                        $newOrderDetailCancel -> estado = 'cancelado';
-                        $newOrderDetailCancel -> save();
+                        if($difference > 0){
+                            $detail -> cantidad = $filterDetailValues[0]['cantidad'];
+                            $detail -> save();
+                        }
+
+                        $state = $difference > 0 ? "cancelado": "enviado";
+                        $state = $params['userAgent'] === 'windows' ? 'enviado_impresora' : $state;
+                          //crate
+                          $newOrderDetailCancel = new DetalleVenta();
+                          $newOrderDetailCancel -> cantidad = abs($difference);
+                          $newOrderDetailCancel -> producto_id = $detail['producto_id'];
+                          $newOrderDetailCancel -> venta_id = $idSale;
+                          $newOrderDetailCancel -> estado = $state;
+                          $newOrderDetailCancel -> save();
+
+                          //Si es bebida disminuir el stcok
+                          $product =  Producto::findOne($detail['producto_id']);
+                          if($product -> tipo === 'bebida'){
+                              $product -> stock = $product -> stock + $difference;
+                              $product -> save();
+                          }
                         
-                        //Si es bebida disminuir el stcok
-                        $product =  Producto::findOne($detail['producto_id']);
-                        if($product -> tipo === 'bebida'){
-                            $product -> stock = $product -> stock + $difference;
-                            $product -> save();
-                        }
                     }
-                   /*  $currentQuantity = $filterDetailValues[0]["cantidad"];
-                    $oldQuantity = $detail -> cantidad;
-                    
-                    $total = $currentQuantity - $oldQuantity;
-                    $product =  Producto::findOne($filterDetailValues[0]['id']); */
-
-                   /*  if($total > 0){
-                        if($product -> tipo === "bebida"){
-                            $product -> stock = $product -> stock - $total;
-                        }
-                        //stock++
-                    }else if($total < 0){
-                        //stock --
-                        if($product -> tipo === 'bebida'){
-                            $product -> stock = $product -> stock + $total;
-                        }
-                    }
-                    $detail -> cantidad = $filterDetailValues[0]["cantidad"];
-                    if($detail -> save() && $product -> save()){
-
-                    }else{
-                        return 'error';
-                    } */
                 }else{
                     //cambiar de estado
                     $detail -> estado = 'cancelado';
@@ -837,7 +822,7 @@ class VentaController extends \yii\web\Controller
                 $filterDetail = array_filter($saleDetail, function ($det) use ($detail) {
                     return $det['producto_id']  === $detail['producto_id'] && $det['estado'] === $detail['estado'];
                 });
-                if(count($filterDetail) > 0){
+                if(count($filterDetail) > 1){
                     //Si filterDetail > 1
                     $filterDetailValues = array_values($filterDetail);
                     for($i = 0; $i < count($filterDetailValues); $i++){
@@ -855,7 +840,7 @@ class VentaController extends \yii\web\Controller
                     $newSaleDetail -> producto_id = $detail['id'];
                     $newSaleDetail -> venta_id = $idSale;
                     if($params['userAgent'] === 'windows'){
-                        $newSaleDetail -> estado = 'enviado-impresora';
+                        $newSaleDetail -> estado = 'enviado_impresora';
                     }else{
                         $newSaleDetail -> estado = 'enviado';
                     }
