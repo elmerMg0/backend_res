@@ -910,4 +910,77 @@ class VentaController extends \yii\web\Controller
         return $response;
     }
 
+
+    public function actionChangeStateOrderDetails($idSale){
+
+        $params = Yii::$app->getRequest()->getBodyParams();
+        $state = $params['state'];
+        $query = DetalleVenta::find()->where(['venta_id' => $idSale, 'estado' => $state]);
+
+        if($state === 'enviado' || $state === 'enviado_cocina'){
+            $anotherState = $state === 'enviado' ? 'enviado_cocina': 'enviado';
+            $query -> orWhere(['estado' => $anotherState]);
+        }
+
+        $orderDetail =  $query -> all();
+        if($orderDetail){
+            $states = [
+                'enviado' => 'preparando',
+                'enviado_cocina' => 'preparando',
+                'preparando' => 'listo',
+                'listo' => 'listo'
+            ];
+
+            $state = $states[$state];
+            for($i = 0; $i< count($orderDetail); $i ++){
+                $order = $orderDetail[$i];
+                if($order -> estado !== 'cancelado'){
+                    $order -> estado = $state;
+                    if( !$order -> save() ){
+                        return $response = [
+                            'success' => false,
+                            'meessage' => 'Existen errores en los parametros'
+                        ];
+                    }
+                }
+            }
+            $response = [
+                'success' => true,
+                'message' => 'Pedidos actualizados'
+            ];
+        }else{
+            $response = [
+                'success' => false,
+                'message' => 'No existen pedidos'
+            ];
+        }
+        return $response;
+    }
+
+    public function actionChangeStateSampleOrder($idSaleDetail){
+        $SaleDetail = DetalleVenta::findOne($idSaleDetail);
+        $params = Yii::$app -> getRequest() -> getBodyParams();
+        if($SaleDetail){
+            $SaleDetail -> estado = $params['state'];
+            if($SaleDetail -> save()){
+            $response = [
+                'success' => true,
+                'message' => 'Pedidos actualizados'
+            ];
+            }else{
+                $response = [
+                    'success' => false,
+                    'message' => 'Existen parametros en los parametros'
+                ];
+            }
+        }else{
+            $response = [
+                'success' => false,
+                'message' => 'No existen detalle de venta'
+            ];
+        }
+
+        return $response;
+    }
+
 }

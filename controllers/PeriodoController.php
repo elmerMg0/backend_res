@@ -262,7 +262,7 @@ class PeriodoController extends \yii\web\Controller
         } else {
             $response = [
                 'success' => false,
-                'message' => 'No existe periodo',
+                'message' => 'No existe periodo iniciado',
             ];
         }
         return $response;
