@@ -106,6 +106,77 @@ class ColaImpresionController extends \yii\web\Controller
         ];
         return $response;
     }
+
+
+    public function actionIndexImproved()
+    {
+        $printSpooler = [];
+        $printSpoolerGlobal = ColaImpresion::find()->where(['estado' => false])->all();
+        for ($i=0; $i < count($printSpoolerGlobal) ; $i++) { 
+            $print = $printSpoolerGlobal[$i];
+            $sale = Venta::find()
+                ->select(['venta.*', 'usuario.username', 'mesa.nombre as mesa', 'cliente.nombre as cliente'])
+                ->innerJoin('usuario','usuario.id = venta.usuario_id')
+                ->innerJoin('mesa','mesa.id = venta.mesa_id')
+                ->innerJoin('cliente','cliente.id = venta.cliente_id')
+                ->where(['venta.id' => $print-> venta_id])
+                ->asArray()
+                ->one();
+            /* Si es cocina, solo agregamos los nuevos pedidios, si es salon todos */
+            $orderDetail = [];
+            $send = true;
+            if($print -> area == 'cocina'){
+                $orderDetail = DetalleVenta::find()
+                                ->select(['detalle_venta.cantidad', 'detalle_venta.estado as estado_detalle_venta', 'producto.*', 'detalle_venta.id'])
+                                ->where(['venta_id' => $print -> venta_id, 'producto.tipo' => 'comida', 'detalle_venta.estado' => 'enviado'])
+                                ->innerJoin('producto' , 'producto.id=detalle_venta.producto_id')
+                                ->asArray()
+                                ->all();
+                if(!$orderDetail){
+                    //cuando hay producto envaidos pero no son comida.
+                    $send = false;
+                }
+            }else{
+                $orderDetail = DetalleVenta::find()
+                                ->select(['detalle_venta.cantidad', 'producto.*'])
+                                ->where(['venta_id' => $print -> venta_id])
+                                ->innerJoin('producto' , 'producto.id=detalle_venta.producto_id')
+                                ->asArray()
+                                ->all();
+            }
+            //actualizar orderDetail de enviado = enviado_cocina
+          
+            $printer = Impresora::find()->where(['lugar' => $print -> area])->one();
+            $infoSale = [
+                'nro_pedido' => $sale ["numero_pedido"],
+                'nro_mesa' => $sale ["mesa"],
+                'cliente' => $sale ["cliente"],
+                'orderDetail' => $orderDetail,
+                'note' => $sale['nota'],
+                'printerName' => $printer -> nombre,
+                'place' => $printer -> lugar,
+                'username' => $sale ["username"],
+                'cantidad_total' => $sale ['cantidad_total']
+            ];
+            if($send){
+                $print -> estado = true;
+                $print -> save();
+                $printSpooler[] = $infoSale;
+            }
+            for($i = 0 ; $i < count($orderDetail); $i++){
+                $order = DetalleVenta::findOne($orderDetail[$i]['id']);
+                $order -> estado = 'enviado_cocina';
+                $order -> save();
+            }
+        }
+        
+        $response = [ 
+            'success' => true,
+            'message' => 'Cola de impresions',
+            'printSpooler' => $printSpooler
+        ];
+        return $response;
+    }
     public function actionCreate(){
         $params = Yii::$app-> getRequest() -> getBodyParams();
         $printSpooler = new ColaImpresion();
