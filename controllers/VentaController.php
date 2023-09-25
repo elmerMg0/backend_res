@@ -571,6 +571,7 @@ class VentaController extends \yii\web\Controller
                                 ,'producto.tipo'])
                     ->where(['venta_id' => $sale['id']])
                     ->innerJoin('producto', 'producto.id=detalle_venta.producto_id')
+                    ->orderBy(['id' => SORT_DESC])
                     ->asArray()
                     ->all();
             $customer = Cliente::findOne($sale['cliente_id']);
@@ -752,11 +753,89 @@ class VentaController extends \yii\web\Controller
         return $response;
     }
 
+    private function addNewOrderDetail( $detail, $idSale, $printout, $amount){
+        $newSaleDetail = new DetalleVenta();
+        $newSaleDetail -> cantidad = abs($amount);
+        $newSaleDetail -> producto_id = $detail['producto_id'];
+        $newSaleDetail -> venta_id = $idSale;
+        $newSaleDetail -> estado = $amount > 0 ? 'enviado' : 'cancelado';
+        $newSaleDetail -> impreso = $printout === 'windows' ? true : false;
+
+        $product =  Producto::findOne($detail['producto_id']);
+        if($product -> tipo === 'bebida'){
+            $product -> stock = $product -> stock - $detail ['cantidad'];
+            $product -> save();
+        }
+        $newSaleDetail -> save();
+    }
 
     public function actionUpdateSaleImproved($idSale){
         $params = Yii::$app->getRequest()->getBodyParams();
         $orderDetail = $params['orderDetail']; //actualizado con estado nuevo/enviado/enviado-impresora
-        
+        //nota y cliente
+        $sale = Venta::findOne($idSale);
+        $sale -> cliente_id = $params['cliente_id'];
+        $sale -> nota = $params['note'];
+        $sale -> save();
+
+        $saleDetail = DetalleVenta::find()
+                    ->where(['venta_id' => $idSale])
+                    ->andWhere(['<>', 'estado', 'cancelado'])
+                    ->all(); 
+
+        for($i = 0; $i < count($orderDetail); $i++){
+            $detail = $orderDetail[$i];
+            if($detail ["estado"] === 'nuevo'){
+                $this->addNewOrderDetail($detail, $idSale, $params['userAgent'], $detail['cantidad']);
+            } 
+
+            if($detail ["estado"] === 'cancelado'){
+                DetalleVenta::updateAll(['estado' => 'cancelado'], ['id' => $detail["id"]]);
+            }else{
+                $filterDetail = array_filter($saleDetail, function ($det) use ($detail) {
+                    return $det['producto_id']  === $detail['producto_id'] && $det['estado'] === $detail['estado'];
+                });
+                //nunca va a entrar poque los pedidos siempre seran nuevos.
+                //va a entrar cuando em: pedodo 3 -> tiene el mismo id y mismo estado;
+                if(count($filterDetail) > 0){
+                    //actualizar  dividir el detalle de venta.
+                    //detail  $filterDetail 
+                    $filterDetailValues = array_values($filterDetail);
+                    if($filterDetailValues[0]['cantidad'] !== $detail["cantidad"]){
+                        //Si no es igual, es que se ha decrementado o incrementado.
+                        //return $filterDetailValues;
+                        $difference = $detail["cantidad"] - $filterDetailValues[0]['cantidad'];
+                    //    if($difference > 0){
+                            DetalleVenta::updateAll(['cantidad' => $detail['cantidad']], ['id' => $detail["id"]]);
+                           /*  $detail["cantidad"] = $detail['cantidad'];
+                            $detail -> save(); */
+                      //  }
+                        $this->addNewOrderDetail($detail, $idSale, $params['userAgent'], $difference);
+                    }
+                }
+            }
+        }
+
+        $saleDetailFull = DetalleVenta::find()
+                    ->select(['detalle_venta.*', 'producto.nombre', 'producto.stock', 'producto.precio_venta', 'producto.precio_compra'
+                    ,'producto.tipo'])
+                    ->where(['venta_id' => $idSale])
+                    ->innerJoin('producto', 'producto.id=detalle_venta.producto_id')
+                    ->asArray()
+                    ->orderBy(['id' => SORT_DESC])
+                    ->all();  
+        $response = [
+            'success' => true,
+            'message' => 'Pedidos enviados.',
+            'orderDetailCurrently' => $saleDetailFull
+
+        ];
+    return $response;
+}
+
+    public function actionUpdateSaleImproved2($idSale){
+        $params = Yii::$app->getRequest()->getBodyParams();
+        $orderDetail = $params['orderDetail']; //actualizado con estado nuevo/enviado/enviado-impresora
         //nota y cliente
         $sale = Venta::findOne($idSale);
         $sale -> cliente_id = $params['cliente_id'];
@@ -766,7 +845,7 @@ class VentaController extends \yii\web\Controller
             $saleDetail = DetalleVenta::find()
                                 ->where(['venta_id' => $idSale])
                                 ->andWhere(['<>', 'estado', 'cancelado'])
-                                ->all();                    
+                                ->all(); 
             for ($i=0; $i < count($saleDetail); $i++) { 
                 $detail = $saleDetail[$i];
                 //Si en nuestras ventas existe el mismo producto ENVIADO
@@ -827,7 +906,7 @@ class VentaController extends \yii\web\Controller
                     $filterDetailValues = array_values($filterDetail);
                     for($i = 0; $i < count($filterDetailValues); $i++){
                         $value = $filterDetailValues[$i];
-                        if($value['id'] !== $detail["id"]){
+                        if($value['id'] !== $detail["producto_id"]){
                             $value["estado"] = 'cancelado';
                             $value -> save();
                         }
@@ -839,11 +918,9 @@ class VentaController extends \yii\web\Controller
                     $newSaleDetail -> cantidad = $detail['cantidad'];
                     $newSaleDetail -> producto_id = $detail['id'];
                     $newSaleDetail -> venta_id = $idSale;
-                    if($params['userAgent'] === 'windows'){
-                        $newSaleDetail -> estado = 'enviado_impresora';
-                    }else{
-                        $newSaleDetail -> estado = 'enviado';
-                    }
+                    $newSaleDetail -> estado = 'enviado';
+                    $newSaleDetail -> impreso = $params['userAgent'] === 'windows' ? true : false;
+
                     $product =  Producto::findOne($detail['producto_id']);
                     if($product -> tipo === 'bebida'){
                         $product -> stock = $product -> stock - $detail ['cantidad'];
@@ -858,6 +935,7 @@ class VentaController extends \yii\web\Controller
             ];
         return $response;
     }
+
     public function actionConfirmSale($idSale)
     {
         $sale = Venta::findOne($idSale);
@@ -917,16 +995,16 @@ class VentaController extends \yii\web\Controller
         $state = $params['state'];
         $query = DetalleVenta::find()->where(['venta_id' => $idSale, 'estado' => $state]);
 
-        if($state === 'enviado' || $state === 'enviado_cocina'){
+        $query -> orWhere(['estado' => $state]);
+       /*  if($state === 'enviado'){
             $anotherState = $state === 'enviado' ? 'enviado_cocina': 'enviado';
-            $query -> orWhere(['estado' => $anotherState]);
-        }
+        } */
 
         $orderDetail =  $query -> all();
         if($orderDetail){
             $states = [
                 'enviado' => 'preparando',
-                'enviado_cocina' => 'preparando',
+               // 'enviado_cocina' => 'preparando',
                 'preparando' => 'listo',
                 'listo' => 'listo'
             ];

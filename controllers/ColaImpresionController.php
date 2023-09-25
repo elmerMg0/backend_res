@@ -127,8 +127,8 @@ class ColaImpresionController extends \yii\web\Controller
             $send = true;
             if($print -> area == 'cocina'){
                 $orderDetail = DetalleVenta::find()
-                                ->select(['detalle_venta.cantidad', 'detalle_venta.estado as estado_detalle_venta', 'producto.*', 'detalle_venta.id'])
-                                ->where(['venta_id' => $print -> venta_id, 'producto.tipo' => 'comida', 'detalle_venta.estado' => 'enviado'])
+                                ->select(['detalle_venta.cantidad', 'detalle_venta.estado', 'producto.nombre','producto.tipo','producto.precio_venta','producto.precio_compra' ,'detalle_venta.id'])
+                                ->where(['venta_id' => $print -> venta_id, 'producto.tipo' => 'comida', 'impreso' => false])
                                 ->innerJoin('producto' , 'producto.id=detalle_venta.producto_id')
                                 ->asArray()
                                 ->all();
@@ -138,7 +138,7 @@ class ColaImpresionController extends \yii\web\Controller
                 }
             }else{
                 $orderDetail = DetalleVenta::find()
-                                ->select(['detalle_venta.cantidad', 'producto.*'])
+                                ->select(['detalle_venta.cantidad', 'detalle_venta.estado', 'producto.*', 'detalle_venta.id'])
                                 ->where(['venta_id' => $print -> venta_id])
                                 ->innerJoin('producto' , 'producto.id=detalle_venta.producto_id')
                                 ->asArray()
@@ -163,11 +163,18 @@ class ColaImpresionController extends \yii\web\Controller
                 $print -> save();
                 $printSpooler[] = $infoSale;
             }
-            for($i = 0 ; $i < count($orderDetail); $i++){
+            DetalleVenta::updateAll(['impreso' => true], [
+                'venta_id' => $print->venta_id,
+                'impreso' => false,
+            ]);
+
+//            return $orderDetail;
+            //$orderDetail::updateAll(['estado_detalle_venta' => 'enviado'],['estado' => 'enviado_cocina']);
+           /*  for($i = 0 ; $i < count($    ); $i++){
                 $order = DetalleVenta::findOne($orderDetail[$i]['id']);
-                $order -> estado = 'enviado_cocina';
+                $order["estado"] = 'enviado_cocina';
                 $order -> save();
-            }
+            } */
         }
         
         $response = [ 
