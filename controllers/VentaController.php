@@ -777,35 +777,19 @@ class VentaController extends \yii\web\Controller
 
         $params = Yii::$app->getRequest()->getBodyParams();
         $state = $params['state'];
-        $query = DetalleVenta::find()->where(['venta_id' => $idSale, 'estado' => $state]);
-
-        $query -> orWhere(['estado' => $state]);
-       /*  if($state === 'enviado'){
-            $anotherState = $state === 'enviado' ? 'enviado_cocina': 'enviado';
-        } */
-
-        $orderDetail =  $query -> all();
+        $orderDetail = DetalleVenta::find()
+                            ->where(['venta_id' => $idSale, 'estado' => $state])
+                            ->all();
         if($orderDetail){
             $states = [
                 'enviado' => 'preparando',
-               // 'enviado_cocina' => 'preparando',
                 'preparando' => 'listo',
                 'listo' => 'listo'
             ];
 
-            $state = $states[$state];
-            for($i = 0; $i< count($orderDetail); $i ++){
-                $order = $orderDetail[$i];
-                if($order -> estado !== 'cancelado'){
-                    $order -> estado = $state;
-                    if( !$order -> save() ){
-                        return $response = [
-                            'success' => false,
-                            'meessage' => 'Existen errores en los parametros'
-                        ];
-                    }
-                }
-            }
+            $newState = $states[$state];
+            DetalleVenta::updateAll(['estado' => $newState], ['venta_id' => $idSale, 'estado' => $state]);
+            
             $response = [
                 'success' => true,
                 'message' => 'Pedidos actualizados'
