@@ -642,116 +642,6 @@ class VentaController extends \yii\web\Controller
         return $response;
     } */
 /* Eliminar detalle de venta y agregar nuevo detalle venta */
-    public function actionUpdateSale($idSale){
-        $params = Yii::$app->getRequest()->getBodyParams();
-        $orderDetail = $params['orderDetail']; //actualizado
-        
-        //nota y cliente
-        $sale = Venta::findOne($idSale);
-        $sale -> cliente_id = $params['cliente_id'];
-        $sale -> nota = $params['note'];
-        $sale -> save();
-
-            $saleDetail = DetalleVenta::find()->where(['venta_id' => $idSale])->all();
-            for ($i=0; $i < count($saleDetail); $i++) { 
-                $detail = $saleDetail[$i];
-                $filterDetail = array_filter($orderDetail, function ($det) use ($detail) {
-                    return $det['id']  === $detail['producto_id'];
-                });
-                if(count($filterDetail) > 0){
-                    //actualizar
-                    $filterDetailValues = array_values($filterDetail);
-                    $currentQuantity = $filterDetailValues[0]["cantidad"];
-                    $oldQuantity = $detail -> cantidad;
-                    
-                    $total = $currentQuantity - $oldQuantity;
-                    $product =  Producto::findOne($filterDetailValues[0]['id']);
-                    /* agregar al log, idSale, idProduct, cantidad */
-                    if($total !== 0){
-                        $logSale = new LogVenta();
-                        $logSale -> venta_id = $idSale;
-                        $logSale -> producto_id = $product -> id;
-                        $logSale -> cantidad = $total;
-                        $logSale -> numero_pedido = $sale -> numero_pedido;
-                        $logSale -> nombre_producto = $product -> nombre;
-                        $logSale -> save();
-                    }
-
-                    
-                    if($total > 0){
-                        if($product -> tipo === "bebida"){
-                            $product -> stock = $product -> stock - $total;
-                        }
-                        //stock++
-                    }else if($total < 0){
-                        /* agregar log */
-                        //stock --
-                        if($product -> tipo === 'bebida'){
-                            $product -> stock = $product -> stock + $total;
-                        }
-                    }
-                    $detail -> cantidad = $filterDetailValues[0]["cantidad"];
-                    if($detail -> save() && $product -> save()){
-
-                    }else{
-                        return 'error';
-                    }
-                }else{
-                    //eliminar
-                    if($detail -> delete()){
-
-                    }else{
-                        return 'error';
-                    }
-                }
-            }
-
-            for ($i=0; $i < count($orderDetail); $i++) { 
-                $detail = $orderDetail[$i];
-                $filterDetail = array_filter($saleDetail, function ($det) use ($detail) {
-                    return $det['producto_id']  === $detail['id'];
-                });
-                if(count($filterDetail) > 0){
-                    //actualizar
-                }else{
-                    //agregar
-                    $newSaleDetail = new DetalleVenta();
-                    $newSaleDetail -> cantidad = $detail['cantidad'];
-                    $newSaleDetail -> producto_id = $detail['id'];
-                    $newSaleDetail -> venta_id = $idSale;
-                    $newSaleDetail -> estado = 'enviado';
-               
-                    $product =  Producto::findOne($detail['id']);
-                    $product -> stock = $product -> stock - $detail ['cantidad'];
-                    if($newSaleDetail -> save() && $product -> save()){
-                        $logSale = new LogVenta();
-                        $logSale -> venta_id = $idSale;
-                        $logSale -> producto_id = $product -> id;
-                        $logSale -> cantidad = $detail['cantidad'];
-                        $logSale -> numero_pedido = $sale['numero_pedido'];
-                        $logSale -> nombre_producto = $product['nombre'];
-                        $logSale -> save();
-                    }else{
-                        return $newSaleDetail->errors;
-                    }
-                }
-            }
-       /*      $saleDetails = Venta::find()
-            ->select(['producto.*', 'detalle_venta.cantidad As cantidad', 'venta.id As idSale', 'detalle_venta.estado as estado'])
-            ->where(['venta.id' => $idSale ])
-            ->innerJoin('detalle_venta', 'detalle_venta.venta_id=venta.id')
-            ->innerJoin('producto', 'producto.id=detalle_venta.producto_id')
-            ->asArray()"enviado"
-            ->orderBy(['id' => SORT_DESC])
-            ->all(); */
-
-            $response = [
-                'success' => true,
-                'message' => 'Pedidos enviados.',
-          //     'saleDetails' => $saleDetails
-            ];
-        return $response;
-    }
 
     private function addNewOrderDetail( $detail, $idSale, $printout, $amount){
         $newSaleDetail = new DetalleVenta();
@@ -803,13 +693,10 @@ class VentaController extends \yii\web\Controller
                     $filterDetailValues = array_values($filterDetail);
                     if($filterDetailValues[0]['cantidad'] !== $detail["cantidad"]){
                         //Si no es igual, es que se ha decrementado o incrementado.
-                        //return $filterDetailValues;
                         $difference = $detail["cantidad"] - $filterDetailValues[0]['cantidad'];
-                    //    if($difference > 0){
+                        if($difference < 0){
                             DetalleVenta::updateAll(['cantidad' => $detail['cantidad']], ['id' => $detail["id"]]);
-                           /*  $detail["cantidad"] = $detail['cantidad'];
-                            $detail -> save(); */
-                      //  }
+                        }
                         $this->addNewOrderDetail($detail, $idSale, $params['userAgent'], $difference);
                     }
                 }
@@ -832,109 +719,6 @@ class VentaController extends \yii\web\Controller
         ];
     return $response;
 }
-
-    public function actionUpdateSaleImproved2($idSale){
-        $params = Yii::$app->getRequest()->getBodyParams();
-        $orderDetail = $params['orderDetail']; //actualizado con estado nuevo/enviado/enviado-impresora
-        //nota y cliente
-        $sale = Venta::findOne($idSale);
-        $sale -> cliente_id = $params['cliente_id'];
-        $sale -> nota = $params['note'];
-        $sale -> save();
-
-            $saleDetail = DetalleVenta::find()
-                                ->where(['venta_id' => $idSale])
-                                ->andWhere(['<>', 'estado', 'cancelado'])
-                                ->all(); 
-            for ($i=0; $i < count($saleDetail); $i++) { 
-                $detail = $saleDetail[$i];
-                //Si en nuestras ventas existe el mismo producto ENVIADO
-                $filterDetail = array_filter($orderDetail, function ($det) use ($detail) {
-                    return $det['producto_id']  === $detail['producto_id'] && $det['estado'] === $detail['estado'];
-                });
-                //nunca va a entrar poque los pedidos siempre seran nuevos.
-                //va a entrar cuando em: pedodo 3 -> tiene el mismo id y mismo estado;
-                if(count($filterDetail) > 0){
-                    //actualizar  dividir el detalle de venta.
-                    //detail  $filterDetail 
-                    $filterDetailValues = array_values($filterDetail);
-                    if($filterDetailValues[0]['cantidad'] !== $detail -> cantidad){
-                        //Si no es igual, es que se ha decrementado.
-                        $difference = $detail -> cantidad - $filterDetailValues[0]['cantidad'];
-                        if($difference > 0){
-                            $detail -> cantidad = $filterDetailValues[0]['cantidad'];
-                            $detail -> save();
-                        }
-
-                        $state = $difference > 0 ? "cancelado": "enviado";
-                        $state = $params['userAgent'] === 'windows' ? 'enviado_impresora' : $state;
-                          //crate
-                          $newOrderDetailCancel = new DetalleVenta();
-                          $newOrderDetailCancel -> cantidad = abs($difference);
-                          $newOrderDetailCancel -> producto_id = $detail['producto_id'];
-                          $newOrderDetailCancel -> venta_id = $idSale;
-                          $newOrderDetailCancel -> estado = $state;
-                          $newOrderDetailCancel -> save();
-
-                          //Si es bebida disminuir el stcok
-                          $product =  Producto::findOne($detail['producto_id']);
-                          if($product -> tipo === 'bebida'){
-                              $product -> stock = $product -> stock + $difference;
-                              $product -> save();
-                          }
-                        
-                    }
-                }else{
-                    //cambiar de estado
-                    $detail -> estado = 'cancelado';
-                    if($detail -> save()){
-                        
-                    }else{
-                        return 'error';
-                    }
-                }
-            }
-
-            for ($i=0; $i < count($orderDetail); $i++) { 
-                $detail = $orderDetail[$i];
-                //SI ORDER DETATIL ES CANCELADO NO HACER NADA.
-                $filterDetail = array_filter($saleDetail, function ($det) use ($detail) {
-                    return $det['producto_id']  === $detail['producto_id'] && $det['estado'] === $detail['estado'];
-                });
-                if(count($filterDetail) > 1){
-                    //Si filterDetail > 1
-                    $filterDetailValues = array_values($filterDetail);
-                    for($i = 0; $i < count($filterDetailValues); $i++){
-                        $value = $filterDetailValues[$i];
-                        if($value['id'] !== $detail["producto_id"]){
-                            $value["estado"] = 'cancelado';
-                            $value -> save();
-                        }
-                    }
-
-                }else{
-                    //agregar
-                    $newSaleDetail = new DetalleVenta();
-                    $newSaleDetail -> cantidad = $detail['cantidad'];
-                    $newSaleDetail -> producto_id = $detail['id'];
-                    $newSaleDetail -> venta_id = $idSale;
-                    $newSaleDetail -> estado = 'enviado';
-                    $newSaleDetail -> impreso = $params['userAgent'] === 'windows' ? true : false;
-
-                    $product =  Producto::findOne($detail['producto_id']);
-                    if($product -> tipo === 'bebida'){
-                        $product -> stock = $product -> stock - $detail ['cantidad'];
-                        $product -> save();
-                    }
-                    $newSaleDetail -> save();
-                }
-            }
-            $response = [
-                'success' => true,
-                'message' => 'Pedidos enviados.',
-            ];
-        return $response;
-    }
 
     public function actionConfirmSale($idSale)
     {
