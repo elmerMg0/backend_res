@@ -84,6 +84,7 @@ class CategoriaController extends \yii\web\Controller
 
     public function actionGetCategories () {
         $categories = Categoria::find()
+                    ->where(['estado' => 'Activo'])
                       ->orderBy(['id' => 'SORT_ASC'])             
                      ->all();
 

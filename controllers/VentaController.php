@@ -593,56 +593,6 @@ class VentaController extends \yii\web\Controller
     }
 
 
- /*    public function actionCreateSaleOld($idTable){
-        $sale = Venta::find()->select(['venta.*', 'usuario.nombres as usuario'])
-                            ->where(['mesa_id' => $idTable, 'venta.estado' => 'consumiendo' ])
-                            ->innerJoin('usuario', 'usuario.id=venta.usuario_id')
-                            ->asArray()
-                            -> one();
-        if($sale){
-                $saleDetails = Venta::find()
-                            ->select(['producto.*', 'detalle_venta.cantidad As cantidad', 'venta.id As idSale', 'detalle_venta.estado as estado'])
-                            ->where(['mesa_id' => $idTable, 'venta.estado' => 'consumiendo' ])
-                            ->innerJoin('detalle_venta', 'detalle_venta.venta_id=venta.id')
-                            ->innerJoin('producto', 'producto.id=detalle_venta.producto_id')
-                            ->asArray()
-                            ->all();
-                $response = [
-                'success' => true,
-                'message' => 'Info de venta',
-                'saleDetails' => $saleDetails,
-                'sale' => $sale
-            ];
-        }else{ 
-            $params = Yii::$app -> getRequest() -> getBodyParams();
-            $newSale = new Venta();
-            $newSale -> load ($params, '');
-            $numberOrder = Venta::find()->all();
-            $newSale->numero_pedido = count($numberOrder) + 1;
-            date_default_timezone_set('America/La_Paz');
-            $newSale -> fecha = date('Y-m-d H:i:s');
-            
-            if($newSale -> save()){
-         
-                    $response = [
-                        'success' => true,
-                        'message' => 'Info de venta',
-                        'saleDetails' => [],
-                        'sale' => $newSale
-                    ];
-      
-            }else{
-                $response = [
-                    'success' => false,
-                    'message' => 'Existe errores en los campos',
-                    'error' => $newSale->errors
-                ];
-            }
-        }
-        return $response;
-    } */
-/* Eliminar detalle de venta y agregar nuevo detalle venta */
-
     private function addNewOrderDetail( $detail, $idSale, $printout, $amount){
         $newSaleDetail = new DetalleVenta();
         $newSaleDetail -> cantidad = abs($amount);
@@ -683,7 +633,7 @@ class VentaController extends \yii\web\Controller
                 DetalleVenta::updateAll(['estado' => 'cancelado'], ['id' => $detail["id"]]);
             }else{
                 $filterDetail = array_filter($saleDetail, function ($det) use ($detail) {
-                    return $det['producto_id']  === $detail['producto_id'] && $det['estado'] === $detail['estado'];
+                    return $det['id']  === $detail['id'] && $det['estado'] === $detail['estado'];
                 });
                 //nunca va a entrar poque los pedidos siempre seran nuevos.
                 //va a entrar cuando em: pedodo 3 -> tiene el mismo id y mismo estado;

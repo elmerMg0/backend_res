@@ -138,7 +138,7 @@ class ColaImpresionController extends \yii\web\Controller
                 }
             }else{
                 $orderDetail = DetalleVenta::find()
-                                ->select(['detalle_venta.cantidad', 'detalle_venta.estado', 'producto.*', 'detalle_venta.id'])
+                                ->select(['detalle_venta.cantidad', 'detalle_venta.estado', 'producto.*','producto.id as producto_id' ,'detalle_venta.id'])
                                 ->where(['venta_id' => $print -> venta_id])
                                 ->innerJoin('producto' , 'producto.id=detalle_venta.producto_id')
                                 ->asArray()
