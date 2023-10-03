@@ -306,8 +306,9 @@ class VentaController extends \yii\web\Controller
 
         if ($params['usuarioId'] === 'todos') {
             $query = Venta::find()
-                ->select(['venta.*', 'usuario.username'])
-                ->join('LEFT JOIN', 'usuario','usuario.id = venta.usuario_id')
+                ->select(['venta.*', 'usuario.username', 'mesa.nombre as mesa'])
+                ->innerJoin('usuario','usuario.id = venta.usuario_id')
+                ->innerJoin('mesa', 'mesa.id=venta.mesa_id')
                 ->where(['between', 'fecha', $params['fechaInicio'], $fechaFinWhole])
                 ->orderBy(['venta.id' => SORT_DESC])
                 ->asArray();
