@@ -5,6 +5,7 @@ namespace app\controllers;
 use app\models\DetalleVenta;
 use Yii;
 use app\models\Venta;
+use yii\db\Query;
 
 class DetalleVentaController extends \yii\web\Controller
 {
@@ -17,7 +18,7 @@ class DetalleVentaController extends \yii\web\Controller
                 'index' => ['get'],
                 'get-detail-period' => ['GET'],
                 'get-sale-detail' => ['GET'],
-
+                'get-reports-by-week' => ['POST']
             ]
         ];
         $behaviors['authenticator'] = [         	
@@ -27,12 +28,12 @@ class DetalleVentaController extends \yii\web\Controller
 
         $behaviors['access'] = [
             'class' => \yii\filters\AccessControl::class,
-            'only' => ['get-best-seller-product', 'index', 'get-sale-detail'], // acciones a las que se aplicará el control
+            'only' => ['get-best-seller-product', 'index', 'get-sale-detail', 'get-reports-by-week'], // acciones a las que se aplicará el control
             'except' => [''],    // acciones a las que no se aplicará el control
             'rules' => [
                 [
                     'allow' => true, // permitido o no permitido
-                    'actions' => ['get-best-seller-product', 'index', 'get-sale-detail'], // acciones que siguen esta regla
+                    'actions' => ['get-best-seller-product', 'index', 'get-sale-detail', 'get-reports-by-week'], // acciones que siguen esta regla
                     'roles' => ['administrador', 'cajero'] // control por roles  permisos
                 ],
             ],
@@ -109,4 +110,39 @@ class DetalleVentaController extends \yii\web\Controller
         return $response;
     }
 
+    public function actionGetReportsByWeek (){
+        $query = new Query();
+        $params = Yii::$app->getRequest()->getBodyParams(); 
+        $type = $params['tipo'];
+        $beginDate = $params['fechaInicio'];
+      
+        $fechaFinWhole = $params['fechaFin'] . ' ' . '23:59:00.000';
+        $selectExpresionWeek = 'EXTRACT(WEEK FROM FECHA) as weekNumber';
+        $selectExpresionMonth = "CONCAT(EXTRACT(YEAR FROM fecha), '-', LPAD(EXTRACT(MONTH FROM fecha)::text, 2, '0')) as Fecha";
+
+        $expression = $type == 'week' ? $selectExpresionWeek : $selectExpresionMonth ;
+
+        $query->select([
+            'dv.producto_id',
+            'p.nombre',
+            new \yii\db\Expression($expression),
+            //new \yii\db\Expression('CONCAT(EXTRACT(YEAR FROM fecha), '/', LPAD(EXTRACT(MONTH FROM fecha)::text, 2, "0"), '/', LPAD(EXTRACT(WEEK FROM fecha)::text, 2, "0")) AS anio_mes_semana'),
+            new \yii\db\Expression("SUM(dv.cantidad) OVER (PARTITION BY EXTRACT($type FROM fecha), dv.producto_id) AS cantidadTotal"),
+        ])
+        ->distinct()
+        ->from('detalle_venta dv')
+        ->innerJoin('producto p', 'dv.producto_id = p.id')
+        ->innerJoin('venta v', 'v.id = dv.venta_id')
+        ->where(['between', 'fecha', $beginDate, $fechaFinWhole])
+        ->andWhere(['or', ['dv.producto_id' => 91], ['dv.producto_id' => 132], ['dv.producto_id' => 111]])
+        ->orderBy(['dv.producto_id' => SORT_ASC]);
+        
+           // Ejecutar la consulta y obtener los resultados
+        $response = [
+            'success' => true,
+            'message' => 'Reportes por semana',
+            'result' => $query -> all()
+        ];
+        return $response;
+    }
 }
