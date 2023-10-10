@@ -128,8 +128,9 @@ class ColaImpresionController extends \yii\web\Controller
             if($print -> area == 'cocina'){
                 $orderDetail = DetalleVenta::find()
                                 ->select(['detalle_venta.cantidad', 'detalle_venta.estado', 'producto.nombre','producto.tipo','producto.precio_venta','producto.precio_compra' ,'detalle_venta.id'])
-                                ->where(['venta_id' => $print -> venta_id, 'producto.tipo' => 'comida', 'impreso' => false])
                                 ->innerJoin('producto' , 'producto.id=detalle_venta.producto_id')
+                                ->where(['venta_id' => $print -> venta_id, 'producto.tipo' => 'comida', 'impreso' => false])
+                                ->andWhere(['<>', 'detalle_venta.estado', 'cancelado'])
                                 ->asArray()
                                 ->all();
                 if(!$orderDetail){
@@ -138,8 +139,9 @@ class ColaImpresionController extends \yii\web\Controller
                 }
             }else{
                 $orderDetail = DetalleVenta::find()
-                                ->select(['detalle_venta.cantidad', 'detalle_venta.estado', 'producto.*','producto.id as producto_id' ,'detalle_venta.id'])
-                                ->where(['venta_id' => $print -> venta_id])
+                                ->select(['detalle_venta.cantidad', 'detalle_venta.estado as estado', 'producto.*','producto.id as producto_id' ,'detalle_venta.id'])
+                                ->where(['venta_id' => $print -> venta_id ])
+                                ->andWhere(['<>', 'detalle_venta.estado', 'cancelado'])
                                 ->innerJoin('producto' , 'producto.id=detalle_venta.producto_id')
                                 ->asArray()
                                 ->all();
