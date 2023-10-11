@@ -94,6 +94,7 @@ class SalonController extends \yii\web\Controller
         
         $lounges = Salon::find()
                         ->filterWhere(['estado' => $estado])
+                        ->orderBy(['id' => SORT_ASC])
                         ->all();
         if($lounges){
             $response = [
