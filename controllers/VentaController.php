@@ -626,8 +626,11 @@ class VentaController extends \yii\web\Controller
 
         for($i = 0; $i < count($orderDetail); $i++){
             $detail = $orderDetail[$i];
+
             if($detail ["estado"] === 'nuevo'){
                 $this->addNewOrderDetail($detail, $idSale, $params['userAgent'], $detail['cantidad']);
+                $sale -> finalizado = false;
+                $sale -> save();
             } 
 
             if($detail ["estado"] === 'cancelado'){
@@ -649,6 +652,8 @@ class VentaController extends \yii\web\Controller
                             DetalleVenta::updateAll(['cantidad' => $detail['cantidad']], ['id' => $detail["id"]]);
                         }
                         $this->addNewOrderDetail($detail, $idSale, $params['userAgent'], $difference);
+                        $sale -> finalizado = false;
+                        $sale -> save();
                     }
                 }
             }
