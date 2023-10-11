@@ -60,9 +60,9 @@ class DetalleVentaController extends \yii\web\Controller
 
     public function actionGetBestSellerProduct($quantity){
         $detail = DetalleVenta::find()
-                    ->select(['sum(cantidad) as cantidad', 'producto.nombre' ])
+                    ->select(['sum(cantidad) as cantidad', 'producto.nombre', 'producto.id'])
                     ->join('LEFT JOIN', 'producto', 'producto.id=detalle_venta.producto_id')
-                    ->groupBy(['producto_id', 'producto.nombre' ])
+                    ->groupBy(['producto_id', 'producto.nombre', 'producto.id' ])
                     ->orderBy(['cantidad' => SORT_DESC])
                     ->where(['producto.tipo' => 'comida'])
                     ->asArray()
@@ -116,6 +116,16 @@ class DetalleVentaController extends \yii\web\Controller
         $type = $params['tipo'];
         $beginDate = $params['fechaInicio'];
       
+        $productIds = isset($params['productIds']) ? $params['productIds'] : null;
+        $condition = ['or'];
+
+        if($productIds){
+            foreach ($productIds as $productId) {
+                $condition[] = ['dv.producto_id' => $productId];
+            }
+        }
+
+        //return $productIds;
         $fechaFinWhole = $params['fechaFin'] . ' ' . '23:59:00.000';
         $selectExpresionWeek = 'EXTRACT(WEEK FROM FECHA) as weekNumber';
         $selectExpresionMonth = "CONCAT(EXTRACT(YEAR FROM fecha), '-', LPAD(EXTRACT(MONTH FROM fecha)::text, 2, '0')) as Fecha";
@@ -134,7 +144,8 @@ class DetalleVentaController extends \yii\web\Controller
         ->innerJoin('producto p', 'dv.producto_id = p.id')
         ->innerJoin('venta v', 'v.id = dv.venta_id')
         ->where(['between', 'fecha', $beginDate, $fechaFinWhole])
-        ->andWhere(['or', ['dv.producto_id' => 91], ['dv.producto_id' => 132], ['dv.producto_id' => 111]])
+        //todos los productos seleccionados
+        ->andWhere($condition)
         ->orderBy(['dv.producto_id' => SORT_ASC]);
         
            // Ejecutar la consulta y obtener los resultados
