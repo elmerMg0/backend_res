@@ -2,6 +2,7 @@
 
 namespace app\controllers;
 
+use app\models\DetalleVenta;
 use Yii;
 use app\models\Periodo;
 use app\models\Usuario;
@@ -211,11 +212,12 @@ class PeriodoController extends \yii\web\Controller
                 //vetnas totales hasta el momento 
                 $sales = Venta::find()
                         ->select(['SUM(detalle_venta.cantidad)', 'producto.nombre', 'sum(producto.precio_venta*detalle_venta.cantidad) as total'])
-                        ->where(['>=', 'fecha', $period-> fecha_inicio])
-                        ->andWhere(['venta.estado' => 'pagado'])
                         ->innerJoin('detalle_venta', 'detalle_venta.venta_id=venta.id')
                         ->innerJoin('producto', 'producto.id= detalle_venta.producto_id')
+                        ->where(['>=', 'fecha', $period-> fecha_inicio])
                         ->andWhere(['usuario_id' => $idUser])
+                        ->andWhere(['venta.estado' => 'pagado'])
+                        ->andWhere(['<>', 'detalle_venta.estado','cancelado'])
                         ->groupBy(['producto_id', 'producto.nombre'])
                         ->asArray()
                         ->all();
@@ -227,6 +229,7 @@ class PeriodoController extends \yii\web\Controller
                         ->innerJoin('detalle_venta', 'detalle_venta.venta_id=venta.id')
                         ->innerJoin('producto', 'producto.id= detalle_venta.producto_id')
                         ->andWhere(['usuario_id' => $idUser])
+                        ->andWhere(['<>', 'detalle_venta.estado','cancelado'])
                         ->groupBy(['producto.tipo'])
                         ->asArray()
                         ->one();
@@ -238,6 +241,7 @@ class PeriodoController extends \yii\web\Controller
                         ->innerJoin('detalle_venta', 'detalle_venta.venta_id=venta.id')
                         ->innerJoin('producto', 'producto.id= detalle_venta.producto_id')
                         ->andWhere(['usuario_id' => $idUser])
+                        ->andWhere(['<>', 'detalle_venta.estado','cancelado'])
                         ->groupBy(['producto.tipo'])
                         ->asArray()
                         ->one();
