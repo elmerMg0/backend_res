@@ -4,7 +4,6 @@ namespace app\controllers;
 
 use app\models\Cliente;
 use app\models\DetalleVenta;
-use app\models\LogVenta;
 use app\models\Mesa;
 use app\models\Venta;
 use app\models\Periodo;
@@ -303,8 +302,17 @@ class VentaController extends \yii\web\Controller
     {
         $params = Yii::$app->getRequest()->getBodyParams();
         $fechaFinWhole = $params['fechaFin'] . ' 23:59:58.0000';
+        $user = assert($params['usuarioId'])? $params['usuarioId'] : null;
+        $query = Venta::find()
+            ->select(['venta.*', 'usuario.username', 'mesa.nombre as mesa'])
+            ->innerJoin('usuario','usuario.id = venta.usuario_id')
+            ->innerJoin('mesa', 'mesa.id=venta.mesa_id')
+            ->where(['between', 'fecha', $params['fechaInicio'], $fechaFinWhole])
+            ->andFilterWhere(['usuario_id' => $user])
+            ->orderBy(['venta.id' => SORT_DESC])
+            ->asArray();
 
-        if ($params['usuarioId'] === 'todos') {
+        /* if ($params['usuarioId'] === 'todos') {
             $query = Venta::find()
                 ->select(['venta.*', 'usuario.username', 'mesa.nombre as mesa'])
                 ->innerJoin('usuario','usuario.id = venta.usuario_id')
@@ -320,7 +328,7 @@ class VentaController extends \yii\web\Controller
                 ->andWhere(['between', 'fecha', $params['fechaInicio'], $fechaFinWhole])
                 ->orderBy(['venta.id' => SORT_DESC])
                 ->asArray();
-        }
+        } */
 
 
         $pagination = new Pagination([
@@ -559,18 +567,11 @@ class VentaController extends \yii\web\Controller
             ->asArray()
             -> one();
         if( $sale ){
-            $saleDetails = Venta::find()
-            ->select(['producto.*', 'detalle_venta.cantidad As cantidad', 'venta.id As idSale', 'detalle_venta.estado as estado'])
-            ->where(['mesa_id' => $idTable, 'venta.estado' => 'consumiendo' ])
-            ->innerJoin('detalle_venta', 'detalle_venta.venta_id=venta.id')
-            ->innerJoin('producto', 'producto.id=detalle_venta.producto_id')
-            ->asArray()
-            ->all();
-
             $saleDetailFull = DetalleVenta::find()
                     ->select(['detalle_venta.*', 'producto.nombre', 'producto.stock', 'producto.precio_venta', 'producto.precio_compra'
                                 ,'producto.tipo'])
                     ->where(['venta_id' => $sale['id']])
+                    ->andWhere(['<>', 'detalle_venta.estado', 'cancelado'])
                     ->innerJoin('producto', 'producto.id=detalle_venta.producto_id')
                     ->orderBy(['id' => SORT_DESC])
                     ->asArray()
@@ -662,8 +663,9 @@ class VentaController extends \yii\web\Controller
         $saleDetailFull = DetalleVenta::find()
                     ->select(['detalle_venta.*', 'producto.nombre', 'producto.stock', 'producto.precio_venta', 'producto.precio_compra'
                     ,'producto.tipo'])
-                    ->where(['venta_id' => $idSale])
                     ->innerJoin('producto', 'producto.id=detalle_venta.producto_id')
+                    ->where(['venta_id' => $idSale])
+                    ->andWhere(['<>', 'detalle_venta.estado', 'cancelado'])
                     ->asArray()
                     ->orderBy(['id' => SORT_DESC])
                     ->all();  

@@ -65,6 +65,7 @@ class DetalleVentaController extends \yii\web\Controller
                     ->groupBy(['producto_id', 'producto.nombre', 'producto.id' ])
                     ->orderBy(['cantidad' => SORT_DESC])
                     ->where(['producto.tipo' => 'comida'])
+                    ->andWhere(['<>', 'detalle_venta.estado', 'cancelado'])
                     ->asArray()
                     ->limit($quantity)
                     ->all();
@@ -94,13 +95,13 @@ class DetalleVentaController extends \yii\web\Controller
                     ->asArray()
                     ->one();
 
-        $products = Venta::find($idSale)
-                    ->select(['producto.nombre','producto.precio_venta', 'detalle_venta.cantidad'])
-                    ->where(['venta.id' => $idSale])
-                    ->leftJoin('detalle_venta', 'detalle_venta.venta_id = venta.id')
-                    ->leftJoin('producto', 'detalle_venta.producto_id = producto.id')
-                    ->asArray()
-                    ->all();
+        $products = DetalleVenta::find()
+                         ->select(['producto.nombre','producto.precio_venta', 'detalle_venta.cantidad'])
+                        ->innerJoin('producto', 'producto.id = detalle_venta.producto_id')
+                        ->where(['venta_id' => $idSale])
+                        ->andWhere(['<>','detalle_venta.estado', 'cancelado'])
+                        ->asArray()
+                        ->all();
         $response = [
             'success' => true, 
             'message' => 'Detalle de venta',
