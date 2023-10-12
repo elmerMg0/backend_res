@@ -96,7 +96,7 @@ class DetalleVentaController extends \yii\web\Controller
                     ->one();
 
         $products = DetalleVenta::find()
-                         ->select(['producto.nombre','producto.precio_venta', 'detalle_venta.cantidad'])
+                         ->select(['producto.nombre','producto.precio_venta', 'detalle_venta.cantidad', 'producto.id as producto_id'])
                         ->innerJoin('producto', 'producto.id = detalle_venta.producto_id')
                         ->where(['venta_id' => $idSale])
                         ->andWhere(['<>','detalle_venta.estado', 'cancelado'])
