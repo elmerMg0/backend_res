@@ -128,15 +128,16 @@ class DetalleVentaController extends \yii\web\Controller
 
         //return $productIds;
         $fechaFinWhole = $params['fechaFin'] . ' ' . '23:59:00.000';
-        $selectExpresionWeek = 'EXTRACT(WEEK FROM FECHA) as weekNumber';
-        $selectExpresionMonth = "CONCAT(EXTRACT(YEAR FROM fecha), '-', LPAD(EXTRACT(MONTH FROM fecha)::text, 2, '0')) as Fecha";
-
-        $expression = $type == 'week' ? $selectExpresionWeek : $selectExpresionMonth ;
+        $expressions = [
+            'week' => 'EXTRACT(WEEK FROM FECHA) as weekNumber',
+            'month' => "CONCAT(EXTRACT(YEAR FROM fecha), '-', LPAD(EXTRACT(MONTH FROM fecha)::text, 2, '0')) as Fecha",
+            'day' => 'DATE_TRUNC(\'day\', fecha) as dayNumber'
+        ];
 
         $query->select([
             'dv.producto_id',
             'p.nombre',
-            new \yii\db\Expression($expression),
+            new \yii\db\Expression($expressions[$type]),
             //new \yii\db\Expression('CONCAT(EXTRACT(YEAR FROM fecha), '/', LPAD(EXTRACT(MONTH FROM fecha)::text, 2, "0"), '/', LPAD(EXTRACT(WEEK FROM fecha)::text, 2, "0")) AS anio_mes_semana'),
             new \yii\db\Expression("SUM(dv.cantidad) OVER (PARTITION BY EXTRACT($type FROM fecha), dv.producto_id) AS cantidadTotal"),
         ])

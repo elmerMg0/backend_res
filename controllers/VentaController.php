@@ -573,7 +573,7 @@ class VentaController extends \yii\web\Controller
                     ->where(['venta_id' => $sale['id']])
                     ->andWhere(['<>', 'detalle_venta.estado', 'cancelado'])
                     ->innerJoin('producto', 'producto.id=detalle_venta.producto_id')
-                    ->orderBy(['id' => SORT_DESC])
+                    ->orderBy(['nombre' => SORT_DESC])
                     ->asArray()
                     ->all();
             $customer = Cliente::findOne($sale['cliente_id']);
@@ -667,7 +667,7 @@ class VentaController extends \yii\web\Controller
                     ->where(['venta_id' => $idSale])
                     ->andWhere(['<>', 'detalle_venta.estado', 'cancelado'])
                     ->asArray()
-                    ->orderBy(['id' => SORT_DESC])
+                    ->orderBy(['nombre' => SORT_DESC])
                     ->all();  
         $response = [
             'success' => true,
