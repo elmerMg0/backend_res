@@ -9,6 +9,7 @@ use Yii;
  *
  * @property int $id
  * @property string $nombre
+ * @property string $abreviatura
  *
  * @property Gasto[] $gastos
  */
@@ -28,8 +29,9 @@ class UnidadMedida extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['nombre'], 'required'],
-            [['nombre'], 'string', 'max' => 5],
+            [['nombre', 'abreviatura'], 'required'],
+            [['nombre'], 'string', 'max' => 15],
+            [['abreviatura'], 'string', 'max' => 5],
         ];
     }
 
@@ -41,6 +43,7 @@ class UnidadMedida extends \yii\db\ActiveRecord
         return [
             'id' => 'ID',
             'nombre' => 'Nombre',
+            'abreviatura' => 'Abreviatura',
         ];
     }
 
