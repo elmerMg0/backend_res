@@ -10,7 +10,7 @@ use Yii;
  * @property int $id
  * @property int $cantidad
  * @property float $precio_unitario
- * @property int $total
+ * @property float $total
  * @property string $fecha
  * @property string $estado
  * @property int $gasto_id
@@ -34,9 +34,9 @@ class RegistroGasto extends \yii\db\ActiveRecord
     {
         return [
             [['cantidad', 'precio_unitario', 'total', 'estado', 'gasto_id'], 'required'],
-            [['cantidad', 'total', 'gasto_id'], 'default', 'value' => null],
-            [['cantidad', 'total', 'gasto_id'], 'integer'],
-            [['precio_unitario'], 'number'],
+            [['cantidad', 'gasto_id'], 'default', 'value' => null],
+            [['cantidad', 'gasto_id'], 'integer'],
+            [['precio_unitario', 'total'], 'number'],
             [['fecha'], 'safe'],
             [['estado'], 'string', 'max' => 12],
             [['gasto_id'], 'exist', 'skipOnError' => true, 'targetClass' => Gasto::class, 'targetAttribute' => ['gasto_id' => 'id']],
