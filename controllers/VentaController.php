@@ -8,9 +8,12 @@ use app\models\Mesa;
 use app\models\Venta;
 use app\models\Periodo;
 use app\models\Producto;
+use app\models\RegistroGasto;
+use Faker\Calculator\Ean;
 use Yii;
 use yii\db\Query;
 use yii\data\Pagination;
+use yii\db\Expression;
 
 class VentaController extends \yii\web\Controller
 {
@@ -33,6 +36,7 @@ class VentaController extends \yii\web\Controller
                 'get-products-sale-by-day' => ['post'],
                 'create-sale' => ['post'],
                 'update-sale' => ['post'],
+                'get-total-sale-month' => ['get']
             ]
         ];
         $behaviors['authenticator'] = [
@@ -41,12 +45,12 @@ class VentaController extends \yii\web\Controller
         ];
         $behaviors['access'] = [
             'class' => \yii\filters\AccessControl::class,
-            'only' => ['get-sales', 'get-info-line-chart', 'get-sales-by-day', 'get-sale-detail','get-sale-detail-all','get-sale-detail-by-period', 'get-products-sale-by-day', 'create-sale', 'update-sale'], // acciones a las que se aplicará el control
+            'only' => ['get-sales', 'get-info-line-chart', 'get-sales-by-day', 'get-sale-detail','get-sale-detail-all','get-sale-detail-by-period', 'get-products-sale-by-day', 'create-sale', 'update-sale' ,'get-total-sale-month'], // acciones a las que se aplicará el control
             'except' => [''],    // acciones a las que no se aplicará el control
             'rules' => [
                 [
                     'allow' => true, // permitido o no permitido
-                    'actions' => ['get-sales', 'get-info-line-chart', 'get-sales-by-day', 'get-sale-detail','get-sale-detail-all', 'get-sale-detail-by-period', 'get-products-sale-by-day', 'create-sale', 'update-sale'], // acciones que siguen esta regla
+                    'actions' => ['get-sales', 'get-info-line-chart', 'get-sales-by-day', 'get-sale-detail','get-sale-detail-all', 'get-sale-detail-by-period', 'get-products-sale-by-day', 'create-sale', 'update-sale', 'get-total-sale-month'], // acciones que siguen esta regla
                     'roles' => ['administrador'] // control por roles  permisos
                 ],
                 [
@@ -787,4 +791,44 @@ class VentaController extends \yii\web\Controller
         return $response;
     }
 
+    public function actionGetTotalSaleMonth($month){
+
+        $query = new Query();
+
+        $expresion = 'DATE_TRUNC(\'month\', fecha) as dateMonth';
+        $monthNumber = 'extract ( month from fecha) ';
+        $query = Venta::find()
+            ->select([
+                new Expression($expresion),
+                'SUM(cantidad_total) as totalVentas',
+            ])
+            ->where(['estado' => 'pagado'])
+            ->andWhere(['=' ,new Expression($monthNumber), intval($month)])
+            ->groupBy(['DATE_TRUNC(\'month\', fecha)'])
+            ->asArray()
+            ->one();
+        //echo $query->createCommand()->getRawSql();
+        if($query){
+            $response = [
+                'success' => true,
+                'message' => 'Reportes global',
+                'reportGlobal' => $query
+            ];
+         }else{
+            $response = [
+                'success' => false,
+                'message' => 'No existe reportes',
+                'reportGlobal' => $query
+            ];
+         }
+
+         /* tear aqui todos los greoprtes del mes */
+        return $response;
+        
+        /* --Obtiene los gastos de todo el mes solo los pagados. gastos PAGADOS
+        select date_trunc('MONTH', fecha) as fechaMonth, sum(total)
+        from registro_gasto rg 
+        where extract ( month from fecha) = 10 and estado = 'pagado'
+        group by date_trunc('MONTH', fecha); */
+    }
 }

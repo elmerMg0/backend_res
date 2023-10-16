@@ -18,6 +18,7 @@ class RegistroGastoController extends \yii\web\Controller
                 'index' => ['get'],
                 'create-record' => ['post'],
                 'get-expense-records-filtered' => ['post'],
+                'update-expenseR-record' => ['get']
             ]
         ];
         $behaviors['authenticator'] = [
@@ -26,12 +27,12 @@ class RegistroGastoController extends \yii\web\Controller
         ];
         $behaviors['access'] = [
             'class' => \yii\filters\AccessControl::class,
-            'only' => ['create-record', 'get-expense-records-filtered'], // acciones a las que se aplicará el control
+            'only' => ['create-record', 'get-expense-records-filtered', 'update-expenseR-record'], // acciones a las que se aplicará el control
             'except' => [''],    // acciones a las que no se aplicará el control
             'rules' => [
                 [
                     'allow' => true, // permitido o no permitido
-                    'actions' => ['create-record', 'get-expense-records-filtered'], // acciones que siguen esta regla
+                    'actions' => ['create-record', 'get-expense-records-filtered', 'update-expenseR-record'], // acciones que siguen esta regla
                     'roles' => ['administrador'] // control por roles  permisos
                 ],
                 [
@@ -142,6 +143,34 @@ class RegistroGastoController extends \yii\web\Controller
             ],
             'expenses' => $expensesRecords
         ];
+        return $response;
+    }
+
+    public function actionUpdateExpenseRecord ($idExpenseRecord){
+        $expenseRecord = RegistroGasto::findOne($idExpenseRecord);
+
+        if($expenseRecord){
+            $expenseRecord -> estado = 'pagado';
+            if($expenseRecord -> save()){
+                $response = [
+                    'success' => true, 
+                    'message' => 'Registro de gasto actualizado'
+                ];
+            }else{
+                Yii::$app->getResponse()->setStatusCode(422, 'Data Validation Failed');
+                $response = [
+                    "success" => false,
+                    "message" => "Existen parametros incorrectos",
+                    'errors' => $expenseRecord->errors
+                ];
+            }
+        }else{
+            Yii::$app->getResponse()->setStatusCode(500);
+            $response = [
+                "success" => false,
+                "message" => "No se encontro el registro",
+            ];
+        }
         return $response;
     }
 }
