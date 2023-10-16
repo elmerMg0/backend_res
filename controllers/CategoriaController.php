@@ -47,9 +47,11 @@ class CategoriaController extends \yii\web\Controller
         return parent::beforeAction($action);
     }
 
-    public function actionIndex($pageSize = 5)
-    {
-        $query = Categoria::find();
+    public function actionIndex($name, $pageSize=5)
+    {   
+        if($name === 'undefined')$name = null;
+        $query = Categoria::find()
+                    ->andFilterWhere(['LIKE', 'UPPER(nombre)',  strtoupper($name)]);
 
         $pagination = new Pagination([
             'defaultPageSize' => $pageSize,
@@ -82,6 +84,7 @@ class CategoriaController extends \yii\web\Controller
 
     public function actionGetCategories () {
         $categories = Categoria::find()
+                    ->where(['estado' => 'Activo'])
                       ->orderBy(['id' => 'SORT_ASC'])             
                      ->all();
 
@@ -307,7 +310,9 @@ class CategoriaController extends \yii\web\Controller
     public function actionGetCategoryWithProducts(){
         $query = Categoria::find()
                     ->with(['productos' => function ($query) {
-                        $query->andWhere(['estado' => 'Activo']);
+                        $query
+                        ->select(['producto.*', 'producto.id as producto_id'])
+                        ->andWhere(['estado' => 'Activo']);
                     }])
                     ->orderBy(['id' => 'SORT_ASC'])
                     ->asArray()

@@ -85,11 +85,13 @@ class ProductoController extends \yii\web\Controller
         return parent::beforeAction($action);
     }
 
-    public function actionIndex($pageSize = 5)
+    public function actionIndex($name, $pageSize = 5)
     {
+        if($name === 'undefined')$name = null;
         $query = Producto::find()
                     ->select(['producto.*', 'categoria.nombre As nombre_categoria'])
-                    ->join('LEFT JOIN', 'categoria', 'categoria.id = producto.categoria_id');
+                    ->join('LEFT JOIN', 'categoria', 'categoria.id = producto.categoria_id')
+                    ->andFilterWhere(['LIKE', 'UPPER(producto.nombre)',  strtoupper($name)]);
 
         $pagination = new Pagination([
             'defaultPageSize' => $pageSize,

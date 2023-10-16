@@ -2,6 +2,7 @@
 
 namespace app\controllers;
 
+use app\models\DetalleVenta;
 use Yii;
 use app\models\Periodo;
 use app\models\Usuario;
@@ -66,7 +67,16 @@ class PeriodoController extends \yii\web\Controller
             $response = [
                 'success' => true,
                 'message' => 'Periodo iniciado con exito!',
-                'period' => $period
+                'period' => $period,
+                'info' => [
+                    'fechaInicio' => $period->fecha_inicio,
+                    'cajaInicial' => $period->caja_inicial,
+                    'totalSaleCash' => 0,
+                    'totalSaleCard' =>  0,
+                    'totalSaleTransfer' => 0,
+                    'totalSale' => 0,
+                    'totalSaleApp' => 0
+                    ]   
             ];
         } else {
             $response = [
@@ -148,11 +158,11 @@ class PeriodoController extends \yii\web\Controller
                     'info' => [
                         'fechaInicio' => $period->fecha_inicio,
                         'cajaInicial' => $period->caja_inicial,
-                        'totalSaleCash' => $totalSaleCash,
-                        'totalSaleCard' => $totalSaleCard,
-                        'totalSaleTransfer' => $totalSaleTransfer,
-                        'totalSale' => $totalSale,
-                        'totalSaleApp' => $totalSaleApp
+                        'totalSaleCash' => $totalSaleCash ? $totalSaleCash : 0,
+                        'totalSaleCard' => $totalSaleCard ? $totalSaleCard : 0,
+                        'totalSaleTransfer' => $totalSaleTransfer ? $totalSaleTransfer : 0,
+                        'totalSale' => $totalSale ? $totalSale: 0,
+                        'totalSaleApp' => $totalSaleApp ? $totalSaleApp : 0
                         ]   
                     ];
             } else {
@@ -202,11 +212,12 @@ class PeriodoController extends \yii\web\Controller
                 //vetnas totales hasta el momento 
                 $sales = Venta::find()
                         ->select(['SUM(detalle_venta.cantidad)', 'producto.nombre', 'sum(producto.precio_venta*detalle_venta.cantidad) as total'])
-                        ->where(['>=', 'fecha', $period-> fecha_inicio])
-                        ->andWhere(['venta.estado' => 'pagado'])
                         ->innerJoin('detalle_venta', 'detalle_venta.venta_id=venta.id')
                         ->innerJoin('producto', 'producto.id= detalle_venta.producto_id')
+                        ->where(['>=', 'fecha', $period-> fecha_inicio])
                         ->andWhere(['usuario_id' => $idUser])
+                        ->andWhere(['venta.estado' => 'pagado'])
+                        ->andWhere(['<>', 'detalle_venta.estado','cancelado'])
                         ->groupBy(['producto_id', 'producto.nombre'])
                         ->asArray()
                         ->all();
@@ -218,9 +229,10 @@ class PeriodoController extends \yii\web\Controller
                         ->innerJoin('detalle_venta', 'detalle_venta.venta_id=venta.id')
                         ->innerJoin('producto', 'producto.id= detalle_venta.producto_id')
                         ->andWhere(['usuario_id' => $idUser])
+                        ->andWhere(['<>', 'detalle_venta.estado','cancelado'])
                         ->groupBy(['producto.tipo'])
                         ->asArray()
-                        ->all();
+                        ->one();
 
                 $salesFoods = Venta::find()
                         ->select(['sum(producto.precio_venta*detalle_venta.cantidad) as total'])
@@ -229,9 +241,10 @@ class PeriodoController extends \yii\web\Controller
                         ->innerJoin('detalle_venta', 'detalle_venta.venta_id=venta.id')
                         ->innerJoin('producto', 'producto.id= detalle_venta.producto_id')
                         ->andWhere(['usuario_id' => $idUser])
+                        ->andWhere(['<>', 'detalle_venta.estado','cancelado'])
                         ->groupBy(['producto.tipo'])
                         ->asArray()
-                        ->all();
+                        ->one();
               
                 $response = [
                     'success' => true,
@@ -253,7 +266,7 @@ class PeriodoController extends \yii\web\Controller
         } else {
             $response = [
                 'success' => false,
-                'message' => 'No existe periodo',
+                'message' => 'No existe periodo iniciado',
             ];
         }
         return $response;

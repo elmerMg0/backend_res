@@ -130,8 +130,9 @@ class InventarioController extends \yii\web\Controller
 
     public function actionGetCurrentInventary ($pageSize=10){
         $query = Inventario::find() 
-                       ->with('producto')
-                       ->where(['last_one' => true] );
+                        ->select(['producto.nombre', 'producto.stock','fecha', 'total', 'nuevo_stock', 'precio_venta', 'precio_compra'])
+                        ->innerJoin('producto', 'producto.id = inventario.producto_id')
+                        ->where(['inventario.last_one' => true]);
 
         $pagination = new Pagination([
             'defaultPageSize' => $pageSize,
@@ -142,7 +143,7 @@ class InventarioController extends \yii\web\Controller
         $inventaries = $query 
             ->offset($pagination -> offset)
             -> limit($pagination -> limit)
-            ->orderBy(['id' => SORT_DESC])
+            ->orderBy(['producto.stock' => SORT_ASC])
             ->asArray()
             ->all();
         $currentPage = $pagination->getPage() + 1;

@@ -90,9 +90,11 @@ class SalonController extends \yii\web\Controller
         return $response;
     }
 
-    public function actionGetLounges (){
+    public function actionGetLounges ($estado = null){
+        
         $lounges = Salon::find()
-                        ->where(['estado' => true])
+                        ->filterWhere(['estado' => $estado])
+                        ->orderBy(['id' => SORT_ASC])
                         ->all();
         if($lounges){
             $response = [
