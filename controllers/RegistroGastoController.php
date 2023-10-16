@@ -16,9 +16,8 @@ class RegistroGastoController extends \yii\web\Controller
             "class" => \yii\filters\VerbFilter::class,
             "actions" => [
                 'index' => ['get'],
-                'create' => ['post'],
-                'update' => ['put', 'post'],
-                'delete' => ['delete'],
+                'create-record' => ['post'],
+                'get-expense-records-filtered' => ['post'],
             ]
         ];
         $behaviors['authenticator'] = [
@@ -27,12 +26,12 @@ class RegistroGastoController extends \yii\web\Controller
         ];
         $behaviors['access'] = [
             'class' => \yii\filters\AccessControl::class,
-            'only' => ['create'], // acciones a las que se aplicará el control
+            'only' => ['create-record', 'get-expense-records-filtered'], // acciones a las que se aplicará el control
             'except' => [''],    // acciones a las que no se aplicará el control
             'rules' => [
                 [
                     'allow' => true, // permitido o no permitido
-                    'actions' => ['create'], // acciones que siguen esta regla
+                    'actions' => ['create-record', 'get-expense-records-filtered'], // acciones que siguen esta regla
                     'roles' => ['administrador'] // control por roles  permisos
                 ],
                 [

@@ -16,9 +16,9 @@ class GastoController extends \yii\web\Controller
             "class" => \yii\filters\VerbFilter::class,
             "actions" => [
                 'index' => ['get'],
-                'create' => ['post'],
+                'create-expense' => ['post'],
                 'update' => ['put', 'post'],
-                'delete' => ['delete'],
+                'get-expenses' => ['GET'],
             ]
         ];
         $behaviors['authenticator'] = [
@@ -27,12 +27,12 @@ class GastoController extends \yii\web\Controller
         ];
         $behaviors['access'] = [
             'class' => \yii\filters\AccessControl::class,
-            'only' => ['create'], // acciones a las que se aplicará el control
+            'only' => ['create-expense', 'get-expenses'], // acciones a las que se aplicará el control
             'except' => [''],    // acciones a las que no se aplicará el control
             'rules' => [
                 [
                     'allow' => true, // permitido o no permitido
-                    'actions' => ['create'], // acciones que siguen esta regla
+                    'actions' => ['create-expense', 'get-expenses'], // acciones que siguen esta regla
                     'roles' => ['administrador'] // control por roles  permisos
                 ],
                 [
