@@ -11,6 +11,7 @@ use Yii;
  * @property string $nombre
  * @property int $unidad_medida_id
  * @property string $create_ts
+ * @property string $update_ts
  *
  * @property RegistroGasto[] $registroGastos
  * @property UnidadMedida $unidadMedida
@@ -34,7 +35,7 @@ class Gasto extends \yii\db\ActiveRecord
             [['nombre', 'unidad_medida_id'], 'required'],
             [['unidad_medida_id'], 'default', 'value' => null],
             [['unidad_medida_id'], 'integer'],
-            [['create_ts'], 'safe'],
+            [['create_ts', 'update_ts'], 'safe'],
             [['nombre'], 'string', 'max' => 50],
             [['unidad_medida_id'], 'exist', 'skipOnError' => true, 'targetClass' => UnidadMedida::class, 'targetAttribute' => ['unidad_medida_id' => 'id']],
         ];
@@ -50,6 +51,7 @@ class Gasto extends \yii\db\ActiveRecord
             'nombre' => 'Nombre',
             'unidad_medida_id' => 'Unidad Medida ID',
             'create_ts' => 'Create Ts',
+            'update_ts' => 'Update Ts',
         ];
     }
 

@@ -30,7 +30,7 @@ class UnidadMedida extends \yii\db\ActiveRecord
     {
         return [
             [['nombre', 'abreviatura'], 'required'],
-            [['nombre'], 'string', 'max' => 15],
+            [['nombre'], 'string', 'max' => 20],
             [['abreviatura'], 'string', 'max' => 5],
         ];
     }
