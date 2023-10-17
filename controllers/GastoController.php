@@ -2,6 +2,7 @@
 
 namespace app\controllers;
 
+use app\models\CategoriaGasto;
 use app\models\Gasto;
 use app\models\UnidadMedida;
 use Exception;
@@ -71,6 +72,17 @@ class GastoController extends \yii\web\Controller
 
         return $response;
     }
+
+    public function actionGetExpenseCategories(){
+        $expenseCategories = CategoriaGasto::find()->all();
+
+        $response = [
+            'success' => true,
+            'message' => 'Lista de categorias de gastos',
+            'expenseCategories' => $expenseCategories
+        ];
+        return $response;
+    }
     public function actionCreateExpense(){
         $params = Yii::$app->getRequest()->getBodyParams();
         $expense = new Gasto();
@@ -116,5 +128,4 @@ class GastoController extends \yii\web\Controller
         ];
         return $reponse;
     }
-
 }

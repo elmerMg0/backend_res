@@ -2,6 +2,7 @@
 
 namespace app\controllers;
 
+use app\models\CategoriaGasto;
 use app\models\Cliente;
 use app\models\DetalleVenta;
 use app\models\Mesa;
@@ -793,9 +794,7 @@ class VentaController extends \yii\web\Controller
 
     public function actionGetTotalSaleMonth($month){
 
-        $query = new Query();
-
-        $expresion = 'DATE_TRUNC(\'month\', fecha) as dateMonth';
+        $expresion = 'DATE(DATE_TRUNC(\'month\', fecha)) as dateMonth';
         $monthNumber = 'extract ( month from fecha) ';
         $query = Venta::find()
             ->select([
@@ -804,31 +803,36 @@ class VentaController extends \yii\web\Controller
             ])
             ->where(['estado' => 'pagado'])
             ->andWhere(['=' ,new Expression($monthNumber), intval($month)])
-            ->groupBy(['DATE_TRUNC(\'month\', fecha)'])
+            ->groupBy(['DATE(DATE_TRUNC(\'month\', fecha))'])
             ->asArray()
             ->one();
         //echo $query->createCommand()->getRawSql();
+
+        
+        $query2 = new Query();
+
+        $reportGlobal =  $query2
+                ->distinct()
+                ->select(['cg.nombre', 'SUM(total) OVER (PARTITION BY categoria_gasto_id) as TotalCantidad'])
+                ->from(['gasto g'])
+                ->innerJoin('registro_gasto rg', 'rg.gasto_id = g.id')
+                ->innerJoin('categoria_gasto cg', 'cg.id = g.categoria_gasto_id')
+                ->where([ 'estado' => 'pagado','EXTRACT(MONTH FROM fecha)' => 10,])
+                ->all();
         if($query){
             $response = [
                 'success' => true,
                 'message' => 'Reportes global',
-                'reportGlobal' => $query
+                'sales' => $query,
+                'reportGlobal' => $reportGlobal
             ];
          }else{
             $response = [
                 'success' => false,
                 'message' => 'No existe reportes',
-                'reportGlobal' => $query
+                'sales' => $query,
             ];
-         }
-
-         /* tear aqui todos los greoprtes del mes */
+         }  
         return $response;
-        
-        /* --Obtiene los gastos de todo el mes solo los pagados. gastos PAGADOS
-        select date_trunc('MONTH', fecha) as fechaMonth, sum(total)
-        from registro_gasto rg 
-        where extract ( month from fecha) = 10 and estado = 'pagado'
-        group by date_trunc('MONTH', fecha); */
     }
 }
