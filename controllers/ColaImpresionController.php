@@ -160,9 +160,9 @@ class ColaImpresionController extends \yii\web\Controller
                 'username' => $sale ["username"],
                 'cantidad_total' => $sale ['cantidad_total']
             ];
+            $print -> estado = true;
+            $print -> save();
             if($send){
-                $print -> estado = true;
-                $print -> save();
                 $printSpooler[] = $infoSale;
             }
             DetalleVenta::updateAll(['impreso' => true], [
