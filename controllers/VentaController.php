@@ -521,6 +521,7 @@ class VentaController extends \yii\web\Controller
             ->innerJoin('detalle_venta', 'venta.id = detalle_venta.venta_id')
             ->innerJoin('producto', 'detalle_venta.producto_id = producto.id')
             ->where(['DATE(venta.fecha)' => $params['fecha'], 'venta.estado' => 'pagado'])
+            ->andWhere(["<>", 'detalle_venta.estado', 'cancelado'])
             ->groupBy(['producto.nombre', 'producto.id'])
             ->orderBy(['cantidad_vendida' => SORT_DESC]);
         if($query){
