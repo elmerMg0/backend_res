@@ -56,42 +56,50 @@ class PeriodoController extends \yii\web\Controller
 
     public function actionStartPeriod($userId)
     {
-        $params = Yii::$app->getRequest()->getBodyParams();
-        $period = new Periodo();
-        date_default_timezone_set('America/La_Paz');
-        $period->fecha_inicio = date('Y-m-d H:i:s');
-        $period->estado = true;
-        $period->caja_inicial = $params['cajaInicial'];
-        $period->usuario_id = $userId;
-        if ($period->save()) {
-            $response = [
-                'success' => true,
-                'message' => 'Periodo iniciado con exito!',
-                'period' => $period,
-                'info' => [
-                    'fechaInicio' => $period->fecha_inicio,
-                    'cajaInicial' => $period->caja_inicial,
-                    'totalSaleCash' => 0,
-                    'totalSaleCard' =>  0,
-                    'totalSaleTransfer' => 0,
-                    'totalSale' => 0,
-                    'totalSaleApp' => 0
-                    ]   
-            ];
-        } else {
-            $response = [
-                'success' => false,
-                'message' => 'Existen parametros incorrectos',
-                'errors' => $period->errors
-            ];
-        }
 
+        /* Validar que no pueda agregar otro periodo si ya existe uno. */
+        $exists = Periodo::find()->where(['usuario_id' => $userId, 'estado' => true])->all();
+        if(!$exists){
+            $params = Yii::$app->getRequest()->getBodyParams();
+            $period = new Periodo();
+            date_default_timezone_set('America/La_Paz');
+            $period->fecha_inicio = date('Y-m-d H:i:s');
+            $period->estado = true;
+            $period->caja_inicial = $params['cajaInicial'];
+            $period->usuario_id = $userId;
+            if ($period->save()) {
+                $response = [
+                    'success' => true,
+                    'message' => 'Periodo iniciado con exito!',
+                    'period' => $period,
+                    'info' => [
+                        'fechaInicio' => $period->fecha_inicio,
+                        'cajaInicial' => $period->caja_inicial,
+                        'totalSaleCash' => 0,
+                        'totalSaleCard' =>  0,
+                        'totalSaleTransfer' => 0,
+                        'totalSale' => 0,
+                        'totalSaleApp' => 0
+                        ]   
+                ];
+            } else {
+                $response = [
+                    'success' => false,
+                    'message' => 'Existen parametros incorrectos',
+                    'errors' => $period->errors
+                ];
+            }
+         }else{
+            $response = [
+            'success' => false,
+            'message' => 'Ya existe un perido activo, actualice la pagina por favor.'
+            ];
+          }
         return $response;
     }
+
     public function actionClosePeriod( $idPeriod, $idUser)
     {
-        $user = Usuario::findOne($idUser);
-
         $params = Yii::$app->getRequest()->getBodyParams();
         $period = Periodo::findOne($idPeriod);
          date_default_timezone_set('America/La_Paz');
@@ -99,9 +107,9 @@ class PeriodoController extends \yii\web\Controller
         $period->estado = false;
 
         $totalSale = Venta::find()
-        ->where(['>=', 'fecha', $period->fecha_inicio])
-        ->andWhere(['usuario_id' => $user->id])
-        ->sum('cantidad_total');
+                ->where(['>=', 'fecha', $period->fecha_inicio])
+                ->andWhere(['usuario_id' => $idUser, 'estado' => 'pagado'])
+                ->sum('cantidad_total');
 
         $period->total_ventas = $totalSale;
         $period->total_cierre_caja = $params['totalCierreCaja'];

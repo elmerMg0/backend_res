@@ -2,15 +2,19 @@
 
 namespace app\controllers;
 
+use app\models\CategoriaGasto;
 use app\models\Cliente;
 use app\models\DetalleVenta;
 use app\models\Mesa;
 use app\models\Venta;
 use app\models\Periodo;
 use app\models\Producto;
+use app\models\RegistroGasto;
+use Faker\Calculator\Ean;
 use Yii;
 use yii\db\Query;
 use yii\data\Pagination;
+use yii\db\Expression;
 
 class VentaController extends \yii\web\Controller
 {
@@ -33,6 +37,7 @@ class VentaController extends \yii\web\Controller
                 'get-products-sale-by-day' => ['post'],
                 'create-sale' => ['post'],
                 'update-sale' => ['post'],
+                'get-total-sale-month' => ['get']
             ]
         ];
         $behaviors['authenticator'] = [
@@ -41,12 +46,12 @@ class VentaController extends \yii\web\Controller
         ];
         $behaviors['access'] = [
             'class' => \yii\filters\AccessControl::class,
-            'only' => ['get-sales', 'get-info-line-chart', 'get-sales-by-day', 'get-sale-detail','get-sale-detail-all','get-sale-detail-by-period', 'get-products-sale-by-day', 'create-sale', 'update-sale'], // acciones a las que se aplicará el control
+            'only' => ['get-sales', 'get-info-line-chart', 'get-sales-by-day', 'get-sale-detail','get-sale-detail-all','get-sale-detail-by-period', 'get-products-sale-by-day', 'create-sale', 'update-sale' ,'get-total-sale-month'], // acciones a las que se aplicará el control
             'except' => [''],    // acciones a las que no se aplicará el control
             'rules' => [
                 [
                     'allow' => true, // permitido o no permitido
-                    'actions' => ['get-sales', 'get-info-line-chart', 'get-sales-by-day', 'get-sale-detail','get-sale-detail-all', 'get-sale-detail-by-period', 'get-products-sale-by-day', 'create-sale', 'update-sale'], // acciones que siguen esta regla
+                    'actions' => ['get-sales', 'get-info-line-chart', 'get-sales-by-day', 'get-sale-detail','get-sale-detail-all', 'get-sale-detail-by-period', 'get-products-sale-by-day', 'create-sale', 'update-sale', 'get-total-sale-month'], // acciones que siguen esta regla
                     'roles' => ['administrador'] // control por roles  permisos
                 ],
                 [
@@ -516,6 +521,7 @@ class VentaController extends \yii\web\Controller
             ->innerJoin('detalle_venta', 'venta.id = detalle_venta.venta_id')
             ->innerJoin('producto', 'detalle_venta.producto_id = producto.id')
             ->where(['DATE(venta.fecha)' => $params['fecha'], 'venta.estado' => 'pagado'])
+            ->andWhere(["<>", 'detalle_venta.estado', 'cancelado'])
             ->groupBy(['producto.nombre', 'producto.id'])
             ->orderBy(['cantidad_vendida' => SORT_DESC]);
         if($query){
@@ -787,4 +793,77 @@ class VentaController extends \yii\web\Controller
         return $response;
     }
 
+    public function actionGetTotalSaleMonth($month){
+
+        $expresion = 'DATE(DATE_TRUNC(\'month\', fecha)) as dateMonth';
+        $monthNumber = 'extract ( month from fecha) ';
+        $query = Venta::find()
+            ->select([
+                new Expression($expresion),
+                'SUM(cantidad_total) as totalVentas',
+            ])
+            ->where(['estado' => 'pagado'])
+            ->andWhere(['=' ,new Expression($monthNumber), intval($month)])
+            ->groupBy(['DATE(DATE_TRUNC(\'month\', fecha))'])
+            ->asArray()
+            ->one();
+        //echo $query->createCommand()->getRawSql();
+
+        
+        $query2 = new Query();
+
+        $reportGlobal =  $query2
+                ->distinct()
+                ->select(['cg.nombre', 'SUM(total) OVER (PARTITION BY categoria_gasto_id) as TotalCantidad'])
+                ->from(['gasto g'])
+                ->innerJoin('registro_gasto rg', 'rg.gasto_id = g.id')
+                ->innerJoin('categoria_gasto cg', 'cg.id = g.categoria_gasto_id')
+                ->where([ 'estado' => 'pagado','EXTRACT(MONTH FROM fecha)' => 10,])
+                ->all();
+        if($query){
+            $response = [
+                'success' => true,
+                'message' => 'Reportes global',
+                'sales' => $query,
+                'reportGlobal' => $reportGlobal
+            ];
+         }else{
+            $response = [
+                'success' => false,
+                'message' => 'No existe reportes',
+                'sales' => $query,
+            ];
+         }  
+        return $response;
+    }
+
+    public function actionChangeTable( $idTableOld, $idTableNew){
+        $sale = Venta::find()
+                        ->where(['mesa_id' => $idTableOld, 'venta.estado' => 'consumiendo' ])
+                        -> one();
+        if($sale){
+            $sale -> mesa_id = $idTableNew;
+            $tableNew = Mesa::findOne($idTableNew);
+            $tableOld = Mesa::findOne($idTableOld);
+            $tableNew -> estado = 'ocupado';
+            $tableOld -> estado = 'disponible';
+            if($sale -> save() && $tableNew -> save() && $tableOld -> save()){
+                $response = [
+                    'success' => true,
+                    'message' => 'Cambio exitoso'
+                ];
+            }else{
+                $response = [
+                    'success' => false,
+                    'message' => 'Ocurrio un error'
+                ];
+            }
+        }else{
+            $response = [
+                'success' => false,
+                'message' => 'No hay pedidos'
+            ];
+        }
+        return $response;
+    }
 }

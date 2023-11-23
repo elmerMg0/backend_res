@@ -130,7 +130,7 @@ class DetalleVentaController extends \yii\web\Controller
         $fechaFinWhole = $params['fechaFin'] . ' ' . '23:59:00.000';
         $expressions = [
             'week' => 'EXTRACT(WEEK FROM FECHA) as weekNumber',
-            'month' => "CONCAT(EXTRACT(YEAR FROM fecha), '-', LPAD(EXTRACT(MONTH FROM fecha)::text, 2, '0')) as Fecha",
+            'month' => 'DATE_TRUNC(\'month\' ,fecha) as Fecha',
             'day' => 'DATE_TRUNC(\'day\', fecha) as dayNumber'
         ];
 
@@ -139,7 +139,7 @@ class DetalleVentaController extends \yii\web\Controller
             'p.nombre',
             new \yii\db\Expression($expressions[$type]),
             //new \yii\db\Expression('CONCAT(EXTRACT(YEAR FROM fecha), '/', LPAD(EXTRACT(MONTH FROM fecha)::text, 2, "0"), '/', LPAD(EXTRACT(WEEK FROM fecha)::text, 2, "0")) AS anio_mes_semana'),
-            new \yii\db\Expression("SUM(dv.cantidad) OVER (PARTITION BY EXTRACT($type FROM fecha), dv.producto_id) AS cantidadTotal"),
+            new \yii\db\Expression("SUM(dv.cantidad) OVER (PARTITION BY DATE_TRUNC('$type' , fecha), dv.producto_id ) AS cantidadTotal"),
         ])
         ->distinct()
         ->from('detalle_venta dv')
