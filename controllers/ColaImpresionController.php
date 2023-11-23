@@ -137,6 +137,18 @@ class ColaImpresionController extends \yii\web\Controller
                     //cuando hay producto envaidos pero no son comida.
                     $send = false;
                 }
+            }else if($print -> area == 'bar'){
+                $orderDetail = DetalleVenta::find()
+                                ->select(['detalle_venta.cantidad', 'detalle_venta.estado', 'producto.nombre','producto.tipo','producto.precio_venta','producto.precio_compra' ,'detalle_venta.id'])
+                                ->innerJoin('producto' , 'producto.id=detalle_venta.producto_id')
+                                ->where(['venta_id' => $print -> venta_id, 'producto.tipo' => 'bebida', 'impreso' => false])
+                                ->andWhere(['<>', 'detalle_venta.estado', 'cancelado'])
+                                ->asArray()
+                                ->all();
+                if(!$orderDetail){
+                    //cuando hay producto enviados pero no son bebida.
+                    $send = false;
+                }
             }else{
                 $orderDetail = DetalleVenta::find()
                                 ->select(['detalle_venta.cantidad', 'detalle_venta.estado as estado', 'producto.*','producto.id as producto_id' ,'detalle_venta.id'])
