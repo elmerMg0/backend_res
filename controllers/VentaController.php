@@ -835,4 +835,34 @@ class VentaController extends \yii\web\Controller
          }  
         return $response;
     }
+
+    public function actionChangeTable( $idTableOld, $idTableNew){
+        $sale = Venta::find()
+                        ->where(['mesa_id' => $idTableOld, 'venta.estado' => 'consumiendo' ])
+                        -> one();
+        if($sale){
+            $sale -> mesa_id = $idTableNew;
+            $tableNew = Mesa::findOne($idTableNew);
+            $tableOld = Mesa::findOne($idTableOld);
+            $tableNew -> estado = 'ocupado';
+            $tableOld -> estado = 'disponible';
+            if($sale -> save() && $tableNew -> save() && $tableOld -> save()){
+                $response = [
+                    'success' => true,
+                    'message' => 'Cambio exitoso'
+                ];
+            }else{
+                $response = [
+                    'success' => false,
+                    'message' => 'Ocurrio un error'
+                ];
+            }
+        }else{
+            $response = [
+                'success' => false,
+                'message' => 'No hay pedidos'
+            ];
+        }
+        return $response;
+    }
 }
