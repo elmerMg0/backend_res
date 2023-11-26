@@ -136,7 +136,26 @@ class ColaImpresionController extends \yii\web\Controller
                 if(!$orderDetail){
                     //cuando hay producto envaidos pero no son comida.
                     $send = false;
+                }else{
+                        $detalleVentaIds = array_column($orderDetail, 'id');
+                        DetalleVenta::updateAll(['impreso' => true], ['id' => $detalleVentaIds]);
                 }
+            }else if($print -> area == 'bar'){
+                $orderDetail = DetalleVenta::find()
+                                ->select(['detalle_venta.cantidad', 'detalle_venta.estado', 'producto.nombre','producto.tipo','producto.precio_venta','producto.precio_compra' ,'detalle_venta.id'])
+                                ->innerJoin('producto' , 'producto.id=detalle_venta.producto_id')
+                                ->where(['venta_id' => $print -> venta_id, 'producto.tipo' => 'bebida', 'impreso' => false])
+                                ->andWhere(['<>', 'detalle_venta.estado', 'cancelado'])
+                                ->asArray()
+                                ->all();
+                if(!$orderDetail){
+                    //cuando hay producto enviados pero no son bebida.
+                    $send = false;
+                }else{
+                    $detalleVentaIds = array_column($orderDetail, 'id');
+                    DetalleVenta::updateAll(['impreso' => true], ['id' => $detalleVentaIds]);
+                }
+               
             }else{
                 $orderDetail = DetalleVenta::find()
                                 ->select(['detalle_venta.cantidad', 'detalle_venta.estado as estado', 'producto.*','producto.id as producto_id' ,'detalle_venta.id'])
@@ -153,7 +172,7 @@ class ColaImpresionController extends \yii\web\Controller
                 'nro_pedido' => $sale ["numero_pedido"],
                 'nro_mesa' => $sale ["mesa"],
                 'cliente' => $sale ["cliente"],
-                'orderDetail' => $orderDetail,
+                'orderDetails' => $orderDetail,
                 'note' => $sale['nota'],
                 'printerName' => $printer -> nombre,
                 'place' => $printer -> lugar,
@@ -165,20 +184,7 @@ class ColaImpresionController extends \yii\web\Controller
             if($send){
                 $printSpooler[] = $infoSale;
             }
-            DetalleVenta::updateAll(['impreso' => true], [
-                'venta_id' => $print->venta_id,
-                'impreso' => false,
-            ]);
-
-//            return $orderDetail;
-            //$orderDetail::updateAll(['estado_detalle_venta' => 'enviado'],['estado' => 'enviado_cocina']);
-           /*  for($i = 0 ; $i < count($    ); $i++){
-                $order = DetalleVenta::findOne($orderDetail[$i]['id']);
-                $order["estado"] = 'enviado_cocina';
-                $order -> save();
-            } */
         }
-        
         $response = [ 
             'success' => true,
             'message' => 'Cola de impresions',
