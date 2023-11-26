@@ -701,7 +701,7 @@ class VentaController extends \yii\web\Controller
         $sale = Venta::findOne($idSale);
         $params = Yii::$app->getRequest()->getBodyParams();
         $sale -> load($params, '');
-      
+        $this -> createPrintSpooler( $idSale, "salon");
         if ($sale->save()) {
             $table = Mesa::findOne($sale -> mesa_id);
             $table -> estado = 'disponible';
