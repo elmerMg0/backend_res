@@ -9,8 +9,8 @@ use Yii;
  *
  * @property int $id
  * @property string $fecha
- * @property int|null $cantidad_total
- * @property int|null $cantidad_cancelada
+ * @property float|null $cantidad_total
+ * @property float|null $cantidad_cancelada
  * @property int $usuario_id
  * @property int $numero_pedido
  * @property int|null $cliente_id
@@ -19,7 +19,7 @@ use Yii;
  * @property string|null $tipo
  * @property string|null $hora
  * @property string|null $tipo_entrega
- * @property int|null $mesa_id
+ * @property int $mesa_id
  * @property bool|null $finalizado
  * @property string|null $nota
  *
@@ -46,9 +46,10 @@ class Venta extends \yii\db\ActiveRecord
     {
         return [
             [['fecha'], 'safe'],
-            [['cantidad_total', 'cantidad_cancelada', 'usuario_id', 'numero_pedido', 'cliente_id', 'mesa_id'], 'default', 'value' => null],
-            [['cantidad_total', 'cantidad_cancelada', 'usuario_id', 'numero_pedido', 'cliente_id', 'mesa_id'], 'integer'],
-            [['usuario_id', 'numero_pedido', 'estado'], 'required'],
+            [['cantidad_total', 'cantidad_cancelada'], 'number'],
+            [['usuario_id', 'numero_pedido', 'estado', 'mesa_id'], 'required'],
+            [['usuario_id', 'numero_pedido', 'cliente_id', 'mesa_id'], 'default', 'value' => null],
+            [['usuario_id', 'numero_pedido', 'cliente_id', 'mesa_id'], 'integer'],
             [['tipo_pago', 'nota'], 'string'],
             [['finalizado'], 'boolean'],
             [['estado'], 'string', 'max' => 50],

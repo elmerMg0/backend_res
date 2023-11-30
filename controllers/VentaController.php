@@ -5,6 +5,7 @@ namespace app\controllers;
 use app\models\Cliente;
 use app\models\ColaImpresion;
 use app\models\DetalleVenta;
+use app\models\Impresora;
 use app\models\Mesa;
 use app\models\Venta;
 use app\models\Periodo;
@@ -616,6 +617,9 @@ class VentaController extends \yii\web\Controller
     }
 
     private function createPrintSpooler($idSale, $place){
+        $printer = Impresora::find()->where(['lugar' => $place])->one();
+        if(!$printer)return;
+
         $printerSpooler = New ColaImpresion();
         $printerSpooler -> venta_id = $idSale;
         $printerSpooler -> estado = false;
@@ -623,7 +627,7 @@ class VentaController extends \yii\web\Controller
         $printerSpooler -> save();
     }
     public function actionUpdateSaleImproved($idSale){
-        $idSale = isset($idSale) ? $idSale: null;
+        $idSale = isset($idSale) ? $idSale : null;
         $params = Yii::$app->getRequest()->getBodyParams();
         if(!$idSale){
             $sale = new Venta();
@@ -636,6 +640,9 @@ class VentaController extends \yii\web\Controller
             $numberOrder = Venta::find()->all();
             $sale->numero_pedido = count($numberOrder) + 1;
             $sale -> save();
+            $table = Mesa::findOne($params['mesa_id']);
+            $table -> estado = 'ocupado';
+            $table -> save();
         }else{
             $sale = Venta::findOne($idSale);
         }
@@ -646,7 +653,7 @@ class VentaController extends \yii\web\Controller
         $sale -> save();
 
         $saleDetail = DetalleVenta::find()
-                    ->where(['venta_id' => $idSale])
+                    ->where(['venta_id' => $sale -> id])
                     ->andWhere(['<>', 'estado', 'cancelado'])
                     ->all(); 
 
@@ -657,11 +664,13 @@ class VentaController extends \yii\web\Controller
             if($existsNewFoods)$this -> createPrintSpooler( $sale -> id , "cocina");
             if($existsNewDrinks) $this -> createPrintSpooler($sale -> id , "bar");
         }
+
+
         for($i = 0; $i < count($orderDetail); $i++){
             $detail = $orderDetail[$i];
 
             if($detail ["estado"] === 'nuevo'){
-                $this->addNewOrderDetail($detail, $idSale, $params['userAgent'], $detail['cantidad']);
+                $this->addNewOrderDetail($detail, $sale -> id, $params['userAgent'], $detail['cantidad']);
                 $sale -> finalizado = false;
                 $sale -> save();
             } 
@@ -684,7 +693,7 @@ class VentaController extends \yii\web\Controller
                         if($difference < 0){
                             DetalleVenta::updateAll(['cantidad' => $detail['cantidad']], ['id' => $detail["id"]]);
                         }
-                        $this->addNewOrderDetail($detail, $idSale, $params['userAgent'], $difference);
+                        $this->addNewOrderDetail($detail, $sale -> id, $params['userAgent'], $difference);
                         $sale -> finalizado = false;
                         $sale -> save();
                     }
@@ -696,15 +705,16 @@ class VentaController extends \yii\web\Controller
                     ->select(['detalle_venta.*', 'producto.nombre', 'producto.stock', 'producto.precio_venta', 'producto.precio_compra'
                     ,'producto.tipo'])
                     ->innerJoin('producto', 'producto.id=detalle_venta.producto_id')
-                    ->where(['venta_id' => $idSale])
+                    ->where(['venta_id' => $sale -> id])
                     ->andWhere(['<>', 'detalle_venta.estado', 'cancelado'])
                     ->asArray()
-                    ->orderBy(['nombre' => SORT_DESC])
+                    ->orderBy([ 'id' => SORT_DESC, 'nombre' => SORT_DESC])
                     ->all();  
         $response = [
             'success' => true,
             'message' => 'Pedidos enviados.',
-            'orderDetailCurrently' => $saleDetailFull
+            'orderDetailCurrently' => $saleDetailFull,
+            'sale' => $sale
 
         ];
     return $response;
