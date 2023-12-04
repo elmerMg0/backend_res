@@ -2,15 +2,13 @@
 
 namespace app\controllers;
 
-use app\models\CategoriaGasto;
 use app\models\Cliente;
+use app\models\ColaImpresion;
 use app\models\DetalleVenta;
 use app\models\Mesa;
 use app\models\Venta;
 use app\models\Periodo;
 use app\models\Producto;
-use app\models\RegistroGasto;
-use Faker\Calculator\Ean;
 use Yii;
 use yii\db\Query;
 use yii\data\Pagination;
@@ -617,11 +615,32 @@ class VentaController extends \yii\web\Controller
         $newSaleDetail -> save();
     }
 
+    private function createPrintSpooler($idSale, $place){
+        $printerSpooler = New ColaImpresion();
+        $printerSpooler -> venta_id = $idSale;
+        $printerSpooler -> estado = false;
+        $printerSpooler -> area = $place;
+        $printerSpooler -> save();
+    }
     public function actionUpdateSaleImproved($idSale){
+        $idSale = isset($idSale) ? $idSale: null;
         $params = Yii::$app->getRequest()->getBodyParams();
+        if(!$idSale){
+            $sale = new Venta();
+            $sale -> usuario_id = $params['usuario_id'];
+            $sale -> mesa_id = $params['mesa_id'];
+            $sale -> cliente_id = $params['cliente_id'];
+            $sale -> estado = 'consumiendo';
+            date_default_timezone_set('America/La_Paz');
+            $sale -> fecha = date('Y-m-d H:i:s');
+            $numberOrder = Venta::find()->all();
+            $sale->numero_pedido = count($numberOrder) + 1;
+            $sale -> save();
+        }else{
+            $sale = Venta::findOne($idSale);
+        }
         $orderDetail = $params['orderDetail']; //actualizado con estado nuevo/enviado/enviado-impresora
         //nota y cliente
-        $sale = Venta::findOne($idSale);
         $sale -> cliente_id = $params['cliente_id'];
         $sale -> nota = $params['note'];
         $sale -> save();
@@ -631,6 +650,13 @@ class VentaController extends \yii\web\Controller
                     ->andWhere(['<>', 'estado', 'cancelado'])
                     ->all(); 
 
+        //Si el cliente es distinto de windows, se crea la cola de impresion
+        if($params['userAgent'] !== 'windows' ){
+            $existsNewFoods = $params['existsSomeFoodWithoutPrint'];
+            $existsNewDrinks = $params['existsSomeDrinkWithoutPrint'];
+            if($existsNewFoods)$this -> createPrintSpooler( $sale -> id , "cocina");
+            if($existsNewDrinks) $this -> createPrintSpooler($sale -> id , "bar");
+        }
         for($i = 0; $i < count($orderDetail); $i++){
             $detail = $orderDetail[$i];
 
@@ -689,7 +715,7 @@ class VentaController extends \yii\web\Controller
         $sale = Venta::findOne($idSale);
         $params = Yii::$app->getRequest()->getBodyParams();
         $sale -> load($params, '');
-      
+        if($params['userAgent'] !== 'windows' )$this -> createPrintSpooler( $idSale, "salon");
         if ($sale->save()) {
             $table = Mesa::findOne($sale -> mesa_id);
             $table -> estado = 'disponible';
