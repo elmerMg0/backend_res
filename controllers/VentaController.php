@@ -623,10 +623,24 @@ class VentaController extends \yii\web\Controller
         $printerSpooler -> save();
     }
     public function actionUpdateSaleImproved($idSale){
+        $idSale = isset($idSale) ? $idSale: null;
         $params = Yii::$app->getRequest()->getBodyParams();
+        if(!$idSale){
+            $sale = new Venta();
+            $sale -> usuario_id = $params['usuario_id'];
+            $sale -> mesa_id = $params['mesa_id'];
+            $sale -> cliente_id = $params['cliente_id'];
+            $sale -> estado = 'consumiendo';
+            date_default_timezone_set('America/La_Paz');
+            $sale -> fecha = date('Y-m-d H:i:s');
+            $numberOrder = Venta::find()->all();
+            $sale->numero_pedido = count($numberOrder) + 1;
+            $sale -> save();
+        }else{
+            $sale = Venta::findOne($idSale);
+        }
         $orderDetail = $params['orderDetail']; //actualizado con estado nuevo/enviado/enviado-impresora
         //nota y cliente
-        $sale = Venta::findOne($idSale);
         $sale -> cliente_id = $params['cliente_id'];
         $sale -> nota = $params['note'];
         $sale -> save();
@@ -701,7 +715,7 @@ class VentaController extends \yii\web\Controller
         $sale = Venta::findOne($idSale);
         $params = Yii::$app->getRequest()->getBodyParams();
         $sale -> load($params, '');
-        $this -> createPrintSpooler( $idSale, "salon");
+        if($params['userAgent'] !== 'windows' )$this -> createPrintSpooler( $idSale, "salon");
         if ($sale->save()) {
             $table = Mesa::findOne($sale -> mesa_id);
             $table -> estado = 'disponible';
