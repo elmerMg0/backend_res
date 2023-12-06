@@ -829,7 +829,7 @@ class VentaController extends \yii\web\Controller
         return $response;
     }
 
-    public function actionGetTotalSaleMonth($month){
+    public function actionGetTotalSaleMonth($month, $year){
 
         $expresion = 'DATE(DATE_TRUNC(\'month\', fecha)) as dateMonth';
         $monthNumber = 'extract ( month from fecha) ';
@@ -838,7 +838,7 @@ class VentaController extends \yii\web\Controller
                 new Expression($expresion),
                 'SUM(cantidad_total) as totalVentas',
             ])
-            ->where(['estado' => 'pagado'])
+            ->where(['estado' => 'pagado', 'EXTRACT(Year FROM fecha)' => $year])
             ->andWhere(['=' ,new Expression($monthNumber), intval($month)])
             ->groupBy(['DATE(DATE_TRUNC(\'month\', fecha))'])
             ->asArray()
@@ -851,12 +851,13 @@ class VentaController extends \yii\web\Controller
         $reportGlobal =  $query2
                 ->distinct()
                 ->select(['cg.nombre', 'SUM(total) OVER (PARTITION BY categoria_gasto_id) as TotalCantidad'])
-                ->from(['gasto g'])
-                ->innerJoin('registro_gasto rg', 'rg.gasto_id = g.id')
+                ->from(['registro_gasto rg'])
+                ->innerJoin('gasto g', 'rg.gasto_id = g.id')
                 ->innerJoin('categoria_gasto cg', 'cg.id = g.categoria_gasto_id')
-                ->where([ 'estado' => 'pagado','EXTRACT(MONTH FROM fecha)' => 10,])
+                ->where([ 'estado' => 'pagado','EXTRACT(MONTH FROM fecha)' => $month])
+                ->andWhere(['EXTRACT(year from fecha)' => $year])
                 ->all();
-        if($query){
+        if($query || $reportGlobal){
             $response = [
                 'success' => true,
                 'message' => 'Reportes global',
