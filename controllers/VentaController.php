@@ -10,6 +10,7 @@ use app\models\Mesa;
 use app\models\Venta;
 use app\models\Periodo;
 use app\models\Producto;
+use Exception;
 use Yii;
 use yii\db\Query;
 use yii\data\Pagination;
@@ -725,23 +726,34 @@ class VentaController extends \yii\web\Controller
         $sale = Venta::findOne($idSale);
         $params = Yii::$app->getRequest()->getBodyParams();
         $sale -> load($params, '');
-        if($params['userAgent'] !== 'windows' )$this -> createPrintSpooler( $idSale, "salon");
-        if ($sale->save()) {
-            $table = Mesa::findOne($sale -> mesa_id);
-            $table -> estado = 'disponible';
-            $table -> save();
-            Yii::$app->getResponse()->setStatusCode(201);
-            $response = [
-                'success' => true,
-                'message' => 'Su pedido se realizo exitosamente',
-                'sale' => $sale
-            ];
-        } else {
+
+        $db = Yii::$app->db;
+        $transaction = $db->beginTransaction();
+        try{
+            if($params['userAgent'] !== 'windows' )$this -> createPrintSpooler( $idSale, "salon");
+
+            if ($sale->save()) {
+                $table = Mesa::findOne($sale -> mesa_id);
+                $table -> estado = 'disponible';
+                if(!$table -> save()){
+                    throw new Exception('Error al actualizar mesa, intente nuevamente.');
+                }
+                Yii::$app->getResponse()->setStatusCode(201);
+                $response = [
+                    'success' => true,
+                    'message' => 'Venta cerrada exitosamente',
+                    'sale' => $sale
+                ];
+                $transaction->commit();
+            } else {
+                throw new Exception('Error al actualizar la venta, intente nuevamente.');
+            }
+        }catch(Exception $e){
+            $transaction->rollBack();
             Yii::$app->getResponse()->setStatusCode(422, 'Data Validation Failed.');
             $response = [
                 'success' => false,
-                'message' => 'failed update',
-                'data' => $sale->errors
+                'message' => $e -> getMessage(),
             ];
         }
         return $response;
