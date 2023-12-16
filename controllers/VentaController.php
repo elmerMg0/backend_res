@@ -317,25 +317,6 @@ class VentaController extends \yii\web\Controller
             ->orderBy(['venta.id' => SORT_DESC])
             ->asArray();
 
-        /* if ($params['usuarioId'] === 'todos') {
-            $query = Venta::find()
-                ->select(['venta.*', 'usuario.username', 'mesa.nombre as mesa'])
-                ->innerJoin('usuario','usuario.id = venta.usuario_id')
-                ->innerJoin('mesa', 'mesa.id=venta.mesa_id')
-                ->where(['between', 'fecha', $params['fechaInicio'], $fechaFinWhole])
-                ->orderBy(['venta.id' => SORT_DESC])
-                ->asArray();
-        } else {
-            $query = Venta::find()
-                ->select(['venta.*', 'usuario.username'])
-                ->join('LEFT JOIN', 'usuario','usuario.id = venta.usuario_id')
-                ->Where(['usuario_id' => $params['usuarioId']])
-                ->andWhere(['between', 'fecha', $params['fechaInicio'], $fechaFinWhole])
-                ->orderBy(['venta.id' => SORT_DESC])
-                ->asArray();
-        } */
-
-
         $pagination = new Pagination([
             'defaultPageSize' => $pageSize,
             'totalCount' => $query->count()
@@ -630,6 +611,7 @@ class VentaController extends \yii\web\Controller
     public function actionUpdateSaleImproved($idSale){
         $idSale = isset($idSale) ? $idSale : null;
         $params = Yii::$app->getRequest()->getBodyParams();
+        try{
         if(!$idSale){
             $sale = new Venta();
             $sale -> usuario_id = $params['usuario_id'];
@@ -718,6 +700,12 @@ class VentaController extends \yii\web\Controller
             'sale' => $sale
 
         ];
+        }catch(Exception $e){
+            $response = [
+                'success' => false,
+                'message' => 'Algo salio mal, intente nuevamente',
+            ];
+        }
     return $response;
 }
 

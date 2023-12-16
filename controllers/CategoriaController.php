@@ -311,7 +311,7 @@ class CategoriaController extends \yii\web\Controller
         $query = Categoria::find()
                     ->with(['productos' => function ($query) {
                         $query
-                        ->select(['producto.*', 'producto.id as producto_id'])
+                        ->select(['producto.id', 'producto.categoria_id','producto.nombre', 'producto.url_image', 'producto.precio_venta', 'producto.estado',  'producto.stock', 'producto.tipo' , 'producto.id as producto_id'])
                         ->andWhere(['estado' => 'Activo']);
                     }])
                     ->orderBy(['id' => 'SORT_ASC'])
