@@ -114,10 +114,11 @@ class DetalleVentaController extends \yii\web\Controller
     public function actionGetReportsByWeek (){
         $query = new Query();
         $params = Yii::$app->getRequest()->getBodyParams(); 
-        $type = $params['tipo'];
-        $beginDate = $params['fechaInicio'];
+        extract($params);
+        $type = $tipo;
+        $beginDate = $fechaInicio;
       
-        $productIds = isset($params['productIds']) ? $params['productIds'] : null;
+        $productIds = $productIds ?? null;
         $condition = ['or'];
 
         if($productIds){
