@@ -986,6 +986,7 @@ class VentaController extends \yii\web\Controller
                     ->innerJoin('mesa', 'mesa.id = venta.mesa_id')
                     ->innerJoin('detalle_venta', 'detalle_venta.venta_id = venta.id')
                     ->where(['<>', 'detalle_venta.estado', 'entregado'])
+                    ->andWhere(['venta.usuario_id' => $idUser])
                     ->innerJoin('producto', 'producto.id = detalle_venta.producto_id')
                     ->asArray()
                     ->orderBy(['create_ts' => SORT_DESC])
