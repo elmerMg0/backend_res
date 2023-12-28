@@ -45,8 +45,7 @@ class UserController extends Controller
                 if ($user->estado === 'Activo') {
                     $keyuser = Yii::$app->params['keyuser'];
                     $currentTimestamp = time();
-                    //$expirationTimestamp = $currentTimestamp + (2 * 24 * 60 * 60);
-                    $expirationTimestamp = $currentTimestamp + (200);
+                    $expirationTimestamp = $currentTimestamp + (2 * 24 * 60 * 60);
 
                     $payload = [
                         'iss' => 'https://jevesoftd.tech/',
