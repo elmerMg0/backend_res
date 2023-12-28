@@ -707,9 +707,9 @@ class VentaController extends \yii\web\Controller
                     ->all(); 
 
         //Si el cliente es distinto de windows, se crea la cola de impresion
+        $existsNewFoods = $params['existsSomeFoodWithoutPrint'];
+        $existsNewDrinks = $params['existsSomeDrinkWithoutPrint'];
         if($params['userAgent'] !== 'windows' ){
-            $existsNewFoods = $params['existsSomeFoodWithoutPrint'];
-            $existsNewDrinks = $params['existsSomeDrinkWithoutPrint'];
             if($existsNewFoods)$this -> createPrintSpooler( $sale -> id , "cocina");
             if($existsNewDrinks) $this -> createPrintSpooler($sale -> id , "bar");
         }
