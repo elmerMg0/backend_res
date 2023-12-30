@@ -284,27 +284,18 @@ class VentaController extends \yii\web\Controller
     {
         //fecha inicio/ fecha fin/ usuario
         $params = Yii::$app->getRequest()->getBodyParams();
-
-        $fechaFinWhole = $params['fechaFin'] . ' ' . '23:59:00.000';
-        if ($params['usuarioId'] === 'todos') {
-            $salesForDay = Venta::find()
+        extract($params);
+        $fechaFinWhole = $fechaFin . ' ' . '23:59:00.000';
+        $usuarioId = $usuarioId === 'todos' ? null : $usuarioId;
+        $salesForDay = Venta::find()
                 ->select(['DATE(fecha) AS fecha', 'SUM(cantidad_total) AS total', 'usuario.nombres'])
                 ->joinWith('usuario')
-                ->where(['between', 'fecha', $params['fechaInicio'], $fechaFinWhole])
-                ->andWhere(['venta.estado' => 'pagado'])
-                ->orderBy(['fecha' => SORT_ASC])
+                ->Where(['venta.estado' => 'pagado'])
+                ->andFilterWhere(['usuario_id' => $usuarioId])
+                ->andWhere(['between', 'fecha', $fechaInicio, $fechaFinWhole])
+                ->orderBy(['fecha' => SORT_DESC])
                 ->groupBy(['DATE(fecha)', 'usuario.nombres'])
                 ->asArray();
-        } else {
-            $salesForDay = Venta::find()
-                ->select(['DATE(fecha) AS fecha', 'SUM(cantidad_total) AS total', 'usuario.nombres'])
-                ->joinWith('usuario')
-                ->Where(['usuario_id' => $params['usuarioId'], 'venta.estado' => 'pagado'])
-                ->andWhere(['between', 'fecha', $params['fechaInicio'], $fechaFinWhole])
-                ->orderBy(['fecha' => SORT_ASC])
-                ->groupBy(['DATE(fecha)', 'usuario.nombres'])
-                ->asArray();
-        }
 
         $pagination = new Pagination([
             'defaultPageSize' => $pageSize,
