@@ -13,6 +13,7 @@ use Yii;
  * @property int $venta_id
  * @property string $estado
  * @property bool|null $impreso
+ * @property string|null $create_ts
  *
  * @property Producto $producto
  * @property Venta $venta
@@ -37,6 +38,7 @@ class DetalleVenta extends \yii\db\ActiveRecord
             [['cantidad', 'producto_id'], 'default', 'value' => null],
             [['cantidad', 'producto_id'], 'integer'],
             [['impreso'], 'boolean'],
+            [['create_ts'], 'safe'],
             [['estado'], 'string', 'max' => 20],
             [['producto_id'], 'exist', 'skipOnError' => true, 'targetClass' => Producto::class, 'targetAttribute' => ['producto_id' => 'id']],
             [['venta_id'], 'exist', 'skipOnError' => true, 'targetClass' => Venta::class, 'targetAttribute' => ['venta_id' => 'id']],
@@ -55,6 +57,7 @@ class DetalleVenta extends \yii\db\ActiveRecord
             'venta_id' => 'Venta ID',
             'estado' => 'Estado',
             'impreso' => 'Impreso',
+            'create_ts' => 'Create Ts',
         ];
     }
 

@@ -2,6 +2,11 @@
 
 namespace app\models;
 
+use Firebase\JWT\ExpiredException;
+use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
+use Yii;
+
 class User extends \yii\db\ActiveRecord implements \yii\web\IdentityInterface
 {
 
@@ -29,16 +34,34 @@ class User extends \yii\db\ActiveRecord implements \yii\web\IdentityInterface
     public static function findIdentityByAccessToken($token, $type = null)
     {
         $user = User::findOne(['access_token' => $token]);     	
-        if ($user) {      
-        // Evita mostrar el token de usuario   	
-        $user->access_token = null; 
-        // Almacena el usuario en Yii::$app->user->identity  
-        return new static($user);     	
+        if ($user) {         	
+            if (!$user->verifyExpiredToken()) {             	
+                $user->access_token = null;             	
+                return new static($user);         	
+             }     	
         }     	
-        return null; // Almacena null en Yii::$app->user->identity
-
+        return null;  
     }
 
+    private function verifyExpiredToken() {     	
+
+        $key = Yii::$app->params['keyuser'];
+        // Obtiene el token del usuario
+        try {
+            $token = $this->access_token;     
+            $decoded = JWT::decode($token, new Key($key, 'HS256'));
+            return time() > $decoded ->exp;
+            // Token válido
+        } catch (ExpiredException $e) {
+            return [
+                'success' => false,
+                'message' => 'El token ha expirado',
+            ]   ;
+            // Token expirado, maneja la expiración aquí
+        }
+        return 1;
+    }
+        
     /**
      * Finds user by username
      *

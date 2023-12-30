@@ -6,6 +6,7 @@ use Yii;
 use yii\web\Controller;
 use app\models\Usuario;
 use app\models\Periodo;
+use Firebase\JWT\JWT;
 
 class UserController extends Controller
 {
@@ -42,6 +43,22 @@ class UserController extends Controller
             $password = $params['password'];
             if (Yii::$app->security->validatePassword($password, $user->password_hash)) {
                 if ($user->estado === 'Activo') {
+                    $keyuser = Yii::$app->params['keyuser'];
+                    $currentTimestamp = time();
+                    $expirationTimestamp = $currentTimestamp + (2 * 24 * 60 * 60);
+
+                    $payload = [
+                        'iss' => 'https://jevesoftd.tech/',
+                        'aud' => 'https://dimasresprodbeta.netlify.app/',
+                        'iat' => $currentTimestamp,
+                        'nbf' => $currentTimestamp,
+                        'exp' => $expirationTimestamp,
+                    ];
+
+                    $jwt = JWT::encode($payload, $keyuser, 'HS256');
+                    $user -> access_token = $jwt;
+                    $user -> save();
+
                     $role = $auth->getRolesByUser($user->id);
                     $period = Periodo::find()
                         ->where(['usuario_id' => $user->id])
@@ -53,7 +70,7 @@ class UserController extends Controller
                     $response = [
                         'success' => true,
                         'message' => 'Inicio de sesion correcto',
-                        'accessToken' => $user->access_token,
+                        'accessToken' => $jwt,
                         'role' => $role,
                         'id' => $user->id,
                         'period' => $period,

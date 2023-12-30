@@ -58,13 +58,14 @@ class DetalleVentaController extends \yii\web\Controller
         return $this->render('index');
     }
 
-    public function actionGetBestSellerProduct($quantity){
+    public function actionGetBestSellerProduct($quantity, $type){
+        $type = $type ?? null;
         $detail = DetalleVenta::find()
                     ->select(['sum(cantidad) as cantidad', 'producto.nombre', 'producto.id'])
                     ->join('LEFT JOIN', 'producto', 'producto.id=detalle_venta.producto_id')
                     ->groupBy(['producto_id', 'producto.nombre', 'producto.id' ])
                     ->orderBy(['cantidad' => SORT_DESC])
-                    ->where(['producto.tipo' => 'comida'])
+                    ->andFilterWhere(['producto.tipo' => $type])
                     ->andWhere(['<>', 'detalle_venta.estado', 'cancelado'])
                     ->asArray()
                     ->limit($quantity)
@@ -114,10 +115,11 @@ class DetalleVentaController extends \yii\web\Controller
     public function actionGetReportsByWeek (){
         $query = new Query();
         $params = Yii::$app->getRequest()->getBodyParams(); 
-        $type = $params['tipo'];
-        $beginDate = $params['fechaInicio'];
+        extract($params);
+        $type = $tipo;
+        $beginDate = $fechaInicio;
       
-        $productIds = isset($params['productIds']) ? $params['productIds'] : null;
+        $productIds = $productIds ?? null;
         $condition = ['or'];
 
         if($productIds){

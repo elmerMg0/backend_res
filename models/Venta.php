@@ -22,6 +22,7 @@ use Yii;
  * @property int $mesa_id
  * @property bool|null $finalizado
  * @property string|null $nota
+ * @property bool|null $finalizado_bar
  *
  * @property Cliente $cliente
  * @property ColaImpresion[] $colaImpresions
@@ -51,7 +52,7 @@ class Venta extends \yii\db\ActiveRecord
             [['usuario_id', 'numero_pedido', 'cliente_id', 'mesa_id'], 'default', 'value' => null],
             [['usuario_id', 'numero_pedido', 'cliente_id', 'mesa_id'], 'integer'],
             [['tipo_pago', 'nota'], 'string'],
-            [['finalizado'], 'boolean'],
+            [['finalizado', 'finalizado_bar'], 'boolean'],
             [['estado'], 'string', 'max' => 50],
             [['tipo', 'tipo_entrega'], 'string', 'max' => 15],
             [['hora'], 'string', 'max' => 20],
@@ -82,6 +83,7 @@ class Venta extends \yii\db\ActiveRecord
             'mesa_id' => 'Mesa ID',
             'finalizado' => 'Finalizado',
             'nota' => 'Nota',
+            'finalizado_bar' => 'Finalizado Bar',
         ];
     }
 

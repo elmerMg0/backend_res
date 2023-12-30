@@ -55,19 +55,20 @@ class EmpresaController extends \yii\web\Controller
 
     public function actionUpdate($id)
     {
-        /* Ver si existe */
-        $company = Empresa::findOne($id);
-        $params = Json::decode(Yii::$app->request->post('body'));
-        if (!$company) {
+        $id = isset($id) ? $id : null;
+        if ($id) {
+            $company = Empresa::findOne($id);
+        }else{
             $company = new Empresa();
-            //actializar
         }
+        $params = Json::decode(Yii::$app->request->post('body'));
+
         $company->load($params, '');
         $image = UploadedFile::getInstanceByName('image');
         if ($image) {
             $image_url = $company->image_url;
             $imageOld = Yii::getAlias('@app/web/upload/' . $image_url);
-            if(file_exists($imageOld)){
+            if(file_exists($imageOld) && $image_url){
                 unlink($imageOld);
                 /* Eliminar */
             }
