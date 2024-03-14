@@ -24,7 +24,7 @@ class ProductoController extends \yii\web\Controller
                 'update' => ['put', 'post'],
                 'delete' => ['delete'],
                 'get-product' => ['get'],
-                'products' => ['get'],
+                'products' => ['post'],
                 'disable-product' => ['get']
             ]
         ];
@@ -339,9 +339,12 @@ class ProductoController extends \yii\web\Controller
     }
     public function actionProducts()
     {
+        $params = Yii::$app -> getRequest() -> getBodyParams();
+        $isStockActive = isset($params['stockActive']) ? $params['stockActive'] : null;
         $products = Producto::find()
                     ->select(['producto.*', 'categoria.nombre As nombre_categoria'])
                     ->join('LEFT JOIN', 'categoria', 'categoria.id = producto.categoria_id')
+                    ->andfilterWhere(['stock_active' => $isStockActive])
                     ->asArray()
                     ->all();
         $response = [
