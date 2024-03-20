@@ -41,7 +41,7 @@ class UsuarioController extends \yii\web\Controller
                 [
                     'allow' => true, // permitido o no permitido
                     'actions' => ['get-all-users'], // acciones que siguen esta regla
-                    'roles' => ['cajero'] // control por roles  permisos
+                    'roles' => ['mesero'] // control por roles  permisos
                 ],
             ],
         ];
@@ -112,43 +112,7 @@ class UsuarioController extends \yii\web\Controller
         
         return $response;
     }
-   /*  public function actionDeleteUser($id){
-        $params= Usuario::findOne($id);
-        if($params){
-            try{
-                $url_image = $params->url_image;
-                $params->delete();
-                $pathFile = Yii::getAlias('@webroot/upload/'.$url_image);
-                unlink($pathFile);
-                $response = [
-                    'success'=>true,
-                    'message'=>'User deleted'
-                ];
-            }catch(Exception $e){
-                Yii::$app->getResponse()->getStatusCode(409);
-                $response = [
-                    'success'=> false,
-                    'message'=>'Elimination failed',
-                    'code'=>$e->getCode()
-                ];
-            }catch(Exception $e){
-                Yii::$app->getResponse()->setStatusCode(422,'Data validation failed');
-                $response = [
-                    'success' => false,
-                    'message'=>$e->getMessage(),
-                    'code' => $e->getCode()
-                ];
-        }
-        }else{
-            Yii::$app->getResponse()->getStatusCode(404);
-            $response = [
-                'success' => false,
-                'message' => 'user not found',
-                
-            ];
-        }
-        return $response;
-    } */
+  
     public function actionEditUser($id){
         $user = Usuario::findOne($id);
         $auth = Yii::$app->authManager;
@@ -162,11 +126,10 @@ class UsuarioController extends \yii\web\Controller
             $newRole = $auth->getRole($data['tipo']);
             $auth -> assign($newRole, $id);
             
-           /*  if(isset($data["password"])){
+            if(isset($data["password"])){
                 $user->password_hash = Yii::$app->getSecurity()->generatePasswordHash($data["password"]);
             }            
-            $
-            $user->access_token = Yii::$app->security->generateRandomString(); */
+            //$user->access_token = Yii::$app->security->generateRandomString();
             $image = UploadedFile::getInstanceByName('file');
             if ($image) {
                 $url_image = $user->url_image;
@@ -302,46 +265,8 @@ class UsuarioController extends \yii\web\Controller
         }
         return $response;
     }
-    public function actionTest(){
-        return Yii::$app->getSecurity()->generatePasswordHash("cesar");
-    }
 
-    /* public function actionGetUsers( $pageSize = 5){
-        $query = Usuario::find()
-                        ->select(['usuario.id', 'usuario.nombres', 'usuario.tipo', 'usuario.url_image']);
-        $pagination = new Pagination([
-            'defaultPageSize'=> $pageSize,
-            'totalCount' => $query->count()
-        ]);
-        $users = $query
-                    ->offset($pagination->offset)
-                    ->limit($pagination -> limit)
-                    ->all();
-        if($users){
-            $currentPage = $pagination->getPage() + 1;
-            $totalPages = $pagination->getPageCount();
-            $response = [
-            'success' => true,
-            'message' => 'lista de clientes',
-            'pageInfo' => [
-                'next' => $currentPage == $totalPages ? null  : $currentPage + 1,
-                'previus' => $currentPage == 1 ? null: $currentPage - 1,
-                'count' => count($users),
-                'page' => $currentPage,
-                'start' => $pagination->getOffset(),
-                'totalPages' => $totalPages,
-            ],
-            'users' => $users
-            ];
-        }else{
-            $response = [
-                'success' => false,
-                'message' => 'No existen usuarios',
-                'users' => $users
-            ];
-        }
-        return $response;
-    } */
+  
     public function actionDisableUser( $idUser ){
         $user = Usuario::findOne($idUser);
         if($user){
