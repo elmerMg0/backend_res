@@ -38,7 +38,7 @@ class RegistroGastoController extends \yii\web\Controller
                 [
                     'allow' => true, // permitido o no permitido
                     'actions' => ['create'], // acciones que siguen esta regla
-                    'roles' => ['cajero'] // control por roles  permisos
+                    'roles' => ['mesero'] // control por roles  permisos
                 ],
             ],
         ];

@@ -36,7 +36,7 @@ class PeriodoController extends \yii\web\Controller
                 [
                     'allow' => true, // permitido o no permitido
                     'actions' => ['get-detail-period', 'start-period', 'close-period', 'get-detail-sale-by-user'], // acciones que siguen esta regla
-                    'roles' => ['administrador', 'cajero'] // control por roles  permisos
+                    'roles' => ['administrador', 'mesero'] // control por roles  permisos
                 ],
             ],
         ];
