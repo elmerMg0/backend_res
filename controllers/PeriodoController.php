@@ -212,7 +212,10 @@ class PeriodoController extends \yii\web\Controller
     }
 
     public function actionGetDetailSaleByUser($idUser){
-        $period = Periodo::find() -> where(['usuario_id' => $idUser, 'estado' => true])->one();
+        $period = Periodo::find() 
+                        -> where(['usuario_id' => $idUser])
+                        ->orderBy(['fecha_inicio' => SORT_DESC])
+                        ->one();
 
         if ($period) {
              $user = Usuario::findOne($idUser);
@@ -274,7 +277,7 @@ class PeriodoController extends \yii\web\Controller
         } else {
             $response = [
                 'success' => false,
-                'message' => 'No existe periodo iniciado',
+                'message' => 'No se encontro registro',
             ];
         }
         return $response;
