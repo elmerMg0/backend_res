@@ -132,7 +132,7 @@ class InventarioController extends \yii\web\Controller
         $query = Inventario::find() 
                         ->select(['producto.nombre', 'producto.stock','fecha', 'total', 'nuevo_stock', 'precio_venta', 'precio_compra'])
                         ->innerJoin('producto', 'producto.id = inventario.producto_id')
-                        ->where(['inventario.last_one' => true]);
+                        ->where(['inventario.last_one' => true, 'producto.stock_active' => true]);
 
         $pagination = new Pagination([
             'defaultPageSize' => $pageSize,

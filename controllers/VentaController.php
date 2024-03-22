@@ -61,7 +61,7 @@ class VentaController extends \yii\web\Controller
                 [
                     'allow' => true, // permitido o no permitido
                     'actions' => ['create-sale','orders', 'update-sale','get-sale-detail-by-period'], // acciones que siguen esta regla
-                    'roles' => ['cajero'] // control por roles  permisos
+                    'roles' => ['mesero'] // control por roles  permisos
                 ],
                 [
                     'allow' => true, // permitido o no permitido
@@ -133,91 +133,6 @@ class VentaController extends \yii\web\Controller
             'message' => 'Lista de pedidos',
             'orders' => $query  
         ];
-        return $response;
-    }
-    public function actionCreate($userId=0)
-    {
-        /* SI es pedido de app, entonces la venta se carga al ultimo periodo aperturado */
-     /*    if($userId === 0 ){
-            $period = Periodo::find()
-                           ->where(['estado' => true])
-                           ->one();
-            if($period){
-                $userId = $period -> usuario_id;
-            }else{
-                return  [
-                    'success' => false,
-                    'message' => 'Ocurrio un error',
-                ];
-            }
-        }
- */
-        $params = Yii::$app->getRequest()->getBodyParams();
-        $numberOrder = Venta::find()->all();
-        $orderDetail = $params['orderDetail'];
-        $sale = new Venta();
-
-        date_default_timezone_set('America/La_Paz');
-        $sale -> fecha = date('Y-m-d H:i:s');
-        $sale->cantidad_total = intval($params['cantidadTotal']);
-        $sale->cantidad_cancelada = $params['cantidadPagada'];
-        $sale->usuario_id = $userId;
-        $sale->numero_pedido = count($numberOrder) + 1;
-        $sale->estado = $params['estado'];
-        $sale->tipo_pago = $params['tipoPago'];
-        $sale->tipo = $params['tipo'];
-        $sale->cliente_id = $params['cliente_id'];
-        $sale->mesa_id = $params['mesa_id'];
-        if($params['tipo'] === 'pedidoApp'){
-            $sale->tipo_entrega = $params['tipo_entrega'];
-            $sale->telefono = $params['telefono'];
-            $sale->hora = $params['hora'];
-            $sale->descripcion_direccion = $params['descripcion_direccion'];
-            $sale->direccion = $params['direccion'];
-        }
-        //$sale->cliente_id = $customerId;
-
-        if ($sale->save()) {
-            //agregar detalle de venta
-            foreach ($orderDetail as $order) {
-                $saleDetail = new DetalleVenta();
-                $saleDetail->cantidad = $order['cantidad'];
-                $saleDetail->producto_id = $order['id'];
-                $saleDetail->venta_id =  $sale->id;
-                $saleDetail->estado =  'enviado';
-                
-                $product = Producto::findOne($order['id']);
-                if($product -> tipo === 'bebida'){
-                    /*Si es bebida validar el stock */
-                    $total = $product -> stock - $order['cantidad'];
-                    $product -> stock = $total;
-                }
-                if ($saleDetail->save() && $product -> save()) {
-                   
-                }else{
-                    Yii::$app->getResponse()->setStatusCode(422, 'Data Validation Failed.');
-                    return $response = [
-                        'success' => false,
-                        'message' => 'Existen errores en los parametros',
-                        'errors' => $saleDetail->errors
-                    ];
-                }
-            }
-
-            Yii::$app->getResponse()->setStatusCode(201);
-            $response = [
-                'success' => true,
-                'message' => 'Su pedido se realizo exitosamente',
-                'sale' => $sale
-            ];
-        } else {
-            Yii::$app->getResponse()->setStatusCode(422, 'Data Validation Failed.');
-            $response = [
-                'success' => false,
-                'message' => 'failed update',
-                'errors' => $sale->errors
-            ];
-        }
         return $response;
     }
 
@@ -479,9 +394,9 @@ class VentaController extends \yii\web\Controller
                         return;
                     }
                     $product = Producto::findOne($order->producto_id);
-                    if($product -> tipo === 'bebida'){
+                    if($product -> stock_active === true){
                         $product -> stock = $product -> stock + $order -> cantidad;
-                        if($product -> save()){
+                        if(!$product -> save()){
                             throw new Exception('No se pudo actualizar el stock');
                         }
                     }
@@ -625,7 +540,8 @@ class VentaController extends \yii\web\Controller
     private function addNewOrderDetail( $detail, $idSale, $printout, $amount){
         try{
             $product =  Producto::findOne($detail['producto_id']);
-            if($product -> tipo === 'bebida'){
+            /* Validar solo si si stock_active es true */
+            if($product -> stock_active === true){
                 if($product -> stock > 0 && $amount <= $product -> stock){
                     $product -> stock = $product -> stock - $detail ['cantidad'];
                     if(!$product -> save()){
