@@ -2,6 +2,9 @@
 
 namespace app\controllers;
 
+use app\models\Gasto;
+use app\models\Inventario;
+use app\models\Producto;
 use app\models\RegistroGasto;
 use Exception;
 use Yii;
@@ -65,11 +68,41 @@ class RegistroGastoController extends \yii\web\Controller
         $params = Yii::$app->getRequest()->getBodyParams();
         $expense = new RegistroGasto();
         $expense -> load($params,"");
-        //date_default_timezone_set('America/La_Paz');
-        //$expense -> create_ts = Date("Y-m-d H:i:s");
         try{
+            $trasaction = Yii::$app->db->beginTransaction();
             if($expense->save()){   
-                //todo ok
+                /* Se incrementa stock segun la cantidad enviada  */
+                $expenseRecord = Gasto::findOne($expense->gasto_id);
+                $product = Producto::find() -> where(['nombre' => $expenseRecord -> nombre]) -> one();
+                if($product && $product -> stock_active === true){
+                    /* Creamos registro de inventario */
+                    $inventaryNew = new Inventario();
+                    date_default_timezone_set('America/La_Paz');
+                    $inventaryNew -> fecha = date('Y-m-d H:i:s');
+                    $inventaryNew -> producto_id = $product -> id;
+                    $inventaryNew -> stock = $product -> stock;
+                    $inventaryNew -> nuevo_stock = $expense -> cantidad;
+                    $inventaryNew -> total = $product -> stock + $expense -> cantidad;
+                    $inventaryNew -> last_one = true ;
+                    //validamos que relamente admita stock
+                    if($product -> stock_active === true)$product -> stock = $product -> stock + $expense -> cantidad;
+
+                    if(!$inventaryNew -> save() || !$product -> save()){
+                        throw new Exception('No se pudo registrar el gasto');
+                    }
+
+                    $inventaryOld = Inventario::find()
+                        ->where(['producto_id' => $product -> id, 'last_one' => true])
+                        ->one();
+                        
+                    if($inventaryOld){
+                        $inventaryOld -> last_one = false;
+                        if(!$inventaryOld -> save()){
+                            throw new Exception('No se pudo registrar el gasto');
+                        }
+                    }
+                }
+                $trasaction->commit();
                 Yii::$app->getResponse()->setStatusCode(201);
                 $response = [
                     "success" => true,
@@ -78,6 +111,7 @@ class RegistroGastoController extends \yii\web\Controller
                 ];
             }else{
                 //Cuando hay error en los tipos de datos ingresados 
+                throw new Exception('No se pudo registrar el gasto');
                 Yii::$app->getResponse()->setStatusCode(422, 'Data Validation Failed');
                 $response = [
                     "success" => false,
@@ -86,12 +120,11 @@ class RegistroGastoController extends \yii\web\Controller
                 ];
             }
         }catch(Exception $e){
-        //cuando no se definen bien las reglas en el modelo ocurre este error, por ejemplo required no esta en modelo y en la base de datos si, 
-        //existe incosistencia
+            $trasaction->rollBack();
             Yii::$app -> getResponse() -> setStatusCode(500);
             $response = [
                 "success" => false,
-                "message" => "ocurrio un error2",
+                "message" => "ocurrio un error",
                 'errors' => $e
             ];
         }

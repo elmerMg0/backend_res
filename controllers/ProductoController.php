@@ -5,6 +5,8 @@ namespace app\controllers;
 use Yii;
 use app\models\Producto;
 use app\models\Categoria;
+use app\models\CategoriaGasto;
+use app\models\Gasto;
 use app\models\SubProducto;
 use Exception;
 use yii\web\UploadedFile;
@@ -132,19 +134,28 @@ class ProductoController extends \yii\web\Controller
             $product = new Producto();
             $file = UploadedFile::getInstanceByName('file');
             $data = Json::decode(Yii::$app->request->post('data'));
-            $varieties = Json::decode(Yii::$app->request->post('varieties'));
+            //  $varieties = Json::decode(Yii::$app->request->post('varieties'));
             if ($file) {
                 $fileName = uniqid() . '.' . $file->getExtension();
                 $file->saveAs(Yii::getAlias('@app/web/upload/') . $fileName);
                 $product->url_image = $fileName;
             }
+            $db = Yii::$app->db;
+            $transaction = $db->beginTransaction();
+
             try {
                 $product->load($data, '');
-
+                $categoryGasto = CategoriaGasto::find()->where(['nombre' => 'Costo de Ventas']) -> one();
+                if($categoryGasto){
+                    $expense = new Gasto();
+                    $expense->nombre = $product->nombre;
+                    $expense -> categoria_gasto_id = $categoryGasto -> id;
+                    $expense->save();
+                }
 
                 if ($product->save()) {
                     Yii::$app->getResponse()->setStatusCode(201);
-                    if($varieties){
+                    /* if($varieties){
                         for($i = 0; $i < count($varieties); $i ++ ){
                             $variety = $varieties[$i];
                             $newVariety = new SubProducto();
@@ -160,7 +171,8 @@ class ProductoController extends \yii\web\Controller
                                 ];
                             }
                         }
-                    }
+                    } */
+                    $transaction -> commit();
                     $response = [
                         'success' => true,
                         'message' => 'Producto creado exitosamente',
@@ -175,6 +187,7 @@ class ProductoController extends \yii\web\Controller
                     ];
                 }
             } catch (Exception $e) {
+                $transaction->rollBack();
                 Yii::$app->getResponse()->setStatusCode(500);
                 $response = [
                     'success' => false,
