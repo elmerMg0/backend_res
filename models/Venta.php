@@ -13,7 +13,7 @@ use Yii;
  * @property float|null $cantidad_cancelada
  * @property int $usuario_id
  * @property int $numero_pedido
- * @property int|null $cliente_id
+ * @property int $cliente_id
  * @property string $estado
  * @property string|null $tipo_pago
  * @property string|null $tipo
@@ -48,7 +48,7 @@ class Venta extends \yii\db\ActiveRecord
         return [
             [['fecha'], 'safe'],
             [['cantidad_total', 'cantidad_cancelada'], 'number'],
-            [['usuario_id', 'numero_pedido', 'estado', 'mesa_id'], 'required'],
+            [['usuario_id', 'numero_pedido', 'cliente_id', 'estado', 'mesa_id'], 'required'],
             [['usuario_id', 'numero_pedido', 'cliente_id', 'mesa_id'], 'default', 'value' => null],
             [['usuario_id', 'numero_pedido', 'cliente_id', 'mesa_id'], 'integer'],
             [['tipo_pago', 'nota'], 'string'],
