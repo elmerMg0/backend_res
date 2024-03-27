@@ -252,13 +252,15 @@ class VentaController extends \yii\web\Controller
     public function actionGetSaleDetail($pageSize = 7)
     {
         $params = Yii::$app->getRequest()->getBodyParams();
-        $fechaFinWhole = $params['fechaFin'] . ' 23:59:58.0000';
         $user = assert($params['usuarioId'])? $params['usuarioId'] : null;
+        $fechaIni = assert($params['fechaInicio'])? $params['fechaInicio'] : null;
+        $fechaFin = assert($params['fechaFin'])? $params['fechaFin'] . ' 23:59:58.0000' : null;
         $query = Venta::find()
-            ->select(['venta.*', 'usuario.username', 'mesa.nombre as mesa'])
+            ->select(['venta.*', 'usuario.username', 'mesa.nombre as mesa', 'cliente.nombre as cliente'])
             ->innerJoin('usuario','usuario.id = venta.usuario_id')
             ->innerJoin('mesa', 'mesa.id=venta.mesa_id')
-            ->where(['between', 'fecha', $params['fechaInicio'], $fechaFinWhole])
+            ->innerJoin('cliente', 'cliente.id=venta.cliente_id')
+            ->andFilterWhere(['between', 'fecha', $fechaIni, $fechaFin])
             ->andFilterWhere(['usuario_id' => $user])
             ->orderBy(['venta.id' => SORT_DESC])
             ->asArray();

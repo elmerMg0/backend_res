@@ -120,7 +120,9 @@ class GastoController extends \yii\web\Controller
     }
 
     public function actionGetExpenses(){
-        $expenses = Gasto::find() -> all();
+        $expenses = Gasto::find() 
+                        ->select(['id', 'nombre'])    
+                        -> all();
         $reponse = [
             'success' => true,
             'message' => 'Lista de gastos',
