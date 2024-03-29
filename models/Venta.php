@@ -9,19 +9,23 @@ use Yii;
  *
  * @property int $id
  * @property string $fecha
- * @property int|null $cantidad_total
- * @property int|null $cantidad_cancelada
+ * @property float|null $cantidad_total
+ * @property float|null $cantidad_cancelada
  * @property int $usuario_id
  * @property int $numero_pedido
- * @property int|null $cliente_id
+ * @property int $cliente_id
  * @property string $estado
  * @property string|null $tipo_pago
  * @property string|null $tipo
  * @property string|null $hora
  * @property string|null $tipo_entrega
- * @property int|null $mesa_id
+ * @property int $mesa_id
+ * @property bool|null $finalizado
+ * @property string|null $nota
+ * @property bool|null $finalizado_bar
  *
  * @property Cliente $cliente
+ * @property ColaImpresion[] $colaImpresions
  * @property DetalleVenta[] $detalleVentas
  * @property Mesa $mesa
  * @property Usuario $usuario
@@ -43,10 +47,12 @@ class Venta extends \yii\db\ActiveRecord
     {
         return [
             [['fecha'], 'safe'],
-            [['cantidad_total', 'cantidad_cancelada', 'usuario_id', 'numero_pedido', 'cliente_id', 'mesa_id'], 'default', 'value' => null],
-            [['cantidad_total', 'cantidad_cancelada', 'usuario_id', 'numero_pedido', 'cliente_id', 'mesa_id'], 'integer'],
-            [['usuario_id', 'numero_pedido', 'estado'], 'required'],
-            [['tipo_pago'], 'string'],
+            [['cantidad_total', 'cantidad_cancelada'], 'number'],
+            [['usuario_id', 'numero_pedido', 'cliente_id', 'estado', 'mesa_id'], 'required'],
+            [['usuario_id', 'numero_pedido', 'cliente_id', 'mesa_id'], 'default', 'value' => null],
+            [['usuario_id', 'numero_pedido', 'cliente_id', 'mesa_id'], 'integer'],
+            [['tipo_pago', 'nota'], 'string'],
+            [['finalizado', 'finalizado_bar'], 'boolean'],
             [['estado'], 'string', 'max' => 50],
             [['tipo', 'tipo_entrega'], 'string', 'max' => 15],
             [['hora'], 'string', 'max' => 20],
@@ -75,6 +81,9 @@ class Venta extends \yii\db\ActiveRecord
             'hora' => 'Hora',
             'tipo_entrega' => 'Tipo Entrega',
             'mesa_id' => 'Mesa ID',
+            'finalizado' => 'Finalizado',
+            'nota' => 'Nota',
+            'finalizado_bar' => 'Finalizado Bar',
         ];
     }
 
@@ -86,6 +95,16 @@ class Venta extends \yii\db\ActiveRecord
     public function getCliente()
     {
         return $this->hasOne(Cliente::class, ['id' => 'cliente_id']);
+    }
+
+    /**
+     * Gets query for [[ColaImpresions]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getColaImpresions()
+    {
+        return $this->hasMany(ColaImpresion::class, ['venta_id' => 'id']);
     }
 
     /**

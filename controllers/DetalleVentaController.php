@@ -5,6 +5,7 @@ namespace app\controllers;
 use app\models\DetalleVenta;
 use Yii;
 use app\models\Venta;
+use yii\db\Query;
 
 class DetalleVentaController extends \yii\web\Controller
 {
@@ -15,16 +16,27 @@ class DetalleVentaController extends \yii\web\Controller
             "class" => \yii\filters\VerbFilter::class,
             "actions" => [
                 'index' => ['get'],
-                'create' => ['post'],
-                'update' => ['put', 'post'],
-                'delete' => ['delete'],
-                'get-product' => ['get'],
-
+                'get-detail-period' => ['GET'],
+                'get-sale-detail' => ['GET'],
+                'get-reports-by-week' => ['POST']
             ]
         ];
         $behaviors['authenticator'] = [         	
             'class' => \yii\filters\auth\HttpBearerAuth::class,         	
             'except' => ['options']     	
+        ];
+
+        $behaviors['access'] = [
+            'class' => \yii\filters\AccessControl::class,
+            'only' => ['get-best-seller-product', 'index', 'get-sale-detail', 'get-reports-by-week'], // acciones a las que se aplicará el control
+            'except' => [''],    // acciones a las que no se aplicará el control
+            'rules' => [
+                [
+                    'allow' => true, // permitido o no permitido
+                    'actions' => ['get-best-seller-product', 'index', 'get-sale-detail', 'get-reports-by-week'], // acciones que siguen esta regla
+                    'roles' => ['administrador', 'mesero'] // control por roles  permisos
+                ],
+            ],
         ];
         return $behaviors;
     }
@@ -46,14 +58,17 @@ class DetalleVentaController extends \yii\web\Controller
         return $this->render('index');
     }
 
-    public function actionGetBestSellerProduct(){
+    public function actionGetBestSellerProduct($quantity, $type){
+        $type = $type ?? null;
         $detail = DetalleVenta::find()
-                    ->select(['sum(cantidad) as cantidad', 'producto.nombre' ])
+                    ->select(['sum(cantidad) as cantidad', 'producto.nombre', 'producto.id'])
                     ->join('LEFT JOIN', 'producto', 'producto.id=detalle_venta.producto_id')
-                    ->groupBy(['producto_id', 'producto.nombre' ])
+                    ->groupBy(['producto_id', 'producto.nombre', 'producto.id' ])
                     ->orderBy(['cantidad' => SORT_DESC])
+                    ->andFilterWhere(['producto.tipo' => $type])
+                    ->andWhere(['<>', 'detalle_venta.estado', 'cancelado'])
                     ->asArray()
-                    ->limit(5)
+                    ->limit($quantity)
                     ->all();
         if($detail){
             $response = [
@@ -73,20 +88,21 @@ class DetalleVentaController extends \yii\web\Controller
 
     public function actionGetSaleDetail( $idSale ){
         $saleInfo = Venta::find()
-                    ->select(['venta.*', 'usuario.username', 'cliente.nombre as cliente'])
+                    ->select(['venta.*', 'usuario.username', 'cliente.nombre as cliente', 'cliente.celular', 'cliente.direccion', 'cliente.descripcion_domicilio', 'mesa.nombre as mesa'])
                     ->where(['venta.id' => $idSale])
-                    ->leftJoin('usuario', 'usuario.id = venta.usuario_id')
-                    ->leftJoin('cliente', 'cliente.id = venta.cliente_id')
+                    ->innerJoin('usuario', 'usuario.id = venta.usuario_id')
+                    ->innerJoin('cliente', 'cliente.id = venta.cliente_id')
+                    ->innerJoin('mesa','mesa.id = venta.mesa_id')
                     ->asArray()
                     ->one();
 
-        $products = Venta::find($idSale)
-                    ->select(['producto.nombre','producto.precio_venta', 'detalle_venta.cantidad'])
-                    ->where(['venta.id' => $idSale])
-                    ->leftJoin('detalle_venta', 'detalle_venta.venta_id = venta.id')
-                    ->leftJoin('producto', 'detalle_venta.producto_id = producto.id')
-                    ->asArray()
-                    ->all();
+        $products = DetalleVenta::find()
+                         ->select(['producto.nombre','producto.precio_venta', 'detalle_venta.cantidad', 'producto.id as producto_id', 'detalle_venta.estado'])
+                        ->innerJoin('producto', 'producto.id = detalle_venta.producto_id')
+                        ->where(['venta_id' => $idSale])
+                       //->andWhere(['<>','detalle_venta.estado', 'cancelado'])
+                        ->asArray()
+                        ->all();
         $response = [
             'success' => true, 
             'message' => 'Detalle de venta',
@@ -96,4 +112,52 @@ class DetalleVentaController extends \yii\web\Controller
         return $response;
     }
 
+    public function actionGetReportsByWeek (){
+        $query = new Query();
+        $params = Yii::$app->getRequest()->getBodyParams(); 
+        extract($params);
+        $type = $tipo;
+        $beginDate = $fechaInicio;
+      
+        $productIds = $productIds ?? null;
+        $condition = ['or'];
+
+        if($productIds){
+            foreach ($productIds as $productId) {
+                $condition[] = ['dv.producto_id' => $productId];
+            }
+        }
+
+        //return $productIds;
+        $fechaFinWhole = $params['fechaFin'] . ' ' . '23:59:00.000';
+        $expressions = [
+            'week' => 'EXTRACT(WEEK FROM FECHA) as weekNumber',
+            'month' => 'DATE_TRUNC(\'month\' ,fecha) as Fecha',
+            'day' => 'DATE_TRUNC(\'day\', fecha) as dayNumber'
+        ];
+
+        $query->select([
+            'dv.producto_id',
+            'p.nombre',
+            new \yii\db\Expression($expressions[$type]),
+            //new \yii\db\Expression('CONCAT(EXTRACT(YEAR FROM fecha), '/', LPAD(EXTRACT(MONTH FROM fecha)::text, 2, "0"), '/', LPAD(EXTRACT(WEEK FROM fecha)::text, 2, "0")) AS anio_mes_semana'),
+            new \yii\db\Expression("SUM(dv.cantidad) OVER (PARTITION BY DATE_TRUNC('$type' , fecha), dv.producto_id ) AS cantidadTotal"),
+        ])
+        ->distinct()
+        ->from('detalle_venta dv')
+        ->innerJoin('producto p', 'dv.producto_id = p.id')
+        ->innerJoin('venta v', 'v.id = dv.venta_id')
+        ->where(['between', 'fecha', $beginDate, $fechaFinWhole])
+        //todos los productos seleccionados
+        ->andWhere($condition)
+        ->orderBy(['dv.producto_id' => SORT_ASC]);
+        
+           // Ejecutar la consulta y obtener los resultados
+        $response = [
+            'success' => true,
+            'message' => 'Reportes por semana',
+            'result' => $query -> all()
+        ];
+        return $response;
+    }
 }
