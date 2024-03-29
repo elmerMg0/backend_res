@@ -44,7 +44,7 @@ class ClienteController extends \yii\web\Controller
 
     public function actionIndex( $pageSize = 5)
     {
-        $query = Cliente::find();
+        $query = Cliente::find() -> where([ '<>' ,'nombre' , 'generico']);
 
         $pagination = new Pagination([
             'defaultPageSize' => $pageSize,
@@ -75,7 +75,9 @@ class ClienteController extends \yii\web\Controller
         return $response;
     }
     public function actionCustomers(){
-        $customers = Cliente::find()->all();
+        $customers = Cliente::find()
+                            ->where([ '<>' ,'nombre' , 'generico'])    
+                            ->all();
         $response = [
             'success' => true,
             'message' => 'Todos los clientes',
