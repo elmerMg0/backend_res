@@ -148,7 +148,7 @@ class PeriodoController extends \yii\web\Controller
 
                 $totalSaleTransfer = Venta::find()
                     ->where(['>=', 'fecha', $period->fecha_inicio])
-                    ->andWhere(['usuario_id' => $user->id, 'tipo_pago' => 'transferencia', 'estado' => 'pagado', 'tipo' => 'local'])
+                    ->andWhere(['usuario_id' => $user->id, 'tipo_pago' => 'codigoQr', 'estado' => 'pagado', 'tipo' => 'local'])
                     ->sum('cantidad_total');
 
                 $totalSaleApp = Venta::find()
