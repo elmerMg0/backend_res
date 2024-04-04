@@ -125,8 +125,8 @@ class UsuarioController extends \yii\web\Controller
             }
             $newRole = $auth->getRole($data['tipo']);
             $auth -> assign($newRole, $id);
-            
-            if(isset($data["password"])){
+            $newPassword = isset($data["password"]) ? $data["password"] : null;
+            if($newPassword){
                 $user->password_hash = Yii::$app->getSecurity()->generatePasswordHash($data["password"]);
             }            
             //$user->access_token = Yii::$app->security->generateRandomString();
