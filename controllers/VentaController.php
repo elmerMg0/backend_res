@@ -887,7 +887,9 @@ class VentaController extends \yii\web\Controller
         return $response;
     }
 
-    public function actionOrders($idUser){
+    public function actionOrders($idUser, $idPeriod){
+        $period = Periodo::findOne($idPeriod);
+
         $orders = Usuario::find()
                     ->select(['detalle_venta.id', 'venta.numero_pedido','mesa.nombre as mesa' ,'detalle_venta.cantidad', 'detalle_venta.estado', 'producto.nombre', 'detalle_venta.create_ts'])
                     ->where(['id' => $idUser])
@@ -896,6 +898,7 @@ class VentaController extends \yii\web\Controller
                     ->innerJoin('detalle_venta', 'detalle_venta.venta_id = venta.id')
                     ->where(['<>', 'detalle_venta.estado', 'entregado'])
                     ->andWhere(['venta.usuario_id' => $idUser])
+                    ->andWhere(['>=', 'fecha', $period->fecha_inicio])
                     ->innerJoin('producto', 'producto.id = detalle_venta.producto_id')
                     ->asArray()
                     ->orderBy(['create_ts' => SORT_DESC])
