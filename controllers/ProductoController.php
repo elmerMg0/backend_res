@@ -5,7 +5,8 @@ namespace app\controllers;
 use Yii;
 use app\models\Producto;
 use app\models\Categoria;
-use app\models\d;
+use app\models\CategoriaGasto;
+use app\models\Gasto;
 use app\models\SubProducto;
 use Exception;
 use yii\web\UploadedFile;
@@ -25,7 +26,8 @@ class ProductoController extends \yii\web\Controller
                 'update' => ['put', 'post'],
                 'delete' => ['delete'],
                 'get-product' => ['get'],
-
+                'products' => ['post'],
+                'disable-product' => ['get']
             ]
         ];
         // add Bearer authentication filter     	
@@ -34,21 +36,25 @@ class ProductoController extends \yii\web\Controller
             'except' => ['options']
         ];
 
-        //  explicame este codigo: 
-     /*   $behaviors['access'] = [
+
+     
+
+
+        $behaviors['access'] = [
+
             'class' => \yii\filters\AccessControl::class,
-            'only' => ['index','update','delete','create', 'getProduct'], // acciones a las que se aplicará el control
-            'except' => [''],    // acciones a las que no se aplicará el control
+            'only' => ['get-product', 'products'], // acciones a las que se aplicará el control
+            'except' => [],    // acciones a las que no se aplicará el control
             'rules' => [
                 [
                     'allow' => true, // permitido o no permitido
-                    'actions' => ['getProduct'], // acciones que siguen esta regla
-                    'roles' => ['administrador'] // control por roles  permisos
+                    'actions' => ['get-product', 'products'], // acciones que siguen esta regla
+                    'roles' => ['mesero'] // control por roles  permisos
                 ],
                  [
                     'allow' => true, // permitido o no permitido
                     'actions' => ['index','update','delete','create'], // acciones que siguen esta regla
-                    'roles' => ['administrador'] // control por roles  permisos
+                    'roles' => ['administrador', 'cajero'] // control por roles  permisos
                 ], 
                 [
                     'allow' => true, // permitido o no permitido
@@ -68,10 +74,12 @@ class ProductoController extends \yii\web\Controller
                     }
                 ],
                 //…
-	    ],*/
-        ];
-
-        return $behaviors;
+			
+     
+	    ]
+	
+	];
+      return $behaviors;
     }
 
     public function beforeAction($action)
@@ -86,11 +94,13 @@ class ProductoController extends \yii\web\Controller
         return parent::beforeAction($action);
     }
 
-    public function actionIndex($pageSize = 5)
+    public function actionIndex($name, $pageSize = 5)
     {
+        if($name === 'undefined')$name = null;
         $query = Producto::find()
                     ->select(['producto.*', 'categoria.nombre As nombre_categoria'])
-                    ->join('LEFT JOIN', 'categoria', 'categoria.id = producto.categoria_id');
+                    ->join('LEFT JOIN', 'categoria', 'categoria.id = producto.categoria_id')
+                    ->andFilterWhere(['LIKE', 'UPPER(producto.nombre)',  strtoupper($name)]);
 
         $pagination = new Pagination([
             'defaultPageSize' => $pageSize,
@@ -131,19 +141,28 @@ class ProductoController extends \yii\web\Controller
             $product = new Producto();
             $file = UploadedFile::getInstanceByName('file');
             $data = Json::decode(Yii::$app->request->post('data'));
-            $varieties = Json::decode(Yii::$app->request->post('varieties'));
+            //  $varieties = Json::decode(Yii::$app->request->post('varieties'));
             if ($file) {
                 $fileName = uniqid() . '.' . $file->getExtension();
                 $file->saveAs(Yii::getAlias('@app/web/upload/') . $fileName);
                 $product->url_image = $fileName;
             }
+            $db = Yii::$app->db;
+            $transaction = $db->beginTransaction();
+
             try {
                 $product->load($data, '');
-
+                $categoryGasto = CategoriaGasto::find()->where(['nombre' => 'Costo de Ventas']) -> one();
+                if($categoryGasto){
+                    $expense = new Gasto();
+                    $expense->nombre = $product->nombre;
+                    $expense -> categoria_gasto_id = $categoryGasto -> id;
+                    $expense->save();
+                }
 
                 if ($product->save()) {
                     Yii::$app->getResponse()->setStatusCode(201);
-                    if($varieties){
+                    /* if($varieties){
                         for($i = 0; $i < count($varieties); $i ++ ){
                             $variety = $varieties[$i];
                             $newVariety = new SubProducto();
@@ -159,7 +178,8 @@ class ProductoController extends \yii\web\Controller
                                 ];
                             }
                         }
-                    }
+                    } */
+                    $transaction -> commit();
                     $response = [
                         'success' => true,
                         'message' => 'Producto creado exitosamente',
@@ -174,6 +194,7 @@ class ProductoController extends \yii\web\Controller
                     ];
                 }
             } catch (Exception $e) {
+                $transaction->rollBack();
                 Yii::$app->getResponse()->setStatusCode(500);
                 $response = [
                     'success' => false,
@@ -338,9 +359,12 @@ class ProductoController extends \yii\web\Controller
     }
     public function actionProducts()
     {
+        $params = Yii::$app -> getRequest() -> getBodyParams();
+        $isStockActive = isset($params['stockActive']) ? $params['stockActive'] : null;
         $products = Producto::find()
                     ->select(['producto.*', 'categoria.nombre As nombre_categoria'])
                     ->join('LEFT JOIN', 'categoria', 'categoria.id = producto.categoria_id')
+                    ->andfilterWhere(['stock_active' => $isStockActive])
                     ->asArray()
                     ->all();
         $response = [
