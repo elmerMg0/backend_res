@@ -35,52 +35,24 @@ class ProductoController extends \yii\web\Controller
             'class' => \yii\filters\auth\HttpBearerAuth::class,
             'except' => ['options']
         ];
-
-
-     
-
-
+    
         $behaviors['access'] = [
-
             'class' => \yii\filters\AccessControl::class,
             'only' => ['get-product', 'products'], // acciones a las que se aplicará el control
             'except' => [],    // acciones a las que no se aplicará el control
             'rules' => [
-                [
-                    'allow' => true, // permitido o no permitido
-                    'actions' => ['get-product', 'products'], // acciones que siguen esta regla
-                    'roles' => ['mesero'] // control por roles  permisos
-                ],
                  [
                     'allow' => true, // permitido o no permitido
-                    'actions' => ['index','update','delete','create'], // acciones que siguen esta regla
-                    'roles' => ['administrador', 'cajero'] // control por roles  permisos
+                    'actions' => ['index','update','delete','create', 'products', 'get-product'], // acciones que siguen esta regla
+                    'roles' => ['administrador', 'mesero'] // control por roles  permisos
                 ], 
-                [
-                    'allow' => true, // permitido o no permitido
-                    'actions' => [''], // acciones que siguen esta regla
-                    'matchCallback' => function ($rule, $action) {
-                        // control personalizado
-                        return true;
-                    }
-                ],
-                [
-                    'allow' => true, // permitido o no permitido
-                    'actions' => [''], // acciones que siguen esta regla
-                    'matchCallback' => function ($rule, $action) {
-                        // control personalizado equivalente a '@’ de usuario 
-                        // autenticado
-                        return Yii::$app->user->identity ? true : false;
-                    }
-                ],
                 //…
-			
-     
-	    ]
-	
+	    ],
 	];
-      return $behaviors;
+
+        return $behaviors;
     }
+
 
     public function beforeAction($action)
     {
