@@ -167,6 +167,12 @@ class PeriodoController extends \yii\web\Controller
                     ->andWhere(['>=', 'fecha', $period-> fecha_inicio])
                     ->sum('total');
                 
+                /* Obtener si existen ventas no pagadas */
+                $existSalesOpen = Venta::find()
+                    ->where(['>=', 'fecha', $period->fecha_inicio])
+                    ->andWhere(['usuario_id' => $user->id, 'estado' => 'consumiendo'])
+                    ->exists();
+
                 $response = [
                     'success' => true,
                     'message' => 'detalle de periodo por usuario',
@@ -178,7 +184,8 @@ class PeriodoController extends \yii\web\Controller
                         'totalSaleTransfer' => $totalSaleTransfer ? $totalSaleTransfer : 0,
                         'totalSale' => $totalSale ? $totalSale: 0,
                         'totalSaleApp' => $totalSaleApp ? $totalSaleApp : 0,
-                        'totalExpenses' => $expenses ? $expenses : 0
+                        'totalExpenses' => $expenses ? $expenses : 0,
+                        'existSalesOpen' => $existSalesOpen
                         ]   
                     ];
             } else {
