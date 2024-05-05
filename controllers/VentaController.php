@@ -104,6 +104,7 @@ class VentaController extends \yii\web\Controller
                     ->select(['detalle_venta.*', 'producto.nombre as nombreProducto'])
                     ->innerjoin('producto', 'producto.id = detalle_venta.producto_id')
                     ->where(['tipo' => 'comida'])
+                    ->orderBy(['id' => SORT_DESC])
                     ->asArray();
                 }
                 ])
@@ -122,6 +123,7 @@ class VentaController extends \yii\web\Controller
                     ->select(['detalle_venta.*', 'producto.nombre as nombreProducto'])
                     ->innerjoin('producto', 'producto.id = detalle_venta.producto_id')
                     ->where(['tipo' => 'bebida'])
+                    ->orderBy(['id' => SORT_DESC])
                     ->asArray();
             }])
             ->orderBy(['id' => SORT_DESC])

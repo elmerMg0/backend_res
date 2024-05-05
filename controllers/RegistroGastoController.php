@@ -69,6 +69,8 @@ class RegistroGastoController extends \yii\web\Controller
         $params = Yii::$app->getRequest()->getBodyParams();
         $expense = new RegistroGasto();
         $expense -> load($params,"");
+        date_default_timezone_set('America/La_Paz');
+        $expense -> fecha = date('Y-m-d H:i:s');
         try{
             $trasaction = Yii::$app->db->beginTransaction();
             if($expense->save()){   
