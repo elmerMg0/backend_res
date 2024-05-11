@@ -564,6 +564,48 @@ class VentaController extends \yii\web\Controller
         return $response;
     }
 
+    public function actionFastSale(){
+        //CREAR VENTA, CREAR DETALLE DE VENTA (inventario, estado, etc)
+        $params = Yii::$app->getRequest()->getBodyParams();
+        $transaction = Yii::$app->db->beginTransaction();
+        $errors = [];
+        try{
+            /* Crear venta */
+            $sale = $this -> createSale($params);
+            $sale -> load($params, '');
+            if($sale -> save()){
+                $existsNewFoods = $params['existsSomeFoodWithoutPrint'];
+                $existsNewDrinks = $params['existsSomeDrinkWithoutPrint'];
+                if($params['userAgent'] !== 'windows' ){
+                    if($existsNewFoods)$this -> createPrintSpooler( $sale -> id , "cocina");
+                    if($existsNewDrinks) $this -> createPrintSpooler($sale -> id , "bar");
+                }
+                /* Agregar productos */
+                $orderDetails = $params['orderDetail'];
+                foreach ($orderDetails as $order) {
+                    $res = $this->addNewOrderDetail($order, $sale -> id, $params['userAgent'], $order['cantidad']);
+                    if($res) $errors[] = $res;
+                }
+            }else{
+                return $sale -> errors;
+            }
+            $response = [
+                'success' => true,
+                'message' => 'Venta creada',
+                'data' => $sale,
+            ];
+            $transaction -> commit();
+        }catch(Exception $e){
+            $transaction->rollBack();
+            Yii::$app->getResponse()->setStatusCode(422, 'Data Validation Failed.');
+            $response = [
+                'success' => false,
+                'message' => $e->getMessage(),
+            ];
+        }
+        return $response;
+    }
+    
 
     private function addNewOrderDetail( $detail, $idSale, $printout, $amount){
         try{
@@ -680,6 +722,8 @@ class VentaController extends \yii\web\Controller
                         if($difference < 0){
                             DetalleVenta::updateAll(['cantidad' => $detail['cantidad']], ['id' => $detail["id"]]);
                         }
+                           //si es mayor se crea otro detalle de vetna positivo si es negativo se reduce la cnatidad del detalle origina
+                        //y se crear un detalle de venta con estado cancelado con la diferencia.
                         $res = $this->addNewOrderDetail($detail, $sale -> id, $params['userAgent'], $difference);
                         if($res) $errors[] = $res;
                         if($existsNewFoods)$sale -> finalizado = false;
