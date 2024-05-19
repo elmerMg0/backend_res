@@ -312,7 +312,8 @@ class CategoriaController extends \yii\web\Controller
                     ->with(['productos' => function ($query) {
                         $query
                         ->select(['producto.id', 'producto.categoria_id','producto.nombre', 'producto.url_image', 'producto.precio_venta', 'producto.estado',  'producto.stock', 'producto.tipo' , 'producto.id as producto_id', 'producto.stock_active'])
-                        ->andWhere(['estado' => 'Activo']);
+                        ->andWhere(['estado' => 'Activo'])
+                        ->orderBy(['id' => 'SORT_ASC']);
                     }])
                     ->orderBy(['id' => 'SORT_ASC'])
                     ->asArray()

@@ -5,6 +5,7 @@ namespace app\controllers;
 use app\models\DetalleVenta;
 use Yii;
 use app\models\Periodo;
+use app\models\RegistroGasto;
 use app\models\Usuario;
 use app\models\Venta;
 
@@ -160,6 +161,18 @@ class PeriodoController extends \yii\web\Controller
                     ->where(['>=', 'fecha', $period->fecha_inicio])
                     ->andWhere(['usuario_id' => $user->id , 'estado' => 'pagado'])
                     ->sum('cantidad_total');
+
+                $expenses = RegistroGasto::find()
+                    ->where(['usuario_id' => $idUser, 'estado' => 'pagado'])
+                    ->andWhere(['>=', 'fecha', $period-> fecha_inicio])
+                    ->sum('total');
+                
+                /* Obtener si existen ventas no pagadas */
+                $existSalesOpen = Venta::find()
+                    ->where(['>=', 'fecha', $period->fecha_inicio])
+                    ->andWhere(['usuario_id' => $user->id, 'estado' => 'consumiendo'])
+                    ->exists();
+
                 $response = [
                     'success' => true,
                     'message' => 'detalle de periodo por usuario',
@@ -170,7 +183,9 @@ class PeriodoController extends \yii\web\Controller
                         'totalSaleCard' => $totalSaleCard ? $totalSaleCard : 0,
                         'totalSaleTransfer' => $totalSaleTransfer ? $totalSaleTransfer : 0,
                         'totalSale' => $totalSale ? $totalSale: 0,
-                        'totalSaleApp' => $totalSaleApp ? $totalSaleApp : 0
+                        'totalSaleApp' => $totalSaleApp ? $totalSaleApp : 0,
+                        'totalExpenses' => $expenses ? $expenses : 0,
+                        'existSalesOpen' => $existSalesOpen
                         ]   
                     ];
             } else {

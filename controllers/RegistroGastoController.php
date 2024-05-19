@@ -4,6 +4,7 @@ namespace app\controllers;
 
 use app\models\Gasto;
 use app\models\Inventario;
+use app\models\Periodo;
 use app\models\Producto;
 use app\models\RegistroGasto;
 use Exception;
@@ -21,7 +22,7 @@ class RegistroGastoController extends \yii\web\Controller
                 'index' => ['get'],
                 'create-record' => ['post'],
                 'get-expense-records-filtered' => ['post'],
-                'update-expenseR-record' => ['get']
+                'update-expense-record' => ['get']
             ]
         ];
         $behaviors['authenticator'] = [
@@ -30,17 +31,17 @@ class RegistroGastoController extends \yii\web\Controller
         ];
         $behaviors['access'] = [
             'class' => \yii\filters\AccessControl::class,
-            'only' => ['create-record', 'get-expense-records-filtered', 'update-expenseR-record'], // acciones a las que se aplicará el control
+            'only' => ['create-record', 'get-expense-records-filtered', 'update-expense-record', 'expenses-period'], // acciones a las que se aplicará el control
             'except' => [''],    // acciones a las que no se aplicará el control
             'rules' => [
                 [
                     'allow' => true, // permitido o no permitido
-                    'actions' => ['create-record', 'get-expense-records-filtered', 'update-expenseR-record'], // acciones que siguen esta regla
+                    'actions' => ['create-record', 'get-expense-records-filtered', 'update-expense-record', 'expenses-period'], // acciones que siguen esta regla
                     'roles' => ['administrador'] // control por roles  permisos
                 ],
                 [
                     'allow' => true, // permitido o no permitido
-                    'actions' => ['create'], // acciones que siguen esta regla
+                    'actions' => ['create-record', 'expenses-period', 'update-expense-record'], // acciones que siguen esta regla
                     'roles' => ['mesero'] // control por roles  permisos
                 ],
             ],
@@ -68,6 +69,8 @@ class RegistroGastoController extends \yii\web\Controller
         $params = Yii::$app->getRequest()->getBodyParams();
         $expense = new RegistroGasto();
         $expense -> load($params,"");
+        date_default_timezone_set('America/La_Paz');
+        $expense -> fecha = date('Y-m-d H:i:s');
         try{
             $trasaction = Yii::$app->db->beginTransaction();
             if($expense->save()){   
@@ -136,16 +139,19 @@ class RegistroGastoController extends \yii\web\Controller
 
         $dateStart = assert($params['dateStart']) ? $params['dateStart'] :  null;
         $dateEnd = assert($params['dateEnd']) ? $params['dateEnd'] : null;
+        $usuarioId = assert($params['usuarioId']) ? $params['usuarioId'] : null;
         if($dateEnd) $dateEnd = $dateEnd . ' ' . '23:59:00.000';
         $name = assert($params['name']) ? $params['name'] : null;
 
 
         $query = RegistroGasto::find()
-                    ->select(['registro_gasto.*', 'gasto.nombre as nombre'])
+                    ->select(['registro_gasto.*', 'gasto.nombre as nombre', 'usuario.nombres'])
                     ->innerjoin('gasto', 'gasto.id = registro_gasto.gasto_id')
+                    ->innerjoin('usuario', 'usuario.id = registro_gasto.usuario_id')
                     ->filterWhere(['like', 'LOWER(gasto.nombre)', $name])
                     ->andFilterWhere(['>=', 'registro_gasto.fecha', $dateStart])
-                    ->andFilterWhere(['<=', 'registro_gasto.fecha', $dateEnd]);
+                    ->andFilterWhere(['<=', 'registro_gasto.fecha', $dateEnd])
+                    ->andFilterWhere(['usuario_id' => $usuarioId]);
         //->select(['usuario.id', 'usuario.nombres', 'usuario.tipo', 'usuario.url_image', 'usuario.estado', 'usuario.username'])
 //   ->andFilterWhere(['LIKE', 'UPPER(nombres)',  strtoupper($name)]);
 
@@ -202,6 +208,56 @@ class RegistroGastoController extends \yii\web\Controller
             $response = [
                 "success" => false,
                 "message" => "No se encontro el registro",
+            ];
+        }
+        return $response;
+    }
+
+
+    public function actionExpensesPeriod($pageSize = 5){
+        $params = Yii::$app->getRequest()->getBodyParams();
+        $period = Periodo::findOne($params['idPeriod']);
+
+        $query = RegistroGasto::find()
+                ->select(['registro_gasto.*', 'gasto.nombre as nombre', 'usuario.nombres'])
+                ->innerjoin('usuario', 'usuario.id = registro_gasto.usuario_id')
+                ->innerjoin('gasto', 'gasto.id = registro_gasto.gasto_id')
+                ->where(['usuario_id' => $params['idUser']])
+                ->andWhere(['>=', 'fecha', $period->fecha_inicio])
+                ->orderBy(['registro_gasto.id' => SORT_DESC])
+                ->asArray();
+
+        $pagination = new Pagination([
+            'defaultPageSize' => $pageSize,
+            'totalCount' => $query->count()
+        ]);
+
+        $expenses = $query
+            ->offset($pagination->offset)
+            ->limit($pagination->limit)
+            ->all();
+
+        if ($expenses) {
+            $currentPage = $pagination->getPage() + 1;
+            $totalPages = $pagination->getPageCount();
+            $response = [
+                'success' => true,
+                'message' => 'lista de gastos',
+                'pageInfo' => [
+                    'next' => $currentPage == $totalPages ? null  : $currentPage + 1,
+                    'previus' => $currentPage == 1 ? null : $currentPage - 1,
+                    'count' => count($expenses),
+                    'page' => $currentPage,
+                    'start' => $pagination->getOffset(),
+                    'totalPages' => $totalPages,
+                ],
+                'expenses' => $expenses
+            ];
+        } else {
+            $response = [
+                'success' => false,
+                'message' => 'Lista de gastos por dia',
+                'expenses' => []
             ];
         }
         return $response;

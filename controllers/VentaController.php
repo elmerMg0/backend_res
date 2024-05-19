@@ -10,6 +10,7 @@ use app\models\Mesa;
 use app\models\Venta;
 use app\models\Periodo;
 use app\models\Producto;
+use app\models\RegistroGasto;
 use app\models\Usuario;
 use Exception;
 use Yii;
@@ -103,6 +104,7 @@ class VentaController extends \yii\web\Controller
                     ->select(['detalle_venta.*', 'producto.nombre as nombreProducto'])
                     ->innerjoin('producto', 'producto.id = detalle_venta.producto_id')
                     ->where(['tipo' => 'comida'])
+                    ->orderBy(['id' => SORT_DESC])
                     ->asArray();
                 }
                 ])
@@ -121,6 +123,7 @@ class VentaController extends \yii\web\Controller
                     ->select(['detalle_venta.*', 'producto.nombre as nombreProducto'])
                     ->innerjoin('producto', 'producto.id = detalle_venta.producto_id')
                     ->where(['tipo' => 'bebida'])
+                    ->orderBy(['id' => SORT_DESC])
                     ->asArray();
             }])
             ->orderBy(['id' => SORT_DESC])
@@ -203,13 +206,23 @@ class VentaController extends \yii\web\Controller
         $fechaFinWhole = $fechaFin . ' ' . '23:59:00.000';
         $usuarioId = $usuarioId === 'todos' ? null : $usuarioId;
         $salesForDay = Venta::find()
-                ->select(['DATE(fecha) AS fecha', 'SUM(cantidad_total) AS total', 'usuario.nombres'])
+                ->select(['DATE(fecha) AS fecha', 'SUM(cantidad_total) AS total', 'usuario.nombres', 'usuario.id as userId'])
                 ->joinWith('usuario')
                 ->Where(['venta.estado' => 'pagado'])
                 ->andFilterWhere(['usuario_id' => $usuarioId])
                 ->andWhere(['between', 'fecha', $fechaInicio, $fechaFinWhole])
                 ->orderBy(['fecha' => SORT_DESC])
-                ->groupBy(['DATE(fecha)', 'usuario.nombres'])
+                ->groupBy(['DATE(fecha)', 'usuario.nombres', 'usuario.id'])
+                ->asArray();
+
+        $expenses = RegistroGasto::find()
+                ->select(['DATE(fecha) AS fecha', 'SUM(total) AS total', 'usuario.nombres', 'usuario.id as userId'])
+                ->innerJoin('usuario', 'usuario.id = registro_gasto.usuario_id')
+                ->Where(['registro_gasto.estado' => 'pagado'])
+                ->andFilterWhere(['usuario_id' => $usuarioId])
+                ->andWhere(['between', 'fecha', $fechaInicio, $fechaFinWhole])
+                ->orderBy(['fecha' => SORT_DESC])
+                ->groupBy(['DATE(fecha)', 'usuario.nombres', 'usuario.id'])
                 ->asArray();
 
         $pagination = new Pagination([
@@ -217,9 +230,21 @@ class VentaController extends \yii\web\Controller
             'totalCount' => $salesForDay->count()
         ]);
 
+        $paginationExpenses = new Pagination([
+            'defaultPageSize' => $pageSize,
+            'totalCount' => $expenses->count()
+        ]);
+
+
+
         $sales = $salesForDay
             ->offset($pagination->offset)
             ->limit($pagination->limit)
+            ->all();
+
+        $expenses = $expenses 
+            ->offset($paginationExpenses->offset)
+            ->limit($paginationExpenses->limit)
             ->all();
 
         if ($sales) {
@@ -236,7 +261,8 @@ class VentaController extends \yii\web\Controller
                     'start' => $pagination->getOffset(),
                     'totalPages' => $totalPages,
                 ],
-                'sales' => $sales
+                'sales' => $sales,
+                'expenses' => $expenses
             ];
         } else {
             $response = [
@@ -538,6 +564,48 @@ class VentaController extends \yii\web\Controller
         return $response;
     }
 
+    public function actionFastSale(){
+        //CREAR VENTA, CREAR DETALLE DE VENTA (inventario, estado, etc)
+        $params = Yii::$app->getRequest()->getBodyParams();
+        $transaction = Yii::$app->db->beginTransaction();
+        $errors = [];
+        try{
+            /* Crear venta */
+            $sale = $this -> createSale($params);
+            $sale -> load($params, '');
+            if($sale -> save()){
+                $existsNewFoods = $params['existsSomeFoodWithoutPrint'];
+                $existsNewDrinks = $params['existsSomeDrinkWithoutPrint'];
+                if($params['userAgent'] !== 'windows' ){
+                    if($existsNewFoods)$this -> createPrintSpooler( $sale -> id , "cocina");
+                    if($existsNewDrinks) $this -> createPrintSpooler($sale -> id , "bar");
+                }
+                /* Agregar productos */
+                $orderDetails = $params['orderDetail'];
+                foreach ($orderDetails as $order) {
+                    $res = $this->addNewOrderDetail($order, $sale -> id, $params['userAgent'], $order['cantidad']);
+                    if($res) $errors[] = $res;
+                }
+            }else{
+                return $sale -> errors;
+            }
+            $response = [
+                'success' => true,
+                'message' => 'Venta creada',
+                'data' => $sale,
+            ];
+            $transaction -> commit();
+        }catch(Exception $e){
+            $transaction->rollBack();
+            Yii::$app->getResponse()->setStatusCode(422, 'Data Validation Failed.');
+            $response = [
+                'success' => false,
+                'message' => $e->getMessage(),
+            ];
+        }
+        return $response;
+    }
+    
 
     private function addNewOrderDetail( $detail, $idSale, $printout, $amount){
         try{
@@ -654,6 +722,8 @@ class VentaController extends \yii\web\Controller
                         if($difference < 0){
                             DetalleVenta::updateAll(['cantidad' => $detail['cantidad']], ['id' => $detail["id"]]);
                         }
+                           //si es mayor se crea otro detalle de vetna positivo si es negativo se reduce la cnatidad del detalle origina
+                        //y se crear un detalle de venta con estado cancelado con la diferencia.
                         $res = $this->addNewOrderDetail($detail, $sale -> id, $params['userAgent'], $difference);
                         if($res) $errors[] = $res;
                         if($existsNewFoods)$sale -> finalizado = false;
@@ -887,7 +957,9 @@ class VentaController extends \yii\web\Controller
         return $response;
     }
 
-    public function actionOrders($idUser){
+    public function actionOrders($idUser, $idPeriod){
+        $period = Periodo::findOne($idPeriod);
+
         $orders = Usuario::find()
                     ->select(['detalle_venta.id', 'venta.numero_pedido','mesa.nombre as mesa' ,'detalle_venta.cantidad', 'detalle_venta.estado', 'producto.nombre', 'detalle_venta.create_ts'])
                     ->where(['id' => $idUser])
@@ -896,6 +968,7 @@ class VentaController extends \yii\web\Controller
                     ->innerJoin('detalle_venta', 'detalle_venta.venta_id = venta.id')
                     ->where(['<>', 'detalle_venta.estado', 'entregado'])
                     ->andWhere(['venta.usuario_id' => $idUser])
+                    ->andWhere(['>=', 'fecha', $period->fecha_inicio])
                     ->innerJoin('producto', 'producto.id = detalle_venta.producto_id')
                     ->asArray()
                     ->orderBy(['create_ts' => SORT_DESC])
