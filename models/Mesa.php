@@ -11,7 +11,8 @@ use Yii;
  * @property string $estado
  * @property bool $habilitado
  * @property int $salon_id
- * @property string|null $nombre
+ * @property string $nombre
+ * @property string $tipo
  *
  * @property Salon $salon
  * @property Venta[] $ventas
@@ -33,11 +34,12 @@ class Mesa extends \yii\db\ActiveRecord
     {
         return [
             [['habilitado'], 'boolean'],
-            [['salon_id'], 'required'],
+            [['salon_id', 'nombre', 'tipo'], 'required'],
             [['salon_id'], 'default', 'value' => null],
             [['salon_id'], 'integer'],
             [['estado'], 'string', 'max' => 25],
             [['nombre'], 'string', 'max' => 20],
+            [['tipo'], 'string', 'max' => 15],
             [['salon_id'], 'exist', 'skipOnError' => true, 'targetClass' => Salon::class, 'targetAttribute' => ['salon_id' => 'id']],
         ];
     }
@@ -53,6 +55,7 @@ class Mesa extends \yii\db\ActiveRecord
             'habilitado' => 'Habilitado',
             'salon_id' => 'Salon ID',
             'nombre' => 'Nombre',
+            'tipo' => 'Tipo',
         ];
     }
 
