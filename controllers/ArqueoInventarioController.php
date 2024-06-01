@@ -36,7 +36,7 @@ class ArqueoInventarioController extends \yii\web\Controller
                 [
                     'allow' => true, // permitido o no permitido
                     'actions' => ['index', 'create'], // acciones que siguen esta regla
-                    'roles' => ['administrador'] // control por roles  permisos
+                    'roles' => ['administrador', 'configurador'] // control por roles  permisos
                 ],
             ],
         ];
