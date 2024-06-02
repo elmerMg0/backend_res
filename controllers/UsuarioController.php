@@ -41,7 +41,7 @@ class UsuarioController extends \yii\web\Controller
                 [
                     'allow' => true, // permitido o no permitido
                     'actions' => ['get-all-users'], // acciones que siguen esta regla
-                    'roles' => ['mesero'] // control por roles  permisos
+                    'roles' => ['mesero', 'configurador'] // control por roles  permisos
                 ],
             ],
         ];
