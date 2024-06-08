@@ -42,7 +42,7 @@ class RegistroGastoController extends \yii\web\Controller
                 [
                     'allow' => true, // permitido o no permitido
                     'actions' => ['create-record', 'expenses-period', 'update-expense-record'], // acciones que siguen esta regla
-                    'roles' => ['mesero'] // control por roles  permisos
+                    'roles' => ['mesero', 'cajero'] // control por roles  permisos
                 ],
             ],
         ];

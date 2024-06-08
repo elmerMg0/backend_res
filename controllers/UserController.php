@@ -45,7 +45,7 @@ class UserController extends Controller
                 if ($user->estado === 'Activo') {
                     $keyuser = Yii::$app->params['keyuser'];
                     $currentTimestamp = time();
-                    $expirationTimestamp = $currentTimestamp + (2 * 24 * 60 * 60);
+                    $expirationTimestamp = $currentTimestamp + (5 * 24 * 60 * 60);
 
                     $payload = [
                         'iss' => 'https://jevesoftd.tech/',
@@ -65,7 +65,10 @@ class UserController extends Controller
                         ->andWhere(['estado' => true])
                         ->one();
                     if ($period) {
-                        $period = $period->id;
+                        $period = [
+                            'id' => $period->id,
+                            'dateStart' => $period->fecha_inicio
+                        ];
                     }
                     $response = [
                         'success' => true,
