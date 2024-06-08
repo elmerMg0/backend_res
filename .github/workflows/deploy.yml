@@ -23,9 +23,10 @@ jobs:
         IFS=',' read -r -a DROPLETS <<< "${{ secrets.DROPLET_IPS }}"
         for DROPLET in "${DROPLETS[@]}"; do
           echo "Deploying to $DROPLET"
-          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USERNAME }}@$DROPLET << 'EOF'
-            cd /var/www/dimas/html
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USERNAME }}@$DROPLET <<EOF
+            cd /path/to/your/project
             git pull origin main
             sudo systemctl restart apache2
-          EOF
+        EOF
         done
+
