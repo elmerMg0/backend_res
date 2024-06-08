@@ -1,0 +1,32 @@
+name: Deploy to Droplets
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Setup SSH
+      uses: webfactory/ssh-agent@v0.5.3
+      with:
+        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+    - name: Deploy to all droplets
+      run: |
+        IFS=',' read -r -a DROPLETS <<< "${{ secrets.DROPLET_IPS }}"
+        for DROPLET in "${DROPLETS[@]}"; do
+          echo "Deploying to $DROPLET"
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USERNAME }}@$DROPLET <<EOF
+            cd /path/to/your/project
+            git pull origin main
+            sudo systemctl restart apache2
+        EOF
+        done
+
