@@ -584,6 +584,7 @@ class VentaController extends \yii\web\Controller
                 if($params['userAgent'] !== 'windows' ){
                     if($existsNewFoods)$this -> createPrintSpooler( $sale -> id , "cocina");
                     if($existsNewDrinks) $this -> createPrintSpooler($sale -> id , "bar");
+                    $this -> createPrintSpooler( $sale -> id, "salon");
                 }
                 /* Agregar productos */
                 $orderDetails = $params['orderDetail'];
