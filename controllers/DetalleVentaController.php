@@ -34,7 +34,7 @@ class DetalleVentaController extends \yii\web\Controller
                 [
                     'allow' => true, // permitido o no permitido
                     'actions' => ['get-best-seller-product', 'index', 'get-sale-detail', 'get-reports-by-week'], // acciones que siguen esta regla
-                    'roles' => ['administrador', 'mesero'] // control por roles  permisos
+                    'roles' => ['administrador', 'mesero', 'cajero'] // control por roles  permisos
                 ],
             ],
         ];

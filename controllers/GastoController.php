@@ -34,12 +34,7 @@ class GastoController extends \yii\web\Controller
                 [
                     'allow' => true, // permitido o no permitido
                     'actions' => ['create-expense', 'get-expenses'], // acciones que siguen esta regla
-                    'roles' => ['administrador', 'mesero'] // control por roles  permisos
-                ],
-                [
-                    'allow' => true, // permitido o no permitido
-                    'actions' => ['create'], // acciones que siguen esta regla
-                    'roles' => ['mesero'] // control por roles  permisos
+                    'roles' => ['administrador', 'mesero', 'cajero'] // control por roles  permisos
                 ],
             ],
         ];
