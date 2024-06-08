@@ -24,7 +24,7 @@ jobs:
         for DROPLET in "${DROPLETS[@]}"; do
           echo "Deploying to $DROPLET"
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USERNAME }}@$DROPLET <<EOF
-            cd /path/to/your/project
+            cd /var/www/dimas/html
             git pull origin main
             sudo systemctl restart apache2
         EOF
