@@ -11,22 +11,21 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v2
 
-    - name: Setup SSH
-      uses: webfactory/ssh-agent@v0.5.3
-      with:
-        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+    - name: Install sshpass
+      run: sudo apt-get update && sudo apt-get install -y sshpass
 
-    - name: Deploy to all droplets
+    - name: Deploy to droplet
+      env:
+        SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
+        SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
+        DROPLET_IP: ${{ secrets.DROPLET_IPS }}
       run: |
-        IFS=',' read -r -a DROPLETS <<< "${{ secrets.DROPLET_IPS }}"
-        for DROPLET in "${DROPLETS[@]}"; do
-          echo "Deploying to $DROPLET"
-          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USERNAME }}@$DROPLET <<EOF
-            cd /var/www/dimas/html
-            git pull origin main
-            sudo systemctl restart apache2
+        echo "Deploying to $DROPLET_IP"
+        sshpass -p "$SSH_PASSWORD" ssh -o StrictHostKeyChecking=no $SSH_USERNAME@$DROPLET_IP <<EOF
+          cd /var/www/dimas/html/
+          git pull origin main
+          sudo systemctl restart apache2
         EOF
-        done
 
