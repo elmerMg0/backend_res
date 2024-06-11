@@ -11,21 +11,27 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
-    - name: Install sshpass
-      run: sudo apt-get update && sudo apt-get install -y sshpass
-
-    - name: Deploy to droplet
-      env:
-        SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
-        SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
-        DROPLET_IP: ${{ secrets.DROPLET_IPS }}
+    - name: Add SSH key
       run: |
-        echo "Deploying to $DROPLET_IP"
-        sshpass -p "$SSH_PASSWORD" ssh -o StrictHostKeyChecking=no $SSH_USERNAME@$DROPLET_IP <<EOF
-          cd /var/www/dimas/html/
-          git pull origin main
-          sudo systemctl restart apache2
-        EOF
+        mkdir -p ~/.ssh
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan ${{ secrets.DROPLET_IPS }} >> ~/.ssh/known_hosts
+
+    - name: Deploy to droplets
+      env:
+        SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
+        DROPLET_IPS: ${{ secrets.DROPLET_IPS }}
+      run: |
+        IFS=',' read -ra ADDR <<< "$DROPLET_IPS"
+        for ip in "${ADDR[@]}"; do
+          echo "Deploying to $ip"
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no $SSH_USERNAME@$ip <<EOF
+            cd /var/www/dimas/html/
+            git pull origin main
+            sudo systemctl restart apache2
+          EOF
+        done
 
