@@ -28,10 +28,10 @@ jobs:
         IFS=',' read -ra ADDR <<< "$DROPLET_IPS"
         for ip in "${ADDR[@]}"; do
           echo "Deploying to $ip"
-          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no $SSH_USERNAME@$ip <<EOF
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no $SSH_USERNAME@$ip << 'EOF'
             cd /var/www/dimas/html/
             git pull origin main
             sudo systemctl restart apache2
-          EOF
+        EOF
         done
 
