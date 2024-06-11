@@ -30,7 +30,7 @@ jobs:
           echo "Deploying to $ip"
           ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no $SSH_USERNAME@$ip << 'EOF'
             cd /var/www/dimas/html/
-            git pull https://oauth2:${{ secrets.GH_TOKEN }}@github.com/elmerMg0/repo.git main
+            git pull https://oauth2:${{ secrets.GH_TOKEN }}@github.com/elmerMg0/backend_res.git main
             sudo systemctl restart apache2
         EOF
         done
