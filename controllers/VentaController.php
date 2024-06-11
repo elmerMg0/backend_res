@@ -7,6 +7,7 @@ use app\models\ColaImpresion;
 use app\models\DetalleVenta;
 use app\models\Impresora;
 use app\models\Mesa;
+use app\models\Notificacion;
 use app\models\Venta;
 use app\models\Periodo;
 use app\models\Producto;
@@ -669,6 +670,14 @@ class VentaController extends \yii\web\Controller
         $table -> save();
         return $sale;
     }
+    private function createNotification($msm){
+        $notification = new Notificacion();
+        $notification -> mensaje = $msm;
+        $notification -> leido = false;
+        date_default_timezone_set('America/La_Paz');
+        $notification -> create_ts = date('Y-m-d H:i:s');
+        $notification -> save();
+    } 
     public function actionUpdateSaleImproved($idSale){
         $idSale = isset($idSale) ? $idSale : null;
         $params = Yii::$app->getRequest()->getBodyParams();
@@ -712,6 +721,7 @@ class VentaController extends \yii\web\Controller
 
             if($detail ["estado"] === 'cancelado'){
                 DetalleVenta::updateAll(['estado' => 'cancelado'], ['id' => $detail["id"]]);
+                $this -> createNotification("Se cancelo el producto: " . $detail["nombre"] . " del pedido #" . $sale -> numero_pedido . " por el usuario: " . $sale -> usuario_id);
             }else{
                 $filterDetail = array_filter($saleDetail, function ($det) use ($detail) {
                     return $det['id']  === $detail['id'] && $det['estado'] === $detail['estado'];
