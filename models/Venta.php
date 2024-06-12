@@ -25,7 +25,6 @@ use Yii;
  * @property bool|null $finalizado_bar
  * @property string|null $nombre
  * @property string|null $telefono
- *
  * @property Cliente $cliente
  * @property ColaImpresion[] $colaImpresions
  * @property DetalleVenta[] $detalleVentas
