@@ -24,7 +24,7 @@ use Yii;
  * @property string|null $nota
  * @property bool|null $finalizado_bar
  * @property string|null $nombre
- *
+ * @property string|null $telefono
  * @property Cliente $cliente
  * @property ColaImpresion[] $colaImpresions
  * @property DetalleVenta[] $detalleVentas
@@ -57,6 +57,7 @@ class Venta extends \yii\db\ActiveRecord
             [['estado', 'nombre'], 'string', 'max' => 50],
             [['tipo', 'tipo_entrega'], 'string', 'max' => 15],
             [['hora'], 'string', 'max' => 20],
+            [['telefono'], 'string', 'max' => 12],
             [['cliente_id'], 'exist', 'skipOnError' => true, 'targetClass' => Cliente::class, 'targetAttribute' => ['cliente_id' => 'id']],
             [['mesa_id'], 'exist', 'skipOnError' => true, 'targetClass' => Mesa::class, 'targetAttribute' => ['mesa_id' => 'id']],
             [['usuario_id'], 'exist', 'skipOnError' => true, 'targetClass' => Usuario::class, 'targetAttribute' => ['usuario_id' => 'id']],
@@ -86,6 +87,7 @@ class Venta extends \yii\db\ActiveRecord
             'nota' => 'Nota',
             'finalizado_bar' => 'Finalizado Bar',
             'nombre' => 'Nombre',
+            'telefono' => 'Telefono',
         ];
     }
 
