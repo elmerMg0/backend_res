@@ -23,6 +23,8 @@ use Yii;
  * @property bool|null $finalizado
  * @property string|null $nota
  * @property bool|null $finalizado_bar
+ * @property string|null $nombre
+ * @property string|null $telefono
  *
  * @property Cliente $cliente
  * @property ColaImpresion[] $colaImpresions
@@ -53,9 +55,10 @@ class Venta extends \yii\db\ActiveRecord
             [['usuario_id', 'numero_pedido', 'cliente_id', 'mesa_id'], 'integer'],
             [['tipo_pago', 'nota'], 'string'],
             [['finalizado', 'finalizado_bar'], 'boolean'],
-            [['estado'], 'string', 'max' => 50],
+            [['estado', 'nombre'], 'string', 'max' => 50],
             [['tipo', 'tipo_entrega'], 'string', 'max' => 15],
             [['hora'], 'string', 'max' => 20],
+            [['telefono'], 'string', 'max' => 12],
             [['cliente_id'], 'exist', 'skipOnError' => true, 'targetClass' => Cliente::class, 'targetAttribute' => ['cliente_id' => 'id']],
             [['mesa_id'], 'exist', 'skipOnError' => true, 'targetClass' => Mesa::class, 'targetAttribute' => ['mesa_id' => 'id']],
             [['usuario_id'], 'exist', 'skipOnError' => true, 'targetClass' => Usuario::class, 'targetAttribute' => ['usuario_id' => 'id']],
@@ -84,6 +87,8 @@ class Venta extends \yii\db\ActiveRecord
             'finalizado' => 'Finalizado',
             'nota' => 'Nota',
             'finalizado_bar' => 'Finalizado Bar',
+            'nombre' => 'Nombre',
+            'telefono' => 'Telefono',
         ];
     }
 
