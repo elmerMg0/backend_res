@@ -43,9 +43,10 @@ class DeliveryController extends \yii\web\Controller
     }
 
 
-    public function actionIndex( $pageSize = 5)
+    public function actionIndex( $name, $pageSize = 5)
     {
-        $query = Delivery::find();
+        $query = Delivery::find()
+                            ->andFilterWhere(['LIKE', 'UPPER(nombre)',  strtoupper($name)]);;
 
         $pagination = new Pagination([
             'defaultPageSize' => $pageSize,
