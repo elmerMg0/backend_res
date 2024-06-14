@@ -17,7 +17,7 @@ use Yii;
  * @property int $categoria_id
  * @property string|null $url_image
  * @property string $estado
- * @property bool|null $cortesia
+ * @property bool|null $en_ecommerce
  * @property bool $stock_active
  *
  * @property Categoria $categoria
@@ -45,7 +45,7 @@ class Producto extends \yii\db\ActiveRecord
             [['precio_venta', 'precio_compra'], 'number'],
             [['stock', 'categoria_id'], 'default', 'value' => null],
             [['stock', 'categoria_id'], 'integer'],
-            [['cortesia', 'stock_active'], 'boolean'],
+            [['en_ecommerce', 'stock_active'], 'boolean'],
             [['nombre', 'tipo', 'url_image', 'estado'], 'string', 'max' => 50],
             [['descripcion'], 'string', 'max' => 80],
             [['nombre'], 'unique'],
@@ -69,7 +69,7 @@ class Producto extends \yii\db\ActiveRecord
             'categoria_id' => 'Categoria ID',
             'url_image' => 'Url Image',
             'estado' => 'Estado',
-            'cortesia' => 'Cortesia',
+            'en_ecommerce' => 'En Ecommerce',
             'stock_active' => 'Stock Active',
         ];
     }

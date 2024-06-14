@@ -12,7 +12,7 @@ use Yii;
  * @property string|null $descripcion
  * @property string|null $url_image
  * @property string $estado
- * @property bool|null $cortesia
+ * @property bool|null $en_ecommerce
  *
  * @property Producto[] $productos
  */
@@ -33,7 +33,7 @@ class Categoria extends \yii\db\ActiveRecord
     {
         return [
             [['nombre', 'estado'], 'required'],
-            [['cortesia'], 'boolean'],
+            [['en_ecommerce'], 'boolean'],
             [['nombre', 'url_image', 'estado'], 'string', 'max' => 50],
             [['descripcion'], 'string', 'max' => 80],
         ];
@@ -50,7 +50,7 @@ class Categoria extends \yii\db\ActiveRecord
             'descripcion' => 'Descripcion',
             'url_image' => 'Url Image',
             'estado' => 'Estado',
-            'cortesia' => 'Cortesia',
+            'en_ecommerce' => 'En Ecommerce',
         ];
     }
 
