@@ -88,7 +88,7 @@ class DetalleVentaController extends \yii\web\Controller
 
     public function actionGetSaleDetail( $idSale ){
         $saleInfo = Venta::find()
-                    ->select(['venta.*', 'usuario.username', 'cliente.nombre as cliente', 'cliente.celular', 'cliente.direccion', 'cliente.descripcion_domicilio', 'mesa.nombre as mesa'])
+                    ->select(['venta.*', 'usuario.username', 'cliente.nombre as customer'])
                     ->where(['venta.id' => $idSale])
                     ->innerJoin('usuario', 'usuario.id = venta.usuario_id')
                     ->innerJoin('cliente', 'cliente.id = venta.cliente_id')

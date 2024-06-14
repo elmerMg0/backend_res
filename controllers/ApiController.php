@@ -7,6 +7,7 @@ use app\models\Periodo;
 use app\models\Categoria;
 use app\models\Venta;
 use app\models\DetalleVenta;
+use app\models\User;
 class ApiController extends \yii\web\Controller{
     public function behaviors()
     {
@@ -115,9 +116,18 @@ class ApiController extends \yii\web\Controller{
         if($userId === 0 ){
             $period = Periodo::find()
                            ->where(['estado' => true])
-                           ->one();
+                           ->all();
             if($period){
-                $userId = $period -> usuario_id;
+                /* Obtener el usuario que sea cajero */
+                $userId;
+                for($i = 0; $i < count($period); $i++){
+                    $user = User::findOne($period[$i] -> usuario_id);
+                    if($user -> tipo === 'cajero'){
+                        $userId = $user -> id;
+                        break;
+                    }
+                } 
+                if(!$userId) $userId = $period[0] -> usuario_id; 
             }else{
                 return  [
                     'success' => false,
@@ -125,61 +135,56 @@ class ApiController extends \yii\web\Controller{
                 ];
             }
         }
+        $transaction = Yii::$app->db->beginTransaction();
+        try{
+            $params = Yii::$app->getRequest()->getBodyParams();
+            $numberOrder = Venta::find()->all();
+            $orderDetail = $params['orderDetail'];
+            $sale = new Venta();
+            date_default_timezone_set('America/La_Paz');
+            $sale -> fecha = date('Y-m-d H:i:s');
+            $sale->cantidad_total = intval($params['cantidadTotal']);
+            $sale->cantidad_cancelada = $params['cantidadPagada'];
+            $sale->usuario_id = $userId;
+            $sale->estado = $params['estado'];
+            $sale->numero_pedido = count($numberOrder) + 1;
+            $sale->tipo = $params['tipo'];
+            $sale->tipo_pago = $params['tipoPago'];
+            $sale->nota = $params['nota'];
 
-        $params = Yii::$app->getRequest()->getBodyParams();
-        $numberOrder = Venta::find()->all();
-        $orderDetail = $params['orderDetail'];
-        $sale = new Venta();
-        date_default_timezone_set('America/La_Paz');
-        $sale -> fecha = date('Y-m-d H:i:s');
-        $sale->cantidad_total = intval($params['cantidadTotal']);
-        $sale->cantidad_cancelada = $params['cantidadPagada'];
-        $sale->usuario_id = $userId;
-        $sale->numero_pedido = count($numberOrder) + 1;
-        $sale->estado = $params['estado'];
-        $sale->tipo_pago = $params['tipoPago'];
-        $sale->tipo = $params['tipo'];
-        $sale->nombre = $params['nombre'];
-        if($params['tipo'] === 'pedidoApp'){
-            $sale->tipo_entrega = $params['tipo_entrega'];
-            $sale->telefono = $params['telefono'];
-            $sale->hora = $params['hora'];
-            $sale->descripcion_direccion = $params['descripcion_direccion'];
-            $sale->direccion = $params['direccion'];
-        }
-        //$sale->cliente_id = $customerId;
-
-        if ($sale->save()) {
-            //agregar detalle de venta
-            foreach ($orderDetail as $order) {
-                $saleDetail = new DetalleVenta();
-                $saleDetail->cantidad = $order['cantidad'];
-                $saleDetail->producto_id = $order['id'];
-                $saleDetail->venta_id =  $sale->id;
-                if ($saleDetail->save()) {
-                   
-                }else{
-                    Yii::$app->getResponse()->setStatusCode(422, 'Data Validation Failed.');
-                    return $response = [
-                        'success' => false,
-                        'message' => 'Existen errores en los parametros',
-                        'data' => $saleDetail->errors
-                    ];
-                }
+            if($params['tipo'] === 'pedidoApp'){
+                $sale -> info_cliente = $params['cliente'];
+                $sale -> mesa_id = 251;
+                $sale -> cliente_id = 24;
             }
-
-            Yii::$app->getResponse()->setStatusCode(201);
-            $response = [
-                'success' => true,
-                'message' => 'Su pedido se realizo exitosamente',
-                'sale' => $sale
-            ];
-        } else {
-            Yii::$app->getResponse()->setStatusCode(422, 'Data Validation Failed.');
-            $response = [
+            if ($sale->save()) {
+                //agregar detalle de venta
+                foreach ($orderDetail as $order) {
+                    $saleDetail = new DetalleVenta();
+                    $saleDetail->cantidad = $order['cantidad'];
+                    $saleDetail->producto_id = $order['id'];
+                    $saleDetail->estado = 'enviado';
+                    $saleDetail->impreso = true;
+                    $saleDetail->venta_id =  $sale->id;
+                    if (!$saleDetail->save()) {
+                        throw new \Exception('Error al insertar detalle de venta');
+                    }
+                }
+                $transaction->commit();
+                Yii::$app->getResponse()->setStatusCode(201);
+                $response = [
+                    'success' => true,
+                    'message' => 'Su pedido se realizo exitosamente',
+                    'sale' => $sale
+                ];
+            } else {
+               throw new \Exception('Error al insertar venta');
+            }
+        }catch (\Exception $e){
+            $transaction->rollBack();
+            return [
                 'success' => false,
-                'message' => 'failed update',
-                'data' => $sale->errors
+                'message' => $e->getMessage(),
             ];
         }
         return $response;

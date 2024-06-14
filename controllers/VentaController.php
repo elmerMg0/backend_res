@@ -67,7 +67,7 @@ class VentaController extends \yii\web\Controller
                 ],
                 [
                     'allow' => true, // permitido o no permitido
-                    'actions' => ['get-sale-detail'], // acciones que siguen esta regla
+                    'actions' => ['get-sale-detail', 'get-sale-detail-all'], // acciones que siguen esta regla
                     'roles' => ['cajero'] // control por roles  permisos
                 ],
                 [
@@ -339,7 +339,6 @@ class VentaController extends \yii\web\Controller
         $period = Periodo::findOne($idPeriod);
         $sales = Venta::find()
         ->join('LEFT JOIN','usuario', 'usuario.id = venta.usuario_id')
-        ->with('cliente')
         ->Where(['usuario_id' => $idUser, 'venta.estado' => 'pendiente', 'venta.tipo' => 'pedidoApp'])
         ->orWhere(['venta.estado' => 'enviado'])
         ->andWhere(['>=', 'fecha', $period -> fecha_inicio])

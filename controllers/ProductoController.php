@@ -70,7 +70,7 @@ class ProductoController extends \yii\web\Controller
         if($name === 'undefined')$name = null;
         $query = Producto::find()
                     ->select(['producto.*', 'categoria.nombre As nombre_categoria'])
-                    ->join('LEFT JOIN', 'categoria', 'categoria.id = producto.categoria_id')
+                    ->innerJoin('categoria', 'categoria.id = producto.categoria_id')
                     ->andFilterWhere(['LIKE', 'UPPER(producto.nombre)',  strtoupper($name)]);
 
         $pagination = new Pagination([
