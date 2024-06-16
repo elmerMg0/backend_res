@@ -434,6 +434,11 @@ class VentaController extends \yii\web\Controller
                         }
                     }
                 }
+                $table = Mesa::findOne($sale -> mesa_id);
+                $table -> estado = 'disponible';
+                if(!$table -> save()){
+                    throw new Exception('No se pudo actualizar la mesa');
+                }
                 $sale -> estado = 'cancelado';
                 if($sale -> save()){
                     $response = [
