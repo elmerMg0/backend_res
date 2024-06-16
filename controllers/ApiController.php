@@ -64,7 +64,7 @@ class ApiController extends \yii\web\Controller{
     public function actionGetCategories () {
         $categories = Categoria::find()
                       ->orderBy(['id' => 'SORT_ASC'])  
-                      ->where(['estado' => 'Activo', 'en_ecommerce' => false])   
+                      ->where(['estado' => 'Activo', 'en_ecommerce' => true])   
                      ->all();
 
         if($categories){
