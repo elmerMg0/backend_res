@@ -154,7 +154,7 @@ class ApiController extends \yii\web\Controller{
 
             if($params['tipo'] === 'pedidoApp'){
                 $sale -> info_cliente = $params['cliente'];
-                $sale -> mesa_id = 251;
+                $sale -> mesa_id = 2;
                 $sale -> cliente_id = 24;
             }
             if ($sale->save()) {
