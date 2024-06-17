@@ -58,17 +58,22 @@ class DetalleVentaController extends \yii\web\Controller
         return $this->render('index');
     }
 
-    public function actionGetBestSellerProduct($quantity, $type){
-        $type = $type ?? null;
+    public function actionGetBestSellerProduct(){
+        $params = Yii::$app -> getRequest() -> getBodyParams();
+        $type = isset($params['type']) ? $params['type'] :  null;
+        $dateStart = isset($params['dateStart']) ? $params['dateStart'] :  null;
+        $dateEnd = isset($params['dateEnd']) ? $params['dateEnd'] : null;
         $detail = DetalleVenta::find()
-                    ->select(['sum(cantidad) as cantidad', 'producto.nombre', 'producto.id'])
-                    ->join('LEFT JOIN', 'producto', 'producto.id=detalle_venta.producto_id')
-                    ->groupBy(['producto_id', 'producto.nombre', 'producto.id' ])
+                    ->select(['sum(cantidad) as cantidad','producto.precio_venta' ,'producto.nombre', 'producto.id'])
+                    ->innerJoin('producto', 'producto.id=detalle_venta.producto_id')
+                    ->groupBy(['producto_id', 'producto.nombre', 'producto.id', 'producto.precio_venta'])
                     ->orderBy(['cantidad' => SORT_DESC])
+                    ->where(['<>', 'detalle_venta.estado', 'cancelado'])
                     ->andFilterWhere(['producto.tipo' => $type])
-                    ->andWhere(['<>', 'detalle_venta.estado', 'cancelado'])
+                    ->andFilterWhere(['>=', 'create_ts', $dateStart])
+                    ->andFilterWhere(['<=', 'create_ts', $dateEnd])
                     ->asArray()
-                    ->limit($quantity)
+                    ->limit($params['quantity'])
                     ->all();
         if($detail){
             $response = [

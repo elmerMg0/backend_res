@@ -93,7 +93,8 @@ class SalonController extends \yii\web\Controller
     public function actionGetLounges ($estado = null){
         
         $lounges = Salon::find()
-                        ->filterWhere(['estado' => $estado])
+                        ->where(['<>', 'nombre', 'SALON_BASE'])
+                        ->andFilterWhere(['estado' => $estado])
                         ->orderBy(['id' => SORT_ASC])
                         ->all();
         if($lounges){
