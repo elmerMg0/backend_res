@@ -288,7 +288,7 @@ class VentaController extends \yii\web\Controller
         $fechaIni = assert($params['fechaInicio'])? $params['fechaInicio'] : null;
         $fechaFin = assert($params['fechaFin'])? $params['fechaFin'] . ' 23:59:58.0000' : null;
         $query = Venta::find()
-            ->select(['venta.*', 'usuario.username', 'mesa.nombre as mesa', 'cliente.nombre as cliente'])
+            ->select(['venta.*', 'usuario.username', 'mesa.nombre as mesa', 'cliente.nombre as customer'])
             ->innerJoin('usuario','usuario.id = venta.usuario_id')
             ->innerJoin('mesa', 'mesa.id=venta.mesa_id')
             ->innerJoin('cliente', 'cliente.id=venta.cliente_id')
