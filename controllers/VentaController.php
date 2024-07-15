@@ -620,9 +620,9 @@ class VentaController extends \yii\web\Controller
 
     private function addNewOrderDetail( $detail, $idSale, $printout, $amount){
         try{
-            $product =  Producto::findOne($detail['producto_id']);
+            //$product =  Producto::findOne($detail['producto_id']);
             /* Validar solo si si stock_active es true */
-            if($product -> stock_active === true){
+            /*if($product -> stock_active === true){
                 if($product -> stock > 0 && $amount <= $product -> stock){
                     $product -> stock = $product -> stock - $detail ['cantidad'];
                     if(!$product -> save()){
@@ -631,7 +631,7 @@ class VentaController extends \yii\web\Controller
                 }else{
                     return 'No hay stock para '.$product -> nombre;
                 }
-            }
+            }*/
             $newSaleDetail = new DetalleVenta();
             $newSaleDetail -> cantidad = abs($amount);
             $newSaleDetail -> producto_id = $detail['producto_id'];
