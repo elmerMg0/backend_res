@@ -28,9 +28,9 @@ class CategoriaController extends \yii\web\Controller
 
             ]
         ];
-        $behaviors['authenticator'] = [         	
-            'class' => \yii\filters\auth\HttpBearerAuth::class,         	
-            'except' => ['options']     	
+        $behaviors['authenticator'] = [
+            'class' => \yii\filters\auth\HttpBearerAuth::class,
+            'except' => ['options']
         ];
         return $behaviors;
     }
@@ -47,11 +47,12 @@ class CategoriaController extends \yii\web\Controller
         return parent::beforeAction($action);
     }
 
-    public function actionIndex($name, $pageSize=5)
-    {   
-        if($name === 'undefined')$name = null;
+    public function actionIndex($name, $pageSize = 5)
+    {
+        if ($name === 'undefined') $name = null;
         $query = Categoria::find()
-                    ->andFilterWhere(['LIKE', 'UPPER(nombre)',  strtoupper($name)]);
+            ->where(['categoria_id' => null])
+            ->andFilterWhere(['LIKE', 'UPPER(nombre)',  strtoupper($name)]);
 
         $pagination = new Pagination([
             'defaultPageSize' => $pageSize,
@@ -82,20 +83,21 @@ class CategoriaController extends \yii\web\Controller
         return $response;
     }
 
-    public function actionGetCategories () {
+    public function actionGetCategories()
+    {
         $categories = Categoria::find()
-                    ->where(['estado' => 'Activo'])
-                      ->orderBy(['id' => 'SORT_ASC'])             
-                     ->all();
+            ->where(['estado' => 'Activo'])
+            ->orderBy(['id' => 'SORT_ASC'])
+            ->all();
 
-        if($categories){
+        if ($categories) {
 
             $response = [
                 'success' => true,
                 'message' => 'Lista de categorias',
                 'categories' => $categories,
             ];
-        }else{
+        } else {
             $response = [
                 'success' => false,
                 'message' => 'No existen categorias',
@@ -108,29 +110,28 @@ class CategoriaController extends \yii\web\Controller
 
     public function actionCreate()
     {
-   
+
         $category = new Categoria;
         $file = UploadedFile::getInstanceByName('file');
         $data = Json::decode(Yii::$app->request->post('data'));
 
         // $data = Json::decode(Yii::$app->request->post('data'));
-        if($file){
+        if ($file) {
             $fileName = uniqid() . '.' . $file->getExtension();
             $file->saveAs(Yii::getAlias('@app/web/upload/') . $fileName);
             $category->url_image = $fileName;
         }
         try {
-        $category->load($data, '');
+            $category->load($data, '');
 
             if ($category->save()) {
                 Yii::$app->getResponse()->setStatusCode(201);
                 $response = [
                     'success' => true,
                     'message' => 'Categoria creada exitosamente',
-                    'fileName' => $category
                 ];
             } else {
-                Yii::$app->getResponse()->setStatusCode(422,"Data Validation Failed.");
+                Yii::$app->getResponse()->setStatusCode(422, "Data Validation Failed.");
                 $response = [
                     'success' => false,
                     'message' => 'Existen errores en los campos',
@@ -161,73 +162,64 @@ class CategoriaController extends \yii\web\Controller
             if ($image) {
                 $url_image = $category->url_image;
                 $imageOld = Yii::getAlias('@app/web/upload/' . $url_image);
-                if(file_exists($imageOld) && $url_image){
+                if (file_exists($imageOld) && $url_image) {
                     unlink($imageOld);
                     /* Eliminar */
                 }
-                $fileName = uniqid().'.'.$image->getExtension();
+                $fileName = uniqid() . '.' . $image->getExtension();
                 $image->saveAs(Yii::getAlias('@app/web/upload/') . $fileName);
                 $imageNew = Yii::getAlias('@app/web/upload/' . $fileName);
-                if(file_exists($imageNew)){
-                    $category -> url_image = $fileName;
-                }else{
+                if (file_exists($imageNew)) {
+                    $category->url_image = $fileName;
+                } else {
                     return $response = [
                         'success' => false,
                         'message' => 'Ocurrio un error!',
                     ];
                 }
             }
-
-            try {
-
-                if ($category->save()) {
-
-                    $response = [
-                        'success' => true,
-                        'message' => 'Categoria actualizado correctamente',
-                        'category' => $category
-                    ];
-                } else {
-                    Yii::$app->getResponse()->setStatusCode(422, 'Data Validation Failed');
-                    $response = [
-                        'success' => false,
-                        'message' => 'Existe errores en los campos',
-                        'error' => $category->errors
-                    ];
-                }
-            } catch (Exception $e) {
-                Yii::$app->getResponse()->setStatusCode(500);
+            if ($category->save()) {
+                $response = [
+                    'success' => true,
+                    'message' => 'Categoria actualizada correctamente',
+                ];
+            } else {
+                Yii::$app->getResponse()->setStatusCode(422, 'Data Validation Failed');
                 $response = [
                     'success' => false,
-                    'message' => 'Categoria no encontrado',
-                    'error' => $e->getMessage()
+                    'message' => 'Existe errores en los campos',
+                    'error' => $category->errors
                 ];
             }
         } else {
             Yii::$app->getResponse()->setStatusCode(404);
             $response = [
                 'success' => false,
-                'message' => 'Categoria no encontrado',
+                'message' => 'Categoria no encontrada',
             ];
         }
         return $response;
     }
 
-    public function actionGetCategory($idCategory)
+    public function actionCategory($idCategory)
     {
-        $category = Categoria::findOne($idCategory);
+        $category = Categoria::find()
+            ->where(['id' => $idCategory])
+            ->with('categorias')
+            ->asArray()
+            ->one();
         if ($category) {
             $response = [
                 'success' => true,
                 'message' => 'Accion realizada correctamente',
-                'category' => $category
+                'record' => $category
             ];
         } else {
             Yii::$app->getResponse()->setStatusCode(404);
             $response = [
                 'success' => false,
                 'message' => 'No existe el Categoria',
-                'category' => $category
+                'record' => $category
             ];
         }
         return $response;
@@ -241,8 +233,8 @@ class CategoriaController extends \yii\web\Controller
             try {
                 $url_image = $category->url_image;
                 $category->delete();
-                $pathFile = Yii::getAlias('@webroot/upload/'.$url_image);
-                if( file_exists($pathFile)){
+                $pathFile = Yii::getAlias('@webroot/upload/' . $url_image);
+                if (file_exists($pathFile)) {
                     unlink($pathFile);
                 }
                 $response = [
@@ -276,7 +268,11 @@ class CategoriaController extends \yii\web\Controller
     }
     public function actionCategories()
     {
-        $categories = Categoria::find()->all();
+        $categories = Categoria::find()
+            ->where(['estado' => true, 'categoria_id' => null])
+            ->with('categorias')
+            ->asArray()
+            ->all();
         $response = [
             'success' => true,
             'message' => 'Lista de categorias',
@@ -285,19 +281,20 @@ class CategoriaController extends \yii\web\Controller
         return $response;
     }
 
-    public function actionGetProductsByCategory($idCategory){
+    public function actionGetProductsByCategory($idCategory)
+    {
         $category = Categoria::findOne($idCategory);
-        if($category){
+        if ($category) {
             $products = Producto::find()
-                        ->where(['estado' => 'Activo', 'categoria_id' => $idCategory])
-                        ->all();
+                ->where(['estado' => true, 'categoria_id' => $idCategory])
+                ->all();
             $response = [
                 "success" => true,
                 "message" => "Lista de productos por categoria",
                 "category" => $category,
                 "products" => $products
             ];
-        }else{
+        } else {
             Yii::$app->getResponse()->setStatusCode(404);
             $response = [
                 "success" => false,
@@ -307,24 +304,66 @@ class CategoriaController extends \yii\web\Controller
         return $response;
     }
 
-    public function actionGetCategoryWithProducts(){
+    public function actionGetCategoryWithProducts()
+    {
         $query = Categoria::find()
-                    ->with(['productos' => function ($query) {
-                        $query
-                        ->select(['producto.id', 'producto.categoria_id','producto.nombre', 'producto.url_image', 'producto.precio_venta', 'producto.estado',  'producto.stock', 'producto.tipo' , 'producto.id as producto_id', 'producto.stock_active'])
-                        ->andWhere(['estado' => 'Activo'])
+            ->where(['estado' => true, 'categoria_id' => null])
+            ->with(['categorias' => function ($query) {
+                $query->with(['productos' => function ($query) {
+                    $query
+                        ->select(['producto.id', 'producto.categoria_id', 'producto.nombre', 'producto.url_image', 'producto.precio_venta', 'producto.estado', 'producto.id as producto_id', 'producto.area_impresion_id'])
+                        ->andWhere(['estado' => true])
+                        ->with('comentarios')
+                        ->with(['grupoModificadores' => function ($query) {
+                            $query->select(['grupo_modificadores.*', 'catalogo_grupo_modificadores.descripcion'])
+                                ->with(['grupoModificadoresDetalles' => function ($query) {
+                                    $query->select(['grupo_modificadores_detalle.*', 'producto.nombre', 'producto.area_impresion_id'])
+                                        ->innerJoin('producto', 'producto.id = grupo_modificadores_detalle.producto_id');
+                                }])
+                                ->innerJoin('catalogo_grupo_modificadores', 'catalogo_grupo_modificadores.id = grupo_modificadores.catalogo_grupo_modificadores_id')
+                                ->orderBy(['secuencia_boton' => 'SORT_ASC']);
+                        }])
+                        ->with(['paquetes0' => function ($query) {
+                            $query->select(['paquete.*', 'producto.categoria_id', 'producto.nombre', 'producto.url_image', 'producto.precio_venta', 'producto.estado', 'producto.id as producto_id', 'producto.area_impresion_id', 'paquete.id'])
+                                ->innerJoin('producto', 'paquete.producto_id = producto.id')
+                                ->andWhere(['estado' => true])
+                                ->orderBy(['id' => 'SORT_ASC']);
+                        }])
                         ->orderBy(['id' => 'SORT_ASC']);
+                }]);
+            }])
+            ->with(['productos' => function ($query) {
+                $query
+                    ->select(['producto.id', 'producto.categoria_id', 'producto.nombre', 'producto.url_image', 'producto.precio_venta', 'producto.estado', 'producto.id as producto_id', 'producto.area_impresion_id'])
+                    ->andWhere(['estado' => true])
+                    ->with('comentarios')
+                    ->with(['paquetes0' => function ($query) {
+                        $query->select(['paquete.*', 'producto.categoria_id', 'producto.nombre', 'producto.url_image', 'producto.precio_venta', 'producto.estado', 'producto.id as producto_id', 'producto.area_impresion_id', 'paquete.id'])
+                            ->innerJoin('producto', 'paquete.producto_id = producto.id')
+                            ->andWhere(['estado' => true])
+                            ->orderBy(['id' => 'SORT_ASC']);
                     }])
-                    ->orderBy(['id' => 'SORT_ASC'])
-                    ->asArray()
-                    ->all();
-        if($query){
+                    ->with(['grupoModificadores' => function ($query) {
+                        $query->select(['grupo_modificadores.*', 'catalogo_grupo_modificadores.descripcion'])
+                            ->with(['grupoModificadoresDetalles' => function ($query) {
+                                $query->select(['grupo_modificadores_detalle.*', 'producto.nombre', 'producto.area_impresion_id'])
+                                    ->innerJoin('producto', 'producto.id = grupo_modificadores_detalle.producto_id');
+                            }])
+                            ->innerJoin('catalogo_grupo_modificadores', 'catalogo_grupo_modificadores.id = grupo_modificadores.catalogo_grupo_modificadores_id')
+                            ->orderBy(['secuencia_boton' => 'SORT_ASC']);
+                    }])
+                    ->orderBy(['id' => 'SORT_ASC']);
+            }])
+            ->orderBy(['id' => 'SORT_ASC'])
+            ->asArray()
+            ->all();
+        if ($query) {
             $response = [
                 'success' => true,
                 'message' => 'Lista de categorias',
                 'categories' => $query
             ];
-        }else{
+        } else {
             $response = [
                 'success' => true,
                 'message' => 'Lista de categorias',
@@ -333,22 +372,23 @@ class CategoriaController extends \yii\web\Controller
         }
         return $response;
     }
-    public function actionDisableCategory( $idCategory ){
+    public function actionDisableCategory($idCategory)
+    {
         $category = Categoria::findOne($idCategory);
-        if($category){
-            $category -> estado = 'Inactivo';
-            if($category -> save()){
+        if ($category) {
+            $category->estado = 'Inactivo';
+            if ($category->save()) {
                 $response = [
                     'success' => true,
                     'message' => 'Producto actualizado'
                 ];
-            }else{
+            } else {
                 $response = [
                     'success' => false,
                     'message' => 'Ocurrio un error!'
                 ];
             }
-        }else{
+        } else {
             $response = [
                 'success' => false,
                 'message' => 'Ocurrio un error!'
@@ -357,22 +397,54 @@ class CategoriaController extends \yii\web\Controller
         return $response;
     }
 
-    public function actionExistsPeriod(){
+    public function actionExistsPeriod()
+    {
         $period = Periodo::find()
-                        ->where(['estado' => true])
-                        ->one();
-        if($period){
-                $response = [
-                    'success' => true, 
-                    'message' => 'existe periodo activo',
-                ];
-        }else{
+            ->where(['estado' => true])
+            ->one();
+        if ($period) {
             $response = [
-                'success' => false, 
+                'success' => true,
+                'message' => 'existe periodo activo',
+            ];
+        } else {
+            $response = [
+                'success' => false,
                 'message' => 'En este instante está fuera de los horarios de atención',
             ];
         }
         return $response;
     }
 
+    public function actionSubCategory()
+    {
+        $subCategories = Yii::$app->getRequest()->getBodyParams();
+
+        $transaction = Yii::$app->db->beginTransaction();
+        try {
+            foreach ($subCategories as $subCategory) {
+                $model = new Categoria();
+                if (isset($subCategory['id'])) {
+                    $model = Categoria::findOne($subCategory['id']);
+                }
+                $model->load($subCategory, '');
+                if (!$model->save()) {
+                    throw new \Exception(json_encode($model->errors));
+                }
+            }
+            $transaction->commit();
+            $response = [
+                'success' => true,
+                'message' => 'Sub categorias creadas exitosamente',
+            ];
+        } catch (\Exception $e) {
+            $transaction->rollBack();
+            $response = [
+                'success' => false,
+                'message' => $e->getMessage(),
+            ];
+        }
+
+        return $response;
+    }
 }

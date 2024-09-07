@@ -9,21 +9,25 @@ use Yii;
  *
  * @property int $id
  * @property string $nombre
- * @property string $tipo
  * @property float $precio_venta
- * @property float $precio_compra
+ * @property float $costo_compra
  * @property string|null $descripcion
- * @property int|null $stock
  * @property int $categoria_id
  * @property string|null $url_image
- * @property string $estado
+ * @property bool $estado
  * @property bool|null $en_ecommerce
- * @property bool $stock_active
+ * @property int|null $area_impresion_id
+ * @property bool $favorito
  *
+ * @property AreaImpresion $areaImpresion
  * @property Categoria $categoria
- * @property DetalleArqueoInventario[] $detalleArqueoInventarios
+ * @property Comentario[] $comentarios
  * @property DetalleVenta[] $detalleVentas
- * @property Inventario[] $inventarios
+ * @property GrupoModificadores[] $grupoModificadores
+ * @property GrupoModificadoresDetalle[] $grupoModificadoresDetalles
+ * @property Paquete[] $paquetes
+ * @property Paquete[] $paquetes0
+ * @property Receta[] $recetas
  */
 class Producto extends \yii\db\ActiveRecord
 {
@@ -41,14 +45,15 @@ class Producto extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['nombre', 'tipo', 'precio_venta', 'precio_compra', 'categoria_id', 'estado'], 'required'],
-            [['precio_venta', 'precio_compra'], 'number'],
-            [['stock', 'categoria_id'], 'default', 'value' => null],
-            [['stock', 'categoria_id'], 'integer'],
-            [['en_ecommerce', 'stock_active'], 'boolean'],
-            [['nombre', 'tipo', 'url_image', 'estado'], 'string', 'max' => 50],
+            [['nombre', 'precio_venta', 'costo_compra', 'categoria_id', 'estado'], 'required'],
+            [['precio_venta', 'costo_compra'], 'number'],
+            [['categoria_id', 'area_impresion_id'], 'default', 'value' => null],
+            [['categoria_id', 'area_impresion_id'], 'integer'],
+            [['estado', 'en_ecommerce', 'favorito'], 'boolean'],
+            [['nombre', 'url_image'], 'string', 'max' => 50],
             [['descripcion'], 'string', 'max' => 80],
             [['nombre'], 'unique'],
+            [['area_impresion_id'], 'exist', 'skipOnError' => true, 'targetClass' => AreaImpresion::class, 'targetAttribute' => ['area_impresion_id' => 'id']],
             [['categoria_id'], 'exist', 'skipOnError' => true, 'targetClass' => Categoria::class, 'targetAttribute' => ['categoria_id' => 'id']],
         ];
     }
@@ -61,17 +66,26 @@ class Producto extends \yii\db\ActiveRecord
         return [
             'id' => 'ID',
             'nombre' => 'Nombre',
-            'tipo' => 'Tipo',
             'precio_venta' => 'Precio Venta',
-            'precio_compra' => 'Precio Compra',
+            'costo_compra' => 'Costo Compra',
             'descripcion' => 'Descripcion',
-            'stock' => 'Stock',
             'categoria_id' => 'Categoria ID',
             'url_image' => 'Url Image',
             'estado' => 'Estado',
             'en_ecommerce' => 'En Ecommerce',
-            'stock_active' => 'Stock Active',
+            'area_impresion_id' => 'Area Impresion ID',
+            'favorito' => 'Favorito',
         ];
+    }
+
+    /**
+     * Gets query for [[AreaImpresion]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getAreaImpresion()
+    {
+        return $this->hasOne(AreaImpresion::class, ['id' => 'area_impresion_id']);
     }
 
     /**
@@ -85,13 +99,13 @@ class Producto extends \yii\db\ActiveRecord
     }
 
     /**
-     * Gets query for [[DetalleArqueoInventarios]].
+     * Gets query for [[Comentarios]].
      *
      * @return \yii\db\ActiveQuery
      */
-    public function getDetalleArqueoInventarios()
+    public function getComentarios()
     {
-        return $this->hasMany(DetalleArqueoInventario::class, ['producto_id' => 'id']);
+        return $this->hasMany(Comentario::class, ['producto_id' => 'id']);
     }
 
     /**
@@ -105,12 +119,52 @@ class Producto extends \yii\db\ActiveRecord
     }
 
     /**
-     * Gets query for [[Inventarios]].
+     * Gets query for [[GrupoModificadores]].
      *
      * @return \yii\db\ActiveQuery
      */
-    public function getInventarios()
+    public function getGrupoModificadores()
     {
-        return $this->hasMany(Inventario::class, ['producto_id' => 'id']);
+        return $this->hasMany(GrupoModificadores::class, ['producto_id' => 'id']);
+    }
+
+    /**
+     * Gets query for [[GrupoModificadoresDetalles]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getGrupoModificadoresDetalles()
+    {
+        return $this->hasMany(GrupoModificadoresDetalle::class, ['producto_id' => 'id']);
+    }
+
+    /**
+     * Gets query for [[Paquetes]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getPaquetes()
+    {
+        return $this->hasMany(Paquete::class, ['producto_id' => 'id']);
+    }
+
+    /**
+     * Gets query for [[Paquetes0]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getPaquetes0()
+    {
+        return $this->hasMany(Paquete::class, ['producto_parent_id' => 'id']);
+    }
+
+    /**
+     * Gets query for [[Recetas]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getRecetas()
+    {
+        return $this->hasMany(Receta::class, ['producto_id' => 'id']);
     }
 }

@@ -17,7 +17,7 @@ class ProductoController extends \yii\web\Controller
 {
     public function behaviors()
     {
-    	$behaviors = parent::behaviors();
+        $behaviors = parent::behaviors();
         $behaviors["verbs"] = [
             "class" => \yii\filters\VerbFilter::class,
             "actions" => [
@@ -27,7 +27,7 @@ class ProductoController extends \yii\web\Controller
                 'delete' => ['delete'],
                 'get-product' => ['get'],
                 'products' => ['post'],
-                'disable-product' => ['get']
+                'disable-product' => ['delete', 'patch']
             ]
         ];
         // add Bearer authentication filter     	
@@ -41,16 +41,16 @@ class ProductoController extends \yii\web\Controller
             'only' => ['get-product', 'products'], // acciones a las que se aplicará el control
             'except' => [],    // acciones a las que no se aplicará el control
             'rules' => [
-                 [
+                [
                     'allow' => true, // permitido o no permitido
-                    'actions' => ['index','update','delete','create', 'products', 'get-product'], // acciones que siguen esta regla
+                    'actions' => ['index', 'update', 'delete', 'create', 'products', 'get-product'], // acciones que siguen esta regla
                     'roles' => ['administrador', 'mesero', 'configurador', 'cajero'] // control por roles  permisos
-                ], 
+                ],
                 //…
-	    ],
-	];
+            ],
+        ];
 
-        return $behaviors; 
+        return $behaviors;
     }
 
     public function beforeAction($action)
@@ -67,11 +67,11 @@ class ProductoController extends \yii\web\Controller
 
     public function actionIndex($name, $pageSize = 5)
     {
-        if($name === 'undefined')$name = null;
+        if ($name === 'undefined') $name = null;
         $query = Producto::find()
-                    ->select(['producto.*', 'categoria.nombre As nombre_categoria'])
-                    ->innerJoin('categoria', 'categoria.id = producto.categoria_id')
-                    ->andFilterWhere(['LIKE', 'UPPER(producto.nombre)',  strtoupper($name)]);
+            ->select(['producto.*', 'categoria.nombre As nombre_categoria'])
+            ->innerJoin('categoria', 'categoria.id = producto.categoria_id')
+            ->andFilterWhere(['LIKE', 'UPPER(producto.nombre)',  strtoupper($name)]);
 
         $pagination = new Pagination([
             'defaultPageSize' => $pageSize,
@@ -112,7 +112,6 @@ class ProductoController extends \yii\web\Controller
             $product = new Producto();
             $file = UploadedFile::getInstanceByName('file');
             $data = Json::decode(Yii::$app->request->post('data'));
-            //  $varieties = Json::decode(Yii::$app->request->post('varieties'));
             if ($file) {
                 $fileName = uniqid() . '.' . $file->getExtension();
                 $file->saveAs(Yii::getAlias('@app/web/upload/') . $fileName);
@@ -123,38 +122,20 @@ class ProductoController extends \yii\web\Controller
 
             try {
                 $product->load($data, '');
-                $categoryGasto = CategoriaGasto::find()->where(['nombre' => 'Costo de Ventas']) -> one();
-                if($categoryGasto){
+                $categoryGasto = CategoriaGasto::find()->where(['nombre' => 'Costo de Ventas'])->one();
+                if ($categoryGasto) {
                     $expense = new Gasto();
                     $expense->nombre = $product->nombre;
-                    $expense -> categoria_gasto_id = $categoryGasto -> id;
+                    $expense->categoria_gasto_id = $categoryGasto->id;
                     $expense->save();
                 }
 
                 if ($product->save()) {
                     Yii::$app->getResponse()->setStatusCode(201);
-                    /* if($varieties){
-                        for($i = 0; $i < count($varieties); $i ++ ){
-                            $variety = $varieties[$i];
-                            $newVariety = new SubProducto();
-                            $newVariety -> nombre = $variety[1];
-                            $newVariety -> producto_id = $product->id;
-                            if($newVariety -> save()){
-
-                            }else{
-                                return [
-                                    'success' => false,
-                                    'message' => 'Existen errores en los campos',
-                                    'fileName' => $newVariety -> errors
-                                ];
-                            }
-                        }
-                    } */
-                    $transaction -> commit();
+                    $transaction->commit();
                     $response = [
                         'success' => true,
                         'message' => 'Producto creado exitosamente',
-                        'fileName' => $product
                     ];
                 } else {
                     Yii::$app->getResponse()->setStatusCode(422, "Data Validation Failed.");
@@ -170,17 +151,15 @@ class ProductoController extends \yii\web\Controller
                 $response = [
                     'success' => false,
                     'message' => 'ocurrio un error',
-                    'fileName' => $e->getMessage()
                 ];
             }
-        }else{
+        } else {
             Yii::$app->getResponse()->setStatusCode(404);
             $response = [
                 'success' => false,
                 'message' => 'Categoria no encontrada',
             ];
         }
-
         return $response;
     }
 
@@ -198,16 +177,16 @@ class ProductoController extends \yii\web\Controller
             if ($image) {
                 $url_image = $product->url_image;
                 $imageOld = Yii::getAlias('@app/web/upload/' . $url_image);
-                if(file_exists($imageOld) && $url_image){
+                if (file_exists($imageOld) && $url_image) {
                     unlink($imageOld);
                     /* Eliminar */
                 }
-                $fileName = uniqid().'.'.$image->getExtension();
+                $fileName = uniqid() . '.' . $image->getExtension();
                 $image->saveAs(Yii::getAlias('@app/web/upload/') . $fileName);
                 $imageNew = Yii::getAlias('@app/web/upload/' . $fileName);
-                if(file_exists($imageNew)){
-                    $product -> url_image = $fileName;
-                }else{
+                if (file_exists($imageNew)) {
+                    $product->url_image = $fileName;
+                } else {
                     return $response = [
                         'success' => false,
                         'message' => 'Ocurrio un error!',
@@ -217,20 +196,19 @@ class ProductoController extends \yii\web\Controller
             }
             try {
                 if ($product->save()) {
-                    if($varieties){
-                    
-                        for($i = 0; $i < count($varieties); $i ++ ){
+                    if ($varieties) {
+
+                        for ($i = 0; $i < count($varieties); $i++) {
                             $variety = $varieties[$i];
                             $newVariety = SubProducto::find()->where(['producto_id' => $product->id]);
-                            $newVariety -> nombre = $variety[1];
-                            $newVariety -> producto_id = $product->id;
-                            if($newVariety -> save()){
-
-                            }else{
+                            $newVariety->nombre = $variety[1];
+                            $newVariety->producto_id = $product->id;
+                            if ($newVariety->save()) {
+                            } else {
                                 return [
                                     'success' => false,
                                     'message' => 'Existen errores en los campos',
-                                    'fileName' => $newVariety -> errors
+                                    'fileName' => $newVariety->errors
                                 ];
                             }
                         }
@@ -273,14 +251,14 @@ class ProductoController extends \yii\web\Controller
             $response = [
                 'success' => true,
                 'message' => 'Accion realizada correctamente',
-                'product' => $product
+                'record' => $product
             ];
         } else {
             Yii::$app->getResponse()->setStatusCode(404);
             $response = [
                 'success' => false,
                 'message' => 'No existe el Categoria',
-                'product' => $product
+                'record' => $product
             ];
         }
         return $response;
@@ -296,7 +274,7 @@ class ProductoController extends \yii\web\Controller
                 $product->delete();
                 /* Si existe imagen elimminar */
                 $pathFile = Yii::getAlias('@webroot/upload/' . $url_image);
-                if( file_exists($pathFile)){
+                if (file_exists($pathFile)) {
                     unlink($pathFile);
                 }
                 $response = [
@@ -330,14 +308,17 @@ class ProductoController extends \yii\web\Controller
     }
     public function actionProducts()
     {
-        $params = Yii::$app -> getRequest() -> getBodyParams();
+        $params = Yii::$app->getRequest()->getBodyParams();
         $isStockActive = isset($params['stockActive']) ? $params['stockActive'] : null;
+        $estado = isset($params['estado']) ? $params['estado'] : null;
+
         $products = Producto::find()
-                    ->select(['producto.*', 'categoria.nombre As nombre_categoria'])
-                    ->join('LEFT JOIN', 'categoria', 'categoria.id = producto.categoria_id')
-                    ->andfilterWhere(['stock_active' => $isStockActive])
-                    ->asArray()
-                    ->all();
+            ->select(['producto.*', 'categoria.nombre As nombre_categoria'])
+            ->join('LEFT JOIN', 'categoria', 'categoria.id = producto.categoria_id')
+            ->filterWhere(['producto.estado' => $estado])
+            ->andfilterWhere(['stock_active' => $isStockActive])
+            ->asArray()
+            ->all();
         $response = [
             'success' => true,
             'message' => 'Lista de productos',
@@ -346,15 +327,16 @@ class ProductoController extends \yii\web\Controller
         return $response;
     }
 
-    public function actionVarieties( $idProduct ) {
+    public function actionVarieties($idProduct)
+    {
         $varieties = SubProducto::find()->where(['producto_id' => $idProduct])->all();
-        if($varieties){
+        if ($varieties) {
             $response = [
                 'success' => true,
                 'message' => 'Lista de subproductos',
                 'varieties' => $varieties
             ];
-        }else{
+        } else {
             $response = [
                 'success' => false,
                 'message' => 'No existen subproductos del producto.',
@@ -364,22 +346,23 @@ class ProductoController extends \yii\web\Controller
         return $response;
     }
 
-    public function actionDisableProduct( $idProduct ){
+    public function actionDisableProduct($idProduct)
+    {
         $product = Producto::findOne($idProduct);
-        if($product){
-            $product -> estado = 'Inactivo';
-            if($product -> save()){
+        if ($product) {
+            $product->estado = !$product->estado;
+            if ($product->save()) {
                 $response = [
                     'success' => true,
                     'message' => 'Producto actualizado'
                 ];
-            }else{
+            } else {
                 $response = [
                     'success' => false,
                     'message' => 'Ocurrio un error!'
                 ];
             }
-        }else{
+        } else {
             $response = [
                 'success' => false,
                 'message' => 'Ocurrio un error!'

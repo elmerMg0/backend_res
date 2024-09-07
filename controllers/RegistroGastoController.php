@@ -60,88 +60,46 @@ class RegistroGastoController extends \yii\web\Controller
         Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
         return parent::beforeAction($action);
     }
-    public function actionIndex()
+    public function actionIndex($id)
     {
-        return $this->render('index');
+        $records = RegistroGasto::find()
+                            ->where(['gasto_id' => $id ])
+                            ->orderBy(['id' => 'DESC'])
+                            ->asArray()
+                            ->all();
+
+        $response = [
+            'success' => true,
+            'message' => 'Lista de registros de gastos',
+            'records' => $records
+        ];
+
+        return $response;
     }
 
-    public function actionCreateRecord(){
-        $params = Yii::$app->getRequest()->getBodyParams();
-        $expense = new RegistroGasto();
-        $expense -> load($params,"");
-        date_default_timezone_set('America/La_Paz');
-        $expense -> fecha = date('Y-m-d H:i:s');
+    public function create($params, $id){
         try{
-            $trasaction = Yii::$app->db->beginTransaction();
-            if($expense->save()){   
-                /* Se incrementa stock segun la cantidad enviada  */
-                $expenseRecord = Gasto::findOne($expense->gasto_id);
-                $product = Producto::find() -> where(['nombre' => $expenseRecord -> nombre]) -> one();
-                if($product && $product -> stock_active === true){
-                    /* Creamos registro de inventario */
-                    $inventaryNew = new Inventario();
-                    date_default_timezone_set('America/La_Paz');
-                    $inventaryNew -> fecha = date('Y-m-d H:i:s');
-                    $inventaryNew -> producto_id = $product -> id;
-                    $inventaryNew -> stock = $product -> stock;
-                    $inventaryNew -> nuevo_stock = $expense -> cantidad;
-                    $inventaryNew -> total = $product -> stock + $expense -> cantidad;
-                    $inventaryNew -> last_one = true ;
-                    //validamos que relamente admita stock
-                    if($product -> stock_active === true)$product -> stock = $product -> stock + $expense -> cantidad;
-
-                    if(!$inventaryNew -> save() || !$product -> save()){
-                        throw new Exception('No se pudo registrar el gasto');
-                    }
-
-                    $inventaryOld = Inventario::find()
-                        ->where(['producto_id' => $product -> id, 'last_one' => true])
-                        ->one();
-                        
-                    if($inventaryOld){
-                        $inventaryOld -> last_one = false;
-                        if(!$inventaryOld -> save()){
-                            throw new Exception('No se pudo registrar el gasto');
-                        }
-                    }
-                }
-                $trasaction->commit();
-                Yii::$app->getResponse()->setStatusCode(201);
-                $response = [
-                    "success" => true,
-                    "message" => "Registro gasto agreado exitosamente",
-                    'expense' => $expense
-                ];
-            }else{
-                //Cuando hay error en los tipos de datos ingresados 
-                throw new Exception('No se pudo registrar el gasto');
-                Yii::$app->getResponse()->setStatusCode(422, 'Data Validation Failed');
-                $response = [
-                    "success" => false,
-                    "message" => "Existen parametros incorrectos",
-                    'errors' => $expense->errors
-                ];
+            $expenseRecord = new RegistroGasto();
+            $expenseRecord -> load($params,"");
+            $expenseRecord -> gasto_id = $id;
+            if(!$expenseRecord->save()){   
+                throw new Exception(json_encode($expenseRecord->errors));
             }
+         $response = $expenseRecord;
         }catch(Exception $e){
-            $trasaction->rollBack();
-            Yii::$app -> getResponse() -> setStatusCode(500);
-            $response = [
-                "success" => false,
-                "message" => "ocurrio un error",
-                'errors' => $e
-            ];
+            throw new Exception($e->getMessage());            
         }
         return $response;
     }
 
-    public function actionGetExpenseRecordsFiltered($pageSize = 5){
+   /*  public function actionGetExpenseRecordsFiltered($pageSize = 5){
         $params = Yii::$app -> getRequest() -> getBodyParams();
 
-        $dateStart = assert($params['dateStart']) ? $params['dateStart'] :  null;
-        $dateEnd = assert($params['dateEnd']) ? $params['dateEnd'] : null;
-        $usuarioId = assert($params['usuarioId']) ? $params['usuarioId'] : null;
+        $dateStart = isset($params['dateStart']) ? $params['dateStart'] :  null;
+        $dateEnd = isset($params['dateEnd']) ? $params['dateEnd'] : null;
+        $usuarioId = isset($params['usuarioId']) ? $params['usuarioId'] : null;
         if($dateEnd) $dateEnd = $dateEnd . ' ' . '23:59:00.000';
-        $name = assert($params['name']) ? $params['name'] : null;
+        $name = isset($params['name']) ? $params['name'] : null;
 
 
         $query = RegistroGasto::find()
@@ -183,9 +141,9 @@ class RegistroGastoController extends \yii\web\Controller
             'expenses' => $expensesRecords
         ];
         return $response;
-    }
+    } */
 
-    public function actionUpdateExpenseRecord ($idExpenseRecord){
+   /*  public function actionUpdateExpenseRecord ($idExpenseRecord){
         $expenseRecord = RegistroGasto::findOne($idExpenseRecord);
 
         if($expenseRecord){
@@ -211,10 +169,10 @@ class RegistroGastoController extends \yii\web\Controller
             ];
         }
         return $response;
-    }
+    } */
 
 
-    public function actionExpensesPeriod($pageSize = 5){
+   /*  public function actionExpensesPeriod($pageSize = 5){
         $params = Yii::$app->getRequest()->getBodyParams();
         $period = Periodo::findOne($params['idPeriod']);
 
@@ -261,5 +219,5 @@ class RegistroGastoController extends \yii\web\Controller
             ];
         }
         return $response;
-    }
+    } */
 }

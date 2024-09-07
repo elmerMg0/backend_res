@@ -2,7 +2,6 @@
 
 namespace app\controllers;
 
-use app\models\Cliente;
 use app\models\Delivery;
 use Exception;
 use Yii;
@@ -80,7 +79,7 @@ class DeliveryController extends \yii\web\Controller
         $deliveries = Delivery::find()->all();
         $response = [
             'success' => true,
-            'message' => 'Todos los clientes',
+            'message' => 'Todos los Deliverys',
             'deliveries' => $deliveries
         ];
         return $response;
@@ -131,7 +130,7 @@ class DeliveryController extends \yii\web\Controller
                     if($delivery->save()){
                         $response = [
                             'success' => true,
-                            'message' => 'Cliente actualizado correctamente',
+                            'message' => 'Delivery actualizado correctamente',
                             'delivery' => $delivery
                         ];
                     }else{
@@ -169,7 +168,7 @@ class DeliveryController extends \yii\web\Controller
             Yii::$app->getResponse()->setStatusCode(404);
             $response = [
                 'success' => false,
-                'message' => 'No existe el cliente',
+                'message' => 'No existe el Delivery',
                 'delivery' => $delivery
             ];
         }
@@ -177,8 +176,7 @@ class DeliveryController extends \yii\web\Controller
     }
 
     public function actionDelete( $idDelivery ){
-        $delivery = Cliente::findOne($idDelivery);
-
+        $delivery = Delivery::findOne($idDelivery);
         if($delivery){
             try{
                 $delivery->delete();
@@ -193,13 +191,6 @@ class DeliveryController extends \yii\web\Controller
                     "success" => false,
                     "message" =>  "El delivery esta siendo usado",
                     "code" => $ie->getCode()
-                ];
-            }catch(\Exception $e){
-                Yii::$app->getResponse()->setStatusCode(422, "");
-                $response = [
-                    "success" => false,
-                    "message" => $e->getMessage(),
-                    "code" => $e->getCode()
                 ];
             }
         }else{

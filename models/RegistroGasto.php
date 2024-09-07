@@ -11,10 +11,9 @@ use Yii;
  * @property int $cantidad
  * @property float $precio_unitario
  * @property string $fecha
- * @property string $estado
+ * @property bool $pagado
  * @property int $gasto_id
- * @property float $total
- * @property int $usuario_id
+ * @property string $descripcion
  *
  * @property Gasto $gasto
  */
@@ -34,12 +33,13 @@ class RegistroGasto extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['cantidad', 'precio_unitario', 'estado', 'gasto_id', 'total', 'usuario_id'], 'required'],
-            [['cantidad', 'gasto_id', 'usuario_id'], 'default', 'value' => null],
-            [['cantidad', 'gasto_id', 'usuario_id'], 'integer'],
-            [['precio_unitario', 'total'], 'number'],
+            [['cantidad', 'precio_unitario', 'gasto_id', 'descripcion'], 'required'],
+            [['cantidad', 'gasto_id'], 'default', 'value' => null],
+            [['cantidad', 'gasto_id'], 'integer'],
+            [['precio_unitario'], 'number'],
             [['fecha'], 'safe'],
-            [['estado'], 'string', 'max' => 12],
+            [['pagado'], 'boolean'],
+            [['descripcion'], 'string', 'max' => 50],
             [['gasto_id'], 'exist', 'skipOnError' => true, 'targetClass' => Gasto::class, 'targetAttribute' => ['gasto_id' => 'id']],
         ];
     }
@@ -54,10 +54,9 @@ class RegistroGasto extends \yii\db\ActiveRecord
             'cantidad' => 'Cantidad',
             'precio_unitario' => 'Precio Unitario',
             'fecha' => 'Fecha',
-            'estado' => 'Estado',
+            'pagado' => 'Pagado',
             'gasto_id' => 'Gasto ID',
-            'total' => 'Total',
-            'usuario_id' => 'Usuario ID',
+            'descripcion' => 'Descripcion',
         ];
     }
 

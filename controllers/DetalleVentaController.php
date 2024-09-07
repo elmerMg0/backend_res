@@ -58,61 +58,40 @@ class DetalleVentaController extends \yii\web\Controller
         return $this->render('index');
     }
 
-    public function actionGetBestSellerProduct(){
-        $params = Yii::$app -> getRequest() -> getBodyParams();
-        $type = isset($params['type']) ? $params['type'] :  null;
-        $dateStart = isset($params['dateStart']) ? $params['dateStart'] :  null;
-        $dateEnd = isset($params['dateEnd']) ? $params['dateEnd'] : null;
-        $detail = DetalleVenta::find()
-                    ->select(['sum(cantidad) as cantidad','producto.precio_venta' ,'producto.nombre', 'producto.id'])
-                    ->innerJoin('producto', 'producto.id=detalle_venta.producto_id')
-                    ->groupBy(['producto_id', 'producto.nombre', 'producto.id', 'producto.precio_venta'])
-                    ->orderBy(['cantidad' => SORT_DESC])
-                    ->where(['<>', 'detalle_venta.estado', 'cancelado'])
-                    ->andFilterWhere(['producto.tipo' => $type])
-                    ->andFilterWhere(['>=', 'create_ts', $dateStart])
-                    ->andFilterWhere(['<=', 'create_ts', $dateEnd])
-                    ->asArray()
-                    ->limit($params['quantity'])
-                    ->all();
-        if($detail){
-            $response = [
-                'success' => true,
-                'message' => 'Productos mas vendidos',
-                'list' => $detail
-            ];
-        }else{
-            $response = [
-                'success' => false,
-                'message' => 'no existen ventas aun!',
-                'list' => $detail
-            ];
-        }
-        return $response;
-    }
+  
 
     public function actionGetSaleDetail( $idSale ){
         $saleInfo = Venta::find()
-                    ->select(['venta.*', 'usuario.username', 'cliente.nombre as customer'])
-                    ->where(['venta.id' => $idSale])
+                    ->select(['venta.*', 'usuario.username', 'mesa.nombre as mesa', 'cliente.nombre as customer', 'area_venta.nombre as area', 'tipo_pago.descripcion as tipo_pago', 'venta_descuento.valor'])
                     ->innerJoin('usuario', 'usuario.id = venta.usuario_id')
-                    ->innerJoin('cliente', 'cliente.id = venta.cliente_id')
-                    ->innerJoin('mesa','mesa.id = venta.mesa_id')
+                    ->leftJoin('mesa', 'mesa.id=venta.mesa_id')
+                    ->innerJoin('cliente', 'cliente.id=venta.cliente_id')
+                    ->innerJoin('area_venta', 'area_venta.id=venta.area_venta_id')
+                    ->leftJoin('tipo_pago', 'tipo_pago.id=venta.tipo_pago_id')
+                    ->leftJoin('venta_descuento', 'venta_descuento.venta_id=venta.id')
+                    ->where(['=', 'venta.id', $idSale])
+                    ->orderBy(['venta.id' => SORT_DESC])
                     ->asArray()
                     ->one();
 
-        $products = DetalleVenta::find()
-                         ->select(['producto.nombre','producto.precio_venta', 'detalle_venta.cantidad', 'producto.id as producto_id', 'detalle_venta.estado'])
-                        ->innerJoin('producto', 'producto.id = detalle_venta.producto_id')
-                        ->where(['venta_id' => $idSale])
-                       //->andWhere(['<>','detalle_venta.estado', 'cancelado'])
-                        ->asArray()
-                        ->all();
+        $saleDetailFull = DetalleVenta::find()
+                    ->select(['detalle_venta.*', 'producto.nombre', 'producto.area_impresion_id'])
+                    ->innerJoin('producto', 'producto.id=detalle_venta.producto_id')
+                    ->where(['venta_id' => $idSale, 'detalle_venta_id' => null])
+                    //->andWhere(['<>', 'detalle_venta.estado', 'cancelado'])
+                    ->orderBy(['id' => SORT_DESC])
+                    ->with(['detalleVentas' => function ($query) {
+                        $query->select(['detalle_venta.*', 'producto.nombre', 'producto.area_impresion_id'])
+                            ->innerJoin('producto', 'producto.id=detalle_venta.producto_id');
+                    }])
+                    ->asArray()
+                    ->all();
+
         $response = [
             'success' => true, 
             'message' => 'Detalle de venta',
             'saleInfo' => $saleInfo,
-            'products' => $products
+            'products' => $saleDetailFull
         ];
         return $response;
     }
@@ -152,8 +131,8 @@ class DetalleVentaController extends \yii\web\Controller
         ->from('detalle_venta dv')
         ->innerJoin('producto p', 'dv.producto_id = p.id')
         ->innerJoin('venta v', 'v.id = dv.venta_id')
-        ->where(['between', 'fecha', $beginDate, $fechaFinWhole])
-        //todos los productos seleccionados
+        ->where(['>=', 'fecha', $beginDate])
+        ->andWhere(['<=', 'fecha', $fechaFinWhole])
         ->andWhere($condition)
         ->orderBy(['dv.producto_id' => SORT_ASC]);
         

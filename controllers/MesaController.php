@@ -2,9 +2,11 @@
 
 namespace app\controllers;
 
+use app\models\AreaVenta;
 use app\models\Mesa;
 use app\models\Salon;
 use Yii;
+
 class MesaController extends \yii\web\Controller
 {
     public function behaviors()
@@ -21,9 +23,9 @@ class MesaController extends \yii\web\Controller
 
             ]
         ];
-        $behaviors['authenticator'] = [         	
-            'class' => \yii\filters\auth\HttpBearerAuth::class,         	
-            'except' => ['options']     	
+        $behaviors['authenticator'] = [
+            'class' => \yii\filters\auth\HttpBearerAuth::class,
+            'except' => ['options']
         ];
         return $behaviors;
     }
@@ -43,21 +45,22 @@ class MesaController extends \yii\web\Controller
     {
         return $this->render('index');
     }
-/* Reserva(table_id) */
-    public function actionGetTables ($idLounge){
-        $lounge = Salon::findOne($idLounge);
+    /* Reserva(table_id) */
+    public function actionGetTables($idArea)
+    {
+        $lounge = AreaVenta::findOne($idArea);
         $tables = Mesa::find()
-                        ->where(['salon_id' => $idLounge])
-                        ->orderBy(['id' => SORT_ASC])
-                        ->all();
-        if($tables){
-                $response = [
+            ->where(['area_venta_id' => $idArea])
+            ->orderBy(['id' => SORT_ASC])
+            ->all();
+        if ($tables) {
+            $response = [
                 'success' => true,
                 'message' => 'Lista de mesas',
                 'tables' => $tables,
                 'lounge' => $lounge
             ];
-        }else{
+        } else {
             $response = [
                 'success' => false,
                 'message' => 'NO existen mesas',
@@ -66,28 +69,27 @@ class MesaController extends \yii\web\Controller
         }
         return $response;
     }
-    public function actionUpdate ($idTable) {
+    public function actionUpdate($idTable)
+    {
         $table = Mesa::findOne($idTable);
-        if($table) {
-            $params = Yii::$app -> getRequest() -> getBodyParams();
-            $table -> load($params, '');
-            if($table -> save()){
+        if ($table) {
+            $params = Yii::$app->getRequest()->getBodyParams();
+            $table->load($params, '');
+            if ($table->save()) {
                 $response = [
                     'success' => true,
                     'message' => 'Mesa actulizada exitosamente.',
                     'tables' => $table,
                 ];
-            }else{
+            } else {
                 $response = [
                     'success' => false,
                     'message' => 'Existe erorres en los parametros',
                     'table' => []
                 ];
             }
-        }else{
-
+        } else {
         }
         return $response;
     }
-
 }

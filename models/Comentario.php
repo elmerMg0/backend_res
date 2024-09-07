@@ -10,6 +10,8 @@ use Yii;
  * @property int $id
  * @property string $descripcion
  * @property int|null $producto_id
+ *
+ * @property Producto $producto
  */
 class Comentario extends \yii\db\ActiveRecord
 {
@@ -31,6 +33,7 @@ class Comentario extends \yii\db\ActiveRecord
             [['producto_id'], 'default', 'value' => null],
             [['producto_id'], 'integer'],
             [['descripcion'], 'string', 'max' => 25],
+            [['producto_id'], 'exist', 'skipOnError' => true, 'targetClass' => Producto::class, 'targetAttribute' => ['producto_id' => 'id']],
         ];
     }
 
@@ -44,5 +47,15 @@ class Comentario extends \yii\db\ActiveRecord
             'descripcion' => 'Descripcion',
             'producto_id' => 'Producto ID',
         ];
+    }
+
+    /**
+     * Gets query for [[Producto]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getProducto()
+    {
+        return $this->hasOne(Producto::class, ['id' => 'producto_id']);
     }
 }

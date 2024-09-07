@@ -8,14 +8,15 @@ use Yii;
  * This is the model class for table "detalle_arqueo_inventario".
  *
  * @property int $id
- * @property int $stock
- * @property int $declaracion
  * @property string|null $nota
- * @property int $producto_id
+ * @property int $insumo_id
  * @property int $arqueo_inventario_id
+ * @property float $costo_unitario
+ * @property float $teorico_almacen
+ * @property float $fisico_almacen
  *
  * @property ArqueoInventario $arqueoInventario
- * @property Producto $producto
+ * @property Insumo $insumo
  */
 class DetalleArqueoInventario extends \yii\db\ActiveRecord
 {
@@ -33,12 +34,13 @@ class DetalleArqueoInventario extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['stock', 'declaracion', 'producto_id', 'arqueo_inventario_id'], 'required'],
-            [['stock', 'declaracion', 'producto_id', 'arqueo_inventario_id'], 'default', 'value' => null],
-            [['stock', 'declaracion', 'producto_id', 'arqueo_inventario_id'], 'integer'],
+            [['insumo_id', 'arqueo_inventario_id', 'costo_unitario', 'teorico_almacen', 'fisico_almacen'], 'required'],
+            [['insumo_id', 'arqueo_inventario_id'], 'default', 'value' => null],
+            [['insumo_id', 'arqueo_inventario_id'], 'integer'],
+            [['costo_unitario', 'teorico_almacen', 'fisico_almacen'], 'number'],
             [['nota'], 'string', 'max' => 80],
             [['arqueo_inventario_id'], 'exist', 'skipOnError' => true, 'targetClass' => ArqueoInventario::class, 'targetAttribute' => ['arqueo_inventario_id' => 'id']],
-            [['producto_id'], 'exist', 'skipOnError' => true, 'targetClass' => Producto::class, 'targetAttribute' => ['producto_id' => 'id']],
+            [['insumo_id'], 'exist', 'skipOnError' => true, 'targetClass' => Insumo::class, 'targetAttribute' => ['insumo_id' => 'id']],
         ];
     }
 
@@ -49,11 +51,12 @@ class DetalleArqueoInventario extends \yii\db\ActiveRecord
     {
         return [
             'id' => 'ID',
-            'stock' => 'Stock',
-            'declaracion' => 'Declaracion',
             'nota' => 'Nota',
-            'producto_id' => 'Producto ID',
+            'insumo_id' => 'Insumo ID',
             'arqueo_inventario_id' => 'Arqueo Inventario ID',
+            'costo_unitario' => 'Costo Unitario',
+            'teorico_almacen' => 'Teorico Almacen',
+            'fisico_almacen' => 'Fisico Almacen',
         ];
     }
 
@@ -68,12 +71,12 @@ class DetalleArqueoInventario extends \yii\db\ActiveRecord
     }
 
     /**
-     * Gets query for [[Producto]].
+     * Gets query for [[Insumo]].
      *
      * @return \yii\db\ActiveQuery
      */
-    public function getProducto()
+    public function getInsumo()
     {
-        return $this->hasOne(Producto::class, ['id' => 'producto_id']);
+        return $this->hasOne(Insumo::class, ['id' => 'insumo_id']);
     }
 }

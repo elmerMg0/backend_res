@@ -5,20 +5,19 @@ namespace app\models;
 use Yii;
 
 /**
- * This is the model class for table "impresora".
+ * This is the model class for table "grupo_tipo_pago".
  *
  * @property int $id
- * @property string $nombre
- * @property string|null $lugar
+ * @property string $descripcion
  */
-class Impresora extends \yii\db\ActiveRecord
+class GrupoTipoPago extends \yii\db\ActiveRecord
 {
     /**
      * {@inheritdoc}
      */
     public static function tableName()
     {
-        return 'impresora';
+        return 'grupo_tipo_pago';
     }
 
     /**
@@ -27,9 +26,8 @@ class Impresora extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['nombre'], 'required'],
-            [['nombre'], 'string', 'max' => 50],
-            [['lugar'], 'string', 'max' => 30],
+            [['descripcion'], 'required'],
+            [['descripcion'], 'string', 'max' => 15],
         ];
     }
 
@@ -40,8 +38,7 @@ class Impresora extends \yii\db\ActiveRecord
     {
         return [
             'id' => 'ID',
-            'nombre' => 'Nombre',
-            'lugar' => 'Lugar',
+            'descripcion' => 'Descripcion',
         ];
     }
 }

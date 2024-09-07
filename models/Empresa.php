@@ -8,10 +8,10 @@ use Yii;
  * This is the model class for table "empresa".
  *
  * @property int $id
- * @property string $nombre
+ * @property string|null $nombre
  * @property string|null $email
- * @property int|null $phone
- * @property int|null $celular
+ * @property string|null $phone
+ * @property string|null $celular
  * @property int|null $nit
  * @property string|null $image_url
  * @property string|null $direccion
@@ -34,13 +34,12 @@ class Empresa extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['nombre'], 'required'],
-            [['phone', 'celular', 'nit'], 'default', 'value' => null],
-            [['phone', 'celular', 'nit'], 'integer'],
-            [['direccion', 'dias_atencion', 'horario_atencion'], 'string'],
+            [['email', 'direccion', 'dias_atencion', 'horario_atencion'], 'string'],
+            [['nit'], 'default', 'value' => null],
+            [['nit'], 'integer'],
             [['nombre'], 'string', 'max' => 50],
-            [['email'], 'string', 'max' => 80],
-            [['image_url'], 'string', 'max' => 100],
+            [['phone', 'celular'], 'string', 'max' => 8],
+            [['image_url'], 'string', 'max' => 25],
         ];
     }
 

@@ -42,7 +42,7 @@ class UserController extends Controller
         if ($user) {
             $password = $params['password'];
             if (Yii::$app->security->validatePassword($password, $user->password_hash)) {
-                if ($user->estado === 'Activo') {
+                if ($user->estado) {
                     $keyuser = Yii::$app->params['keyuser'];
                     $currentTimestamp = time();
                     $expirationTimestamp = $currentTimestamp + (5 * 24 * 60 * 60);

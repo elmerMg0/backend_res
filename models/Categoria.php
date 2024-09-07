@@ -11,9 +11,16 @@ use Yii;
  * @property string $nombre
  * @property string|null $descripcion
  * @property string|null $url_image
- * @property string $estado
+ * @property bool $estado
  * @property bool|null $en_ecommerce
+ * @property int $clasificacion_grupo_id
+ * @property string|null $background
+ * @property int|null $categoria_id
+ * @property string|null $color
  *
+ * @property Categoria $categoria
+ * @property Categoria[] $categorias
+ * @property ClasificacionGrupo $clasificacionGrupo
  * @property Producto[] $productos
  */
 class Categoria extends \yii\db\ActiveRecord
@@ -32,10 +39,15 @@ class Categoria extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['nombre', 'estado'], 'required'],
-            [['en_ecommerce'], 'boolean'],
-            [['nombre', 'url_image', 'estado'], 'string', 'max' => 50],
+            [['nombre', 'estado', 'clasificacion_grupo_id'], 'required'],
+            [['estado', 'en_ecommerce'], 'boolean'],
+            [['clasificacion_grupo_id', 'categoria_id'], 'default', 'value' => null],
+            [['clasificacion_grupo_id', 'categoria_id'], 'integer'],
+            [['nombre', 'url_image'], 'string', 'max' => 50],
             [['descripcion'], 'string', 'max' => 80],
+            [['background', 'color'], 'string', 'max' => 7],
+            [['categoria_id'], 'exist', 'skipOnError' => true, 'targetClass' => Categoria::class, 'targetAttribute' => ['categoria_id' => 'id']],
+            [['clasificacion_grupo_id'], 'exist', 'skipOnError' => true, 'targetClass' => ClasificacionGrupo::class, 'targetAttribute' => ['clasificacion_grupo_id' => 'id']],
         ];
     }
 
@@ -51,7 +63,41 @@ class Categoria extends \yii\db\ActiveRecord
             'url_image' => 'Url Image',
             'estado' => 'Estado',
             'en_ecommerce' => 'En Ecommerce',
+            'clasificacion_grupo_id' => 'Clasificacion Grupo ID',
+            'background' => 'Background',
+            'categoria_id' => 'Categoria ID',
+            'color' => 'Color',
         ];
+    }
+
+    /**
+     * Gets query for [[Categoria]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getCategoria()
+    {
+        return $this->hasOne(Categoria::class, ['id' => 'categoria_id']);
+    }
+
+    /**
+     * Gets query for [[Categorias]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getCategorias()
+    {
+        return $this->hasMany(Categoria::class, ['categoria_id' => 'id']);
+    }
+
+    /**
+     * Gets query for [[ClasificacionGrupo]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getClasificacionGrupo()
+    {
+        return $this->hasOne(ClasificacionGrupo::class, ['id' => 'clasificacion_grupo_id']);
     }
 
     /**

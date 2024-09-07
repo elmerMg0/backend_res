@@ -37,7 +37,10 @@ class NotificacionController extends \yii\web\Controller
     }
 
     public function actionIndex(){
-        $notifications = Notificacion::find()->where(['leido' => false]) ->all();
+        $notifications = Notificacion::find()
+                                ->where(['leido' => false]) 
+                                ->orderBy(['id' => SORT_DESC])    
+                                ->all();
         $response = [
             'success' => true,
             'message' => 'Listado de notificaciones',
