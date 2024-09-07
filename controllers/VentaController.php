@@ -2,10 +2,10 @@
 
 namespace app\controllers;
 
+use app\models\AsignacionImpresora;
 use app\models\Cliente;
 use app\models\ColaImpresion;
 use app\models\DetalleVenta;
-use app\models\Impresora;
 use app\models\Mesa;
 use app\models\Notificacion;
 use app\models\Venta;
@@ -13,13 +13,14 @@ use app\models\Periodo;
 use app\models\Producto;
 use app\models\RegistroGasto;
 use app\models\Usuario;
+use app\models\VentaAreaImpresion;
+use app\models\VentaDescuento;
 use Exception;
 use Yii;
 use yii\db\Query;
 use yii\data\Pagination;
 use yii\db\Expression;
 
-use function PHPUnit\Framework\isNull;
 
 class VentaController extends \yii\web\Controller
 {
@@ -29,7 +30,7 @@ class VentaController extends \yii\web\Controller
         $behaviors["verbs"] = [
             "class" => \yii\filters\VerbFilter::class,
             "actions" => [
-                'index' => ['post'],
+                'index' => ['get'],
                 'create' => ['post'],
                 'update' => ['put', 'post'],
                 'delete' => ['delete'],
@@ -42,7 +43,6 @@ class VentaController extends \yii\web\Controller
                 'get-products-sale-by-day' => ['post'],
                 'create-sale' => ['post'],
                 'update-sale' => ['post'],
-                'get-total-sale-month' => ['get'],
                 'orders' => ['get'],
             ]
         ];
@@ -52,17 +52,17 @@ class VentaController extends \yii\web\Controller
         ];
         $behaviors['access'] = [
             'class' => \yii\filters\AccessControl::class,
-            'only' => ['index','orders', 'get-sales', 'get-info-line-chart', 'get-sales-by-day', 'get-sale-detail','get-sale-detail-all','get-sale-detail-by-period', 'get-products-sale-by-day', 'create-sale', 'update-sale' ,'get-total-sale-month'], // acciones a las que se aplicará el control
+            'only' => ['index', 'orders', 'get-sales', 'get-info-line-chart', 'get-sales-by-day', 'get-sale-detail', 'get-sale-detail-all', 'get-sale-detail-by-period', 'get-products-sale-by-day', 'create-sale', 'update-sale', 'get-total-sale-month'], // acciones a las que se aplicará el control
             'except' => [''],    // acciones a las que no se aplicará el control
             'rules' => [
                 [
                     'allow' => true, // permitido o no permitido
-                    'actions' => ['index', 'get-sales', 'get-info-line-chart', 'get-sales-by-day', 'get-sale-detail','get-sale-detail-all', 'get-sale-detail-by-period', 'get-products-sale-by-day', 'create-sale', 'update-sale', 'get-total-sale-month', 'orders'], // acciones que siguen esta regla
+                    'actions' => ['index', 'get-sales', 'get-info-line-chart', 'get-sales-by-day', 'get-sale-detail', 'get-sale-detail-all', 'get-sale-detail-by-period', 'get-products-sale-by-day', 'create-sale', 'update-sale', 'get-total-sale-month', 'orders'], // acciones que siguen esta regla
                     'roles' => ['administrador'] // control por roles  permisos
                 ],
                 [
                     'allow' => true, // permitido o no permitido
-                    'actions' => ['create-sale','orders', 'update-sale','get-sale-detail-by-period'], // acciones que siguen esta regla
+                    'actions' => ['create-sale', 'orders', 'update-sale', 'get-sale-detail-by-period'], // acciones que siguen esta regla
                     'roles' => ['mesero', 'cajero'] // control por roles  permisos
                 ],
                 [
@@ -92,55 +92,61 @@ class VentaController extends \yii\web\Controller
         return parent::beforeAction($action);
     }
 
-    public function actionIndex()
-    {   
-        $params = Yii::$app -> getRequest() -> getBodyParams();
+    public function actionIndex($area)
+    {
+        $params = Yii::$app->getRequest()->getBodyParams();
         extract($params);
 
-        $query = Venta::find();
+        $query = Venta::find()
+            ->select(['venta.*', 'usuario.username', 'area_venta.nombre as area_venta'])
+            ->innerJoin('venta_area_impresion', 'venta.id = venta_area_impresion.venta_id')
+            ->innerJoin('usuario', 'usuario.id = venta.usuario_id')
+            ->innerJoin('area_venta', 'area_venta.id = venta.area_venta_id')
+            ->where(['area_impresion_id' => $area, 'finalizado' => false])
+            ->with(['detalleVentas' => function ($query) use ($area) {
+                $query
+                    ->select(['detalle_venta.*', 'producto.nombre as nombreProducto', 'producto.area_impresion_id'])
+                    ->innerJoin('producto', 'producto.id = detalle_venta.producto_id')
+                    ->where(['detalle_venta.detalle_venta_id' => null])
+                    ->andWhere([
+                        'OR',
+                        ['producto.area_impresion_id' => $area], // Incluye productos con el área de impresión actual
+                        [
+                            'AND',
+                            ['detalle_venta.detalle_venta_id' => null],   // Padres sin área de impresión
+                            [
+                                'EXISTS',
+                                (new \yii\db\Query())
+                                    ->from('detalle_venta dv2')
+                                    ->innerJoin('producto p2', 'p2.id = dv2.producto_id')
+                                    ->where('dv2.detalle_venta_id = detalle_venta.id')
+                                    ->andWhere(['p2.area_impresion_id' => $area])  // Verifica que tienen al menos un hijo con área de impresión
+                            ]
+                        ]
+                    ])
 
-        if($type === 'kitchen'){
-            $query = $query
-            ->select(['venta.*', 'usuario.username', 'mesa.nombre as nroMesa'])
-            ->innerJoin('usuario', 'usuario.id= venta.usuario_id')
-            ->innerJoin('mesa', 'mesa.id= venta.mesa_id')
-            ->with([
-                'detalleVentas' => function ($query) {
-                    $query
-                    ->select(['detalle_venta.*', 'producto.nombre as nombreProducto'])
-                    ->innerjoin('producto', 'producto.id = detalle_venta.producto_id')
-                    ->where(['tipo' => 'comida'])
-                    ->orderBy(['id' => SORT_DESC])
-                    ->asArray();
-                }
-                ])
-            ->where(['finalizado' => false])
-            ->orderBy(['id' => SORT_DESC])
-            ->asArray()
-            ->all(); 
-        }else{
-            $query = $query
-            ->select(['venta.*', 'usuario.username', 'mesa.nombre as nroMesa'])
-            ->where(['finalizado_bar' => false])
-            ->innerJoin('usuario', 'usuario.id= venta.usuario_id')
-            ->innerJoin('mesa', 'mesa.id= venta.mesa_id')
-            ->with(['detalleVentas' => function($query){
-                $query 
-                    ->select(['detalle_venta.*', 'producto.nombre as nombreProducto'])
-                    ->innerjoin('producto', 'producto.id = detalle_venta.producto_id')
-                    ->where(['tipo' => 'bebida'])
+                    ->with(['detalleVentas' => function ($query) use ($area) {
+                        $query
+                            ->select(['detalle_venta.*', 'producto.nombre as nombreProducto', 'producto.area_impresion_id'])
+                            ->innerJoin('producto', 'producto.id = detalle_venta.producto_id')
+                            ->where(['producto.area_impresion_id' => $area]);
+                    }])
+                   /*  ->orderBy([
+                        new \yii\db\Expression('COALESCE(detalle_venta.detalle_venta_id, detalle_venta.id) DESC'), // Ordena por el detalle principal o su propio ID si es un producto principal
+                        new \yii\db\Expression('detalle_venta.detalle_venta_id IS NOT NULL ASC'),   // Asegura que los productos principales se muestren antes que sus modificadores
+                        'detalle_venta.id' => SORT_DESC, // Ordena por ID para mantener el orden de inserción
+                    ])  */
                     ->orderBy(['id' => SORT_DESC])
                     ->asArray();
             }])
-            ->orderBy(['id' => SORT_DESC])
+            ->orderBy(['venta.id' => SORT_DESC])
             ->asArray()
-            ->all(); 
-        }
+            ->all();
 
         $response = [
             "success" => true,
             'message' => 'Lista de pedidos',
-            'orders' => $query  
+            'orders' => $query
         ];
         return $response;
     }
@@ -171,7 +177,8 @@ class VentaController extends \yii\web\Controller
             $salesForDay = (new Query())
                 ->select(['DATE(DATE_TRUNC(\'month\', fecha)) AS mes', 'SUM(cantidad_total) AS total'])
                 ->from('venta')
-                ->where(['between', 'fecha', $params['fechaInicio'], $fechaFinWhole])
+                ->where(['>=', 'fecha', $params['fechaInicio']])
+                ->andWhere(['<=', 'fecha', $fechaFinWhole])
                 ->andWhere(['venta.estado' => 'pagado'])
                 ->groupBy(['mes'])
                 ->orderBy(['mes' => SORT_ASC])
@@ -179,7 +186,8 @@ class VentaController extends \yii\web\Controller
         } else {
             $salesForDay = Venta::find()
                 ->select(['DATE(fecha) AS fecha', 'SUM(cantidad_total) AS total'])
-                ->where(['between', 'fecha', $params['fechaInicio'], $fechaFinWhole])
+                ->where(['>=', 'fecha', $params['fechaInicio']])
+                ->andWhere(['<=', 'fecha', $fechaFinWhole])
                 ->andWhere(['venta.estado' => 'pagado'])
                 ->orderBy(['fecha' => SORT_ASC])
                 ->groupBy(['DATE(fecha)'])
@@ -203,97 +211,29 @@ class VentaController extends \yii\web\Controller
 
         return $response;
     }
-
-    public function actionGetSalesByDay($pageSize = 7)
-    {
-        //fecha inicio/ fecha fin/ usuario
-        $params = Yii::$app->getRequest()->getBodyParams();
-        extract($params);
-        $fechaFinWhole = $fechaFin . ' ' . '23:59:00.000';
-        $usuarioId = $usuarioId === 'todos' ? null : $usuarioId;
-        $salesForDay = Venta::find()
-                ->select(['DATE(fecha) AS fecha', 'SUM(cantidad_total) AS total', 'usuario.nombres', 'usuario.id as userId'])
-                ->joinWith('usuario')
-                ->Where(['venta.estado' => 'pagado'])
-                ->andFilterWhere(['usuario_id' => $usuarioId])
-                ->andWhere(['between', 'fecha', $fechaInicio, $fechaFinWhole])
-                ->orderBy(['fecha' => SORT_DESC])
-                ->groupBy(['DATE(fecha)', 'usuario.nombres', 'usuario.id'])
-                ->asArray();
-
-        $expenses = RegistroGasto::find()
-                ->select(['DATE(fecha) AS fecha', 'SUM(total) AS total', 'usuario.nombres', 'usuario.id as userId'])
-                ->innerJoin('usuario', 'usuario.id = registro_gasto.usuario_id')
-                ->Where(['registro_gasto.estado' => 'pagado'])
-                ->andFilterWhere(['usuario_id' => $usuarioId])
-                ->andWhere(['between', 'fecha', $fechaInicio, $fechaFinWhole])
-                ->orderBy(['fecha' => SORT_DESC])
-                ->groupBy(['DATE(fecha)', 'usuario.nombres', 'usuario.id'])
-                ->asArray();
-
-        $pagination = new Pagination([
-            'defaultPageSize' => $pageSize,
-            'totalCount' => $salesForDay->count()
-        ]);
-
-        $paginationExpenses = new Pagination([
-            'defaultPageSize' => $pageSize,
-            'totalCount' => $expenses->count()
-        ]);
-
-
-
-        $sales = $salesForDay
-            ->offset($pagination->offset)
-            ->limit($pagination->limit)
-            ->all();
-
-        $expenses = $expenses 
-            ->offset($paginationExpenses->offset)
-            ->limit($paginationExpenses->limit)
-            ->all();
-
-        if ($sales) {
-            $currentPage = $pagination->getPage() + 1;
-            $totalPages = $pagination->getPageCount();
-            $response = [
-                'success' => true,
-                'message' => 'lista de clientes',
-                'pageInfo' => [
-                    'next' => $currentPage == $totalPages ? null  : $currentPage + 1,
-                    'previus' => $currentPage == 1 ? null : $currentPage - 1,
-                    'count' => count($sales),
-                    'page' => $currentPage,
-                    'start' => $pagination->getOffset(),
-                    'totalPages' => $totalPages,
-                ],
-                'sales' => $sales,
-                'expenses' => $expenses
-            ];
-        } else {
-            $response = [
-                'success' => false,
-                'message' => 'Lista de ventas por dia',
-                'sales' => []
-            ];
-        }
-        return $response;
-    }
+  
 
     /* Retorna la venta con su detalle de venta, segun un rango de fecha y usuario */
     public function actionGetSaleDetail($pageSize = 7)
     {
         $params = Yii::$app->getRequest()->getBodyParams();
-        $user = assert($params['usuarioId'])? $params['usuarioId'] : null;
-        $fechaIni = assert($params['fechaInicio'])? $params['fechaInicio'] : null;
-        $fechaFin = assert($params['fechaFin'])? $params['fechaFin'] . ' 23:59:58.0000' : null;
+        $user = isset($params['usuarioId']) ? $params['usuarioId'] : null;
+        $state = isset($params['estado']) ? $params['estado'] : null;
+        $area = isset($params['area_venta_id']) ? $params['area_venta_id'] : null;
+        $fechaIni = isset($params['fechaInicio']) ? $params['fechaInicio'] : null;
+        $fechaFin = isset($params['fechaFin']) ? $params['fechaFin'] . ' 23:59:58.0000' : null;
         $query = Venta::find()
-            ->select(['venta.*', 'usuario.username', 'mesa.nombre as mesa', 'cliente.nombre as customer'])
-            ->innerJoin('usuario','usuario.id = venta.usuario_id')
-            ->innerJoin('mesa', 'mesa.id=venta.mesa_id')
+            ->select(['venta.*', 'usuario.username', 'mesa.nombre as mesa', 'cliente.nombre as customer', 'area_venta.nombre as area', 'tipo_pago.descripcion as tipo_pago'])
+            ->innerJoin('usuario', 'usuario.id = venta.usuario_id')
+            ->leftJoin('mesa', 'mesa.id=venta.mesa_id')
             ->innerJoin('cliente', 'cliente.id=venta.cliente_id')
-            ->andFilterWhere(['between', 'fecha', $fechaIni, $fechaFin])
+            ->innerJoin('area_venta', 'area_venta.id=venta.area_venta_id')
+            ->leftJoin('tipo_pago', 'tipo_pago.id=venta.tipo_pago_id')
+            ->filterWhere(['>=', 'fecha', $fechaIni])
+            ->andFilterWhere(['<=', 'fecha', $fechaFin])
             ->andFilterWhere(['usuario_id' => $user])
+            ->andFilterWhere(['venta.estado' => $state])
+            ->andFilterWhere(['venta.area_venta_id' => $area])
             ->orderBy(['venta.id' => SORT_DESC])
             ->asArray();
 
@@ -338,15 +278,15 @@ class VentaController extends \yii\web\Controller
     {
         $period = Periodo::findOne($idPeriod);
         $sales = Venta::find()
-        ->join('LEFT JOIN','usuario', 'usuario.id = venta.usuario_id')
-        ->Where(['usuario_id' => $idUser, 'venta.estado' => 'pendiente', 'venta.tipo' => 'pedidoApp'])
-        ->orWhere(['venta.estado' => 'enviado'])
-        ->andWhere(['>=', 'fecha', $period -> fecha_inicio])
-        ->orderBy(['id' => SORT_DESC])
-        ->asArray()
-        ->all();
+            ->join('LEFT JOIN', 'usuario', 'usuario.id = venta.usuario_id')
+            ->Where(['usuario_id' => $idUser, 'venta.estado' => 'pendiente', 'venta.tipo' => 'pedidoApp'])
+            ->orWhere(['venta.estado' => 'enviado'])
+            ->andWhere(['>=', 'fecha', $period->fecha_inicio])
+            ->orderBy(['id' => SORT_DESC])
+            ->asArray()
+            ->all();
 
-   
+
         if ($sales) {
             $response = [
                 'success' => true,
@@ -363,18 +303,19 @@ class VentaController extends \yii\web\Controller
         return $response;
     }
 
-    public function actionGetSaleDetailByPeriod ($pageSize = 7) {
+   /*  public function actionGetSaleDetailByPeriod($pageSize = 7)
+    {
         $params = Yii::$app->getRequest()->getBodyParams();
         $period = Periodo::findOne($params['idPeriod']);
         $query = Venta::find()
-                ->select(['venta.*', 'usuario.username', 'mesa.nombre as mesa', 'cliente.nombre as cliente'])
-                ->join('LEFT JOIN', 'usuario','usuario.id = venta.usuario_id')
-                ->innerJoin('mesa', 'mesa.id=venta.mesa_id')
-                ->innerJoin('cliente', 'cliente.id=venta.cliente_id')
-                ->Where(['usuario_id' => $params['idUser']])
-                ->andWhere(['>=', 'fecha', $period->fecha_inicio])
-                ->orderBy(['venta.id' => SORT_DESC])
-                ->asArray();
+            ->select(['venta.*', 'usuario.username', 'mesa.nombre as mesa', 'cliente.nombre as cliente'])
+            ->join('LEFT JOIN', 'usuario', 'usuario.id = venta.usuario_id')
+            ->innerJoin('mesa', 'mesa.id=venta.mesa_id')
+            ->innerJoin('cliente', 'cliente.id=venta.cliente_id')
+            ->Where(['usuario_id' => $params['idUser']])
+            ->andWhere(['>=', 'fecha', $period->fecha_inicio])
+            ->orderBy(['venta.id' => SORT_DESC])
+            ->asArray();
 
         $pagination = new Pagination([
             'defaultPageSize' => $pageSize,
@@ -410,50 +351,46 @@ class VentaController extends \yii\web\Controller
             ];
         }
         return $response;
-    }
+    } */
 
-    public function actionCancelSale ($idSale) {
+    public function actionCancelSale($idSale)
+    {
         $sale = Venta::findOne($idSale);
-        if($sale){
+        if ($sale) {
             $db = Yii::$app->db;
-            $transaction = $db->beginTransaction();            
-            try{
+            $transaction = $db->beginTransaction();
+            try {
                 $orderDetail = DetalleVenta::find()->where(['venta_id' => $idSale])->all();
-                for($i = 0; $i < count($orderDetail); $i++){
+                for ($i = 0; $i < count($orderDetail); $i++) {
                     $order  = $orderDetail[$i];
-                    $order -> estado = 'cancelado';
-                    if(!$order -> save()){
+                    $order->estado = 'cancelado';
+                    if (!$order->save()) {
                         throw new Exception('No se pudo actualizar el pedido');
                         return;
                     }
-                    $product = Producto::findOne($order->producto_id);
-                    if($product -> stock_active === true){
-                        $product -> stock = $product -> stock + $order -> cantidad;
-                        if(!$product -> save()){
-                            throw new Exception('No se pudo actualizar el stock');
-                        }
+                }
+                if($sale -> mesa_id){
+                    $table = Mesa::findOne($sale->mesa_id);
+                    $table->estado = 'disponible';
+                    if (!$table->save()) {
+                        throw new Exception('No se pudo actualizar la mesa');
                     }
                 }
-                $table = Mesa::findOne($sale -> mesa_id);
-                $table -> estado = 'disponible';
-                if(!$table -> save()){
-                    throw new Exception('No se pudo actualizar la mesa');
-                }
-                $sale -> estado = 'cancelado';
-                if($sale -> save()){
+                $sale->estado = 'cancelado';
+                if ($sale->save()) {
                     $response = [
                         'success' => true,
                         'message' => 'Venta cancelada'
                     ];
                 }
-                $transaction -> commit();
-            }catch(Exception $e){
+                $transaction->commit();
+            } catch (Exception $e) {
                 $response = [
                     'success' => false,
-                    'message' => $e -> getMessage()
+                    'message' => $e->getMessage()
                 ];
             }
-        }else{
+        } else {
             $response = [
                 'success' => false,
                 'message' => 'Ocurrio un error'
@@ -462,15 +399,16 @@ class VentaController extends \yii\web\Controller
         return $response;
     }
 
-    public function actionUpdateState($state, $idSale){
+    public function actionUpdateState($state, $idSale)
+    {
         $sale = Venta::findOne($idSale);
-        $sale -> estado = $state;
-        if($sale -> save()){
+        $sale->estado = $state;
+        if ($sale->save()) {
             $response = [
                 'success' => true,
                 'message' => 'Actualizado corretamente'
             ];
-        }else{
+        } else {
             $response = [
                 'success' => false,
                 'message' => 'Ucurrio un error'
@@ -480,7 +418,8 @@ class VentaController extends \yii\web\Controller
     }
 
     /* Cantidad de productos por dia */
-    public function actionGetProductsSaleByDay(){
+    public function actionGetProductsSaleByDay()
+    {
         /* Fecha */
         $params = Yii::$app->getRequest()->getBodyParams();
 
@@ -490,7 +429,7 @@ class VentaController extends \yii\web\Controller
                 'producto.id As idProducto',
                 'SUM(detalle_venta.cantidad) AS cantidad_vendida',
                 'SUM(detalle_venta.cantidad * producto.precio_venta) AS total_dinero'
-                ])
+            ])
             ->from('venta')
             ->innerJoin('detalle_venta', 'venta.id = detalle_venta.venta_id')
             ->innerJoin('producto', 'detalle_venta.producto_id = producto.id')
@@ -498,13 +437,13 @@ class VentaController extends \yii\web\Controller
             ->andWhere(["<>", 'detalle_venta.estado', 'cancelado'])
             ->groupBy(['producto.nombre', 'producto.id'])
             ->orderBy(['cantidad_vendida' => SORT_DESC]);
-        if($query){
+        if ($query) {
             $response = [
                 'success' => true,
                 'message' => 'Lista de ventas de productos por dia',
                 'reports' => $query->all()
             ];
-        }else{
+        } else {
             $response = [
                 'success' => false,
                 'message' => 'No existen reportes.',
@@ -513,25 +452,26 @@ class VentaController extends \yii\web\Controller
         }
         return $response;
     }
-    public function actionCreateSale(){
+    public function actionCreateSale()
+    {
         $sale = new Venta();
         $params = Yii::$app->getRequest()->getBodyParams();
-        $sale -> load($params, '');
+        $sale->load($params, '');
         date_default_timezone_set('America/La_Paz');
-        $sale -> fecha = date('Y-m-d H:i:s');
+        $sale->fecha = date('Y-m-d H:i:s');
         $numberOrder = Venta::find()->all();
         $sale->numero_pedido = count($numberOrder) + 1;
-        if($sale -> save()){
+        if ($sale->save()) {
             //actulalizar estado de la mesa
-            $table = Mesa::findOne($sale -> mesa_id);
-            $table -> estado = 'ocupado';
-            $table -> save();
+            $table = Mesa::findOne($sale->mesa_id);
+            $table->estado = 'ocupado';
+            $table->save();
             $response = [
                 'success' => true,
                 'message' => 'Venta creada venta',
                 'sale' => $sale
             ];
-        }else{
+        } else {
             $response = [
                 'success' => true,
                 'message' => 'Existen errores en los parametros',
@@ -540,31 +480,45 @@ class VentaController extends \yii\web\Controller
         return $response;
     }
 
-    public function actionGetInformationSale($idTable){
-        $sale = Venta::find()->select(['venta.*', 'usuario.nombres as usuario'])
-            ->where(['mesa_id' => $idTable, 'venta.estado' => 'consumiendo' ])
+    public function actionGetInformationSale($idTable = null, $idSale = null)
+    {
+        $state = 'consumiendo';
+        if($idSale){
+            $state = null;
+        }
+        $sale = Venta::find()->select(['venta.*', 'usuario.nombres as usuario', 'mesa.nombre as mesa'])
+            ->filterWhere(['venta.estado' => $state])
+            ->andFilterWhere(['mesa_id' => $idTable])
+            ->andFilterWhere(['venta.id' => $idSale])
             ->innerJoin('usuario', 'usuario.id=venta.usuario_id')
+            ->leftJoin('mesa', 'mesa.id=venta.mesa_id')
             ->asArray()
-            -> one();
-        if( $sale ){
+            ->one();
+
+        if ($sale) {
             $saleDetailFull = DetalleVenta::find()
-                    ->select(['detalle_venta.*', 'producto.nombre', 'producto.stock', 'producto.precio_venta', 'producto.precio_compra'
-                                ,'producto.tipo'])
-                    ->where(['venta_id' => $sale['id']])
-                    ->andWhere(['<>', 'detalle_venta.estado', 'cancelado'])
-                    ->innerJoin('producto', 'producto.id=detalle_venta.producto_id')
-                    ->orderBy(['nombre' => SORT_DESC, 'id' => SORT_DESC])
-                    ->asArray()
-                    ->all();
+                ->select(['detalle_venta.*', 'producto.nombre', 'producto.precio_venta', 'producto.costo_compra', 'producto.area_impresion_id'])
+                ->where(['venta_id' => $sale['id'], 'detalle_venta_id' => null])
+                ->andWhere(['<>', 'detalle_venta.estado', 'cancelado'])
+                ->innerJoin('producto', 'producto.id=detalle_venta.producto_id')
+                ->orderBy(['id' => SORT_DESC])
+                ->with(['detalleVentas' => function ($query) {
+                    $query->select(['detalle_venta.*', 'producto.nombre', 'producto.area_impresion_id'])
+                        ->innerJoin('producto', 'producto.id=detalle_venta.producto_id');
+                }])
+                ->asArray()
+                ->all();
             $customer = Cliente::findOne($sale['cliente_id']);
+            $discount = VentaDescuento::find()->where(['venta_id' => $sale['id']])->one();
             $response = [
                 'success' => true,
                 'message' => 'Info de venta',
                 'saleDetails' => $saleDetailFull,
                 'sale' => $sale,
-                'customer' => $customer
+                'customer' => $customer,
+                'discount' => $discount
             ];
-        }else{
+        } else {
             $response = [
                 'success' => false,
                 'message' => 'No existe venta asociada a la mesa',
@@ -574,39 +528,56 @@ class VentaController extends \yii\web\Controller
         return $response;
     }
 
-    public function actionFastSale(){
+    public function actionFastSale()
+    {
         //CREAR VENTA, CREAR DETALLE DE VENTA (inventario, estado, etc)
         $params = Yii::$app->getRequest()->getBodyParams();
-        $transaction = Yii::$app->db->beginTransaction();
         $errors = [];
-        try{
+        $transaction = Yii::$app->db->beginTransaction();
+        try {
             /* Crear venta */
-            $sale = $this -> createSale($params);
-            $sale -> load($params, '');
-            if($sale -> save()){
-                $existsNewFoods = $params['existsSomeFoodWithoutPrint'];
-                $existsNewDrinks = $params['existsSomeDrinkWithoutPrint'];
-                if($params['userAgent'] !== 'windows' ){
-                    if($existsNewFoods)$this -> createPrintSpooler( $sale -> id , "cocina");
-                    if($existsNewDrinks) $this -> createPrintSpooler($sale -> id , "bar");
-                    $this -> createPrintSpooler( $sale -> id, "salon");
-                }
+            $sale = $this->createSale($params);
+            $sale->load($params, '');
+            if ($sale->save()) {
                 /* Agregar productos */
                 $orderDetails = $params['orderDetail'];
                 foreach ($orderDetails as $order) {
-                    $res = $this->addNewOrderDetail($order, $sale -> id, $params['userAgent'], $order['cantidad']);
-                    if($res) $errors[] = $res;
+                    $res = $this->addNewOrderDetail($order, $sale->id, $params['printed'], $order['cantidad']);
+                    if ($res) $errors[] = $res;
                 }
-            }else{
-                return $sale -> errors;
+
+                if (count($params['printerAreasIds']) > 0) {
+                    for ($i = 0; $i < count($params['printerAreasIds']); $i++) {
+                        $this->assignSaleToArea($sale->id, $params['printerAreasIds'][$i]);
+                        if (!$params['printed']) {
+                            $this->createPrintSpooler($sale->id, $params['printerAreasIds'][$i]);
+                        }
+                    }
+                }
+                $this->createPrintSpooler($sale->id, 1);
+                /* Agregar descuento     */
+                $discount = $params['discount'];
+                if ($discount['valor'] > 0) {
+                    if(!$discount['tipo_descuento_id']){
+                        $discount['tipo_descuento_id'] = 1;
+                    }
+                    $model = new VentaDescuento();
+                    $model->load($discount, '');
+                    $model->venta_id = $sale->id;
+                    if (!$model->save()) {
+                        throw new Exception(json_encode($model->errors));
+                    }
+                }
+            } else {
+                throw new Exception(json_encode($sale->errors));
             }
             $response = [
                 'success' => true,
                 'message' => 'Venta creada',
                 'data' => $sale,
             ];
-            $transaction -> commit();
-        }catch(Exception $e){
+            $transaction->commit();
+        } catch (Exception $e) {
             $transaction->rollBack();
             Yii::$app->getResponse()->setStatusCode(422, 'Data Validation Failed.');
             $response = [
@@ -616,187 +587,261 @@ class VentaController extends \yii\web\Controller
         }
         return $response;
     }
-    
 
-    private function addNewOrderDetail( $detail, $idSale, $printout, $amount){
-        try{
-            //$product =  Producto::findOne($detail['producto_id']);
-            /* Validar solo si si stock_active es true */
-            /*if($product -> stock_active === true){
-                if($product -> stock > 0 && $amount <= $product -> stock){
-                    $product -> stock = $product -> stock - $detail ['cantidad'];
-                    if(!$product -> save()){
-                        throw new Exception('Ocurrio un error, intente de nuevo');
+    private function addNewOrderDetail($detail, $idSale, $printed, $quantity)
+    {
+        try {
+            $saleDetailParent = $this->createAndSaveSaleDetail($detail, $idSale, $printed, abs($quantity), $quantity > 0, null);
+
+            if (isset($detail['detalleVentas'])) {
+                foreach ($detail['detalleVentas'] as $modifier) {
+                    $quantityDetail = $modifier['cantidad'];
+                    if(isset($modifier['detalle_venta_id'])){
+                        $model = DetalleVenta::findOne($modifier['id']);
+                        $quantityDetail = $model->cantidad - $quantityDetail;
                     }
-                }else{
-                    return 'No hay stock para '.$product -> nombre;
-                }
-            }*/
-            $newSaleDetail = new DetalleVenta();
-            $newSaleDetail -> cantidad = abs($amount);
-            $newSaleDetail -> producto_id = $detail['producto_id'];
-            $newSaleDetail -> venta_id = $idSale;
-            $newSaleDetail -> estado = $amount > 0 ? 'enviado' : 'cancelado';
-            $newSaleDetail -> impreso = $printout === 'windows' ? true : false;
-            if(!$newSaleDetail -> save()){
-                throw new Exception('Ocurrio un error, intente de nuevo');
-            }
 
-            return false;
-        }catch(Exception $e){
-            return $e -> getMessage();
+                    $this->createAndSaveSaleDetail($modifier,  $idSale, $printed, $quantityDetail, $quantity > 0, $saleDetailParent->id);
+                }
+            }
+            return false; // Indicar que no hubo errores.
+        } catch (Exception $e) {
+            return $e->getMessage();
         }
     }
 
-    private function createPrintSpooler($idSale, $place){
-        $printer = Impresora::find()->where(['lugar' => $place])->one();
-        if(!$printer)return;
-
-        $printerSpooler = New ColaImpresion();
-        $printerSpooler -> venta_id = $idSale;
-        $printerSpooler -> estado = false;
-        $printerSpooler -> area = $place;
-        $printerSpooler -> save();
+    private function createAndSaveSaleDetail($detail, $saleId, $printed, $quantity,  $isSent, $idParent)
+    {
+        $saleDetail = new DetalleVenta();
+        $saleDetail->load($detail, '');
+        $saleDetail->cantidad = $quantity;
+        $saleDetail->venta_id = $saleId;
+        $saleDetail->estado = $isSent ? 'enviado' : 'cancelado';
+        $saleDetail->impreso = $printed;
+        $saleDetail->detalle_venta_id = $idParent;
+        if (!$saleDetail->save()) {
+            throw new Exception('Ocurrió un error, intente de nuevo' . json_encode($saleDetail->errors));
+        }
+        return $saleDetail;
     }
-    private function createSale($params){
+
+    private function createPrintSpooler($idSale, $idArea)
+    {
+        $printerSpooler = new ColaImpresion();
+        $printerSpooler->venta_id = $idSale;
+        $printerSpooler->estado = false;
+        $printerSpooler->area_impresion_id = $idArea;
+        if (!$printerSpooler->save()) {
+            throw new Exception('Ocurrio un error, intente de nuevo' . json_encode($printerSpooler->errors));
+        }
+    }
+    private function createSale($params)
+    {
         $sale = new Venta();
-        $sale -> usuario_id = $params['usuario_id'];
-        $sale -> mesa_id = $params['mesa_id'];
-        $sale -> cliente_id = $params['cliente_id'];
-        $sale -> estado = 'consumiendo';
+        $sale->load($params, '');
+        $sale->estado = 'consumiendo';
         date_default_timezone_set('America/La_Paz');
-        $sale -> fecha = date('Y-m-d H:i:s');
+        $sale->fecha = date('Y-m-d H:i:s');
         $numberOrder = Venta::find()->all();
         $sale->numero_pedido = count($numberOrder) + 1;
-        $sale -> save();
-        $table = Mesa::findOne($params['mesa_id']);
-        $table -> estado = 'ocupado';
-        $table -> save();
+        $sale->save();
+
+        if (isset($params['mesa_id'])) {
+            $table = Mesa::findOne($params['mesa_id']);
+            $table->estado = 'ocupado';
+            $table->save();
+        }
         return $sale;
     }
-    private function createNotification($msm){
+
+
+    private function assignSaleToArea($idSale, $idArea)
+    {
+        //si existe update false, si no existe crear
+        $model = VentaAreaImpresion::find()
+            ->where(['venta_id' => $idSale, 'area_impresion_id' => $idArea])
+            ->one();
+
+        if (!$model) {
+            $model = new VentaAreaImpresion();
+            $model->venta_id = $idSale;
+            $model->area_impresion_id = $idArea;
+        }
+        $model->finalizado = false;
+        if (!$model->save()) {
+            throw new Exception(json_encode($model->errors));
+        }
+    }
+    private function createNotification($msm)
+    {
         $notification = new Notificacion();
-        $notification -> mensaje = $msm;
-        $notification -> leido = false;
+        $notification->mensaje = $msm;
+        $notification->leido = false;
         date_default_timezone_set('America/La_Paz');
-        $notification -> create_ts = date('Y-m-d H:i:s');
-        $notification -> save();
-    } 
-    public function actionUpdateSaleImproved($idSale){
+        $notification->create_ts = date('Y-m-d H:i:s');
+        $notification->save();
+    }
+    public function actionUpdateSaleImproved($idSale)
+    {
         $idSale = isset($idSale) ? $idSale : null;
         $params = Yii::$app->getRequest()->getBodyParams();
-        try{
-        if(!$idSale){
-            $sale = $this -> createSale($params);
-        }else{
-            $sale = Venta::findOne($idSale);
-        }
-        $orderDetail = $params['orderDetail']; //actualizado con estado nuevo/enviado/enviado-impresora
-        //nota y cliente
-        $sale -> cliente_id = $params['cliente_id'];
-        $sale -> nota = $params['note'];
-        $sale -> save();
-
-        $saleDetail = DetalleVenta::find()
-                    ->where(['venta_id' => $sale -> id])
-                    ->andWhere(['<>', 'estado', 'cancelado'])
-                    ->all(); 
-
-        //Si el cliente es distinto de windows, se crea la cola de impresion
-        $existsNewFoods = $params['existsSomeFoodWithoutPrint'];
-        $existsNewDrinks = $params['existsSomeDrinkWithoutPrint'];
-        if($params['userAgent'] !== 'windows' ){
-            if($existsNewFoods)$this -> createPrintSpooler( $sale -> id , "cocina");
-            if($existsNewDrinks) $this -> createPrintSpooler($sale -> id , "bar");
-        }
-
-        $errors = [];
-        for($i = 0; $i < count($orderDetail); $i++){
-            $detail = $orderDetail[$i];
-
-            if($detail ["estado"] === 'nuevo'){
-                $res = $this->addNewOrderDetail($detail, $sale -> id, $params['userAgent'], $detail['cantidad']);
-                if($res) $errors[] = $res;
-                if($existsNewFoods)$sale -> finalizado = false;
-                if($existsNewDrinks)$sale -> finalizado_bar = false;
-                $sale -> save();
+        try {
+            if (!$idSale) {
+                $sale = $this->createSale($params);
+            } else {
+                $sale = Venta::findOne($idSale);
             }
-                
+            $orderDetail = $params['orderDetail']; //actualizado con estado nuevo/enviado/enviado-impresora
+            //nota y cliente
+            $sale->cliente_id = $params['cliente_id'];
+            $sale->nota = $params['note'];
+            $sale->save();
 
-            if($detail ["estado"] === 'cancelado'){
-                DetalleVenta::updateAll(['estado' => 'cancelado'], ['id' => $detail["id"]]);
-                $this -> createNotification("Se cancelo el producto: " . $detail["nombre"] . " del pedido #" . $sale -> numero_pedido . " por el usuario: " . $sale -> usuario_id);
-            }else{
-                $filterDetail = array_filter($saleDetail, function ($det) use ($detail) {
-                    return $det['id']  === $detail['id'] && $det['estado'] === $detail['estado'];
-                });
-                //nunca va a entrar poque los pedidos siempre seran nuevos.
-                //va a entrar cuando em: pedodo 3 -> tiene el mismo id y mismo estado;
-                if(count($filterDetail) > 0){
-                    //actualizar  dividir el detalle de venta.
-                    //detail  $filterDetail 
-                    $filterDetailValues = array_values($filterDetail);
-                    if($filterDetailValues[0]['cantidad'] !== $detail["cantidad"]){
-                        //Si no es igual, es que se ha decrementado o incrementado.
-                        $difference = $detail["cantidad"] - $filterDetailValues[0]['cantidad'];
-                        if($difference < 0){
-                            DetalleVenta::updateAll(['cantidad' => $detail['cantidad']], ['id' => $detail["id"]]);
-                        }
-                           //si es mayor se crea otro detalle de vetna positivo si es negativo se reduce la cnatidad del detalle origina
-                        //y se crear un detalle de venta con estado cancelado con la diferencia.
-                        $res = $this->addNewOrderDetail($detail, $sale -> id, $params['userAgent'], $difference);
-                        if($res) $errors[] = $res;
-                        if($existsNewFoods)$sale -> finalizado = false;
-                        if($existsNewDrinks)$sale -> finalizado_bar = false;
-                        $sale -> save();
+            $saleDetail = DetalleVenta::find()
+                ->where(['venta_id' => $sale->id])
+                ->andWhere(['<>', 'estado', 'cancelado'])
+                ->all();
+
+            //Si el cliente es distinto de COMPUTADORA, se crea la cola de impresion
+            if (count($params['printerAreasIds']) > 0) {
+                for ($i = 0; $i < count($params['printerAreasIds']); $i++) {
+                    $this->assignSaleToArea($sale->id, $params['printerAreasIds'][$i]);
+                    if (!$params['printed']) {
+                        $this->createPrintSpooler($sale->id, $params['printerAreasIds'][$i]);
                     }
                 }
             }
-        }
+            $errors = [];
+            for ($i = 0; $i < count($orderDetail); $i++) {
+                $detail = $orderDetail[$i];
 
-        $saleDetailFull = DetalleVenta::find()
-                    ->select(['detalle_venta.*', 'producto.nombre', 'producto.stock', 'producto.precio_venta', 'producto.precio_compra'
-                    ,'producto.tipo'])
-                    ->innerJoin('producto', 'producto.id=detalle_venta.producto_id')
-                    ->where(['venta_id' => $sale -> id])
-                    ->andWhere(['<>', 'detalle_venta.estado', 'cancelado'])
-                    ->asArray()
-                    ->orderBy(['nombre' => SORT_DESC, 'id' => SORT_DESC])
-                    ->all();  
-        $response = [
-            'success' => true,
-            'message' => 'Pedidos enviados.',
-            'orderDetailCurrently' => $saleDetailFull,
-            'sale' => $sale,
-            'errors' => $errors
+                if ($detail["estado"] === 'nuevo') {
+                    $res = $this->addNewOrderDetail($detail, $sale->id, $params['printed'], $detail['cantidad']);
+                    if ($res) $errors[] = $res;
+                    $sale->save();
+                    continue;
+                }
 
-        ];
-        }catch(Exception $e){
+
+                if ($detail["estado"] === 'cancelado') {
+                    DetalleVenta::updateAll(['estado' => 'cancelado'], ['id' => $detail["id"], 'detalle_venta_id' => $detail["id"]]);
+                    $this->createNotification("Se cancelo el producto: " . $detail["nombre"] . " del pedido #" . $sale->numero_pedido . " por el usuario: " . $sale->usuario_id);
+                } else {
+                    $filterDetail = array_filter($saleDetail, function ($det) use ($detail) {
+                        return $det['id']  === $detail['id'] && $det['estado'] === $detail['estado'];
+                    });
+                    //va a entrar cuando el: pedido 3 -> tiene el mismo id y mismo estado;
+                    if (count($filterDetail) > 0) {
+                        $filterDetailValues = array_values($filterDetail);
+
+                        //Si no es igual, es que se ha decrementado o incrementado.
+                        if ($filterDetailValues[0]['cantidad'] !== $detail["cantidad"]) {
+                            $difference = $detail["cantidad"] - $filterDetailValues[0]['cantidad'];
+                        
+                            //si es mayor se crea otro detalle de venta positivo, si es negativo se reduce la cantidad del detalle original y se crear un detalle de venta con estado cancelado con la diferencia.
+
+                            $res = $this->addNewOrderDetail($detail, $sale->id, $params['printed'], $difference);
+                            if ($difference < 0) {
+                                DetalleVenta::updateAll(['cantidad' => $detail['cantidad']], ['id' => $detail["id"]]);
+                                if( count($detail['detalleVentas']) > 0 ){
+                                    $this -> updateDetail($detail['detalleVentas']);
+                                }
+                            }
+                            
+                            if ($res) $errors[] = $res;
+
+                            $sale->save();
+                        }
+                    }
+                }
+            }
+
+            $saleDetailFull = DetalleVenta::find()
+                ->select(['detalle_venta.*', 'producto.nombre', 'producto.area_impresion_id'])
+                ->innerJoin('producto', 'producto.id=detalle_venta.producto_id')
+                ->where(['venta_id' => $sale->id, 'detalle_venta_id' => null])
+                ->andWhere(['<>', 'detalle_venta.estado', 'cancelado'])
+                ->orderBy(['id' => SORT_DESC])
+                ->with(['detalleVentas' => function ($query) {
+                    $query->select(['detalle_venta.*', 'producto.nombre', 'producto.area_impresion_id'])
+                        ->innerJoin('producto', 'producto.id=detalle_venta.producto_id');
+                }])
+                ->asArray()
+                ->all();
+            $customer = Cliente::findOne($params['cliente_id']);
+            $response = [
+                'success' => true,
+                'message' => 'Pedidos enviados.',
+                'orderDetailCurrently' => $saleDetailFull,
+                'sale' => [...$sale, 'customer' => $customer],
+                'errors' => $errors
+
+            ];
+        } catch (Exception $e) {
             $response = [
                 'success' => false,
-                'message' => 'Algo salio mal, intente nuevamente',
+                'message' => $e->getMessage()
             ];
         }
-    return $response;
-}
+        return $response;
+    }
+
+    private function updateDetail($detail){
+        foreach ($detail as $key => $value) {
+            DetalleVenta::updateAll(['cantidad' => $value['cantidad']], ['id' => $value['id']]);
+        }
+    }
 
     public function actionConfirmSale($idSale)
     {
         $sale = Venta::findOne($idSale);
         $params = Yii::$app->getRequest()->getBodyParams();
-        $sale -> load($params, '');
-
+        $sale->load($params, '');
+        $sale->fecha_cierre = date('Y-m-d H:i:s');
         $db = Yii::$app->db;
         $transaction = $db->beginTransaction();
-        try{
-            if($params['userAgent'] !== 'windows' )$this -> createPrintSpooler( $idSale, "salon");
+        try {
+            if (!$params['printed'] && !$params['isEdit']) $this->createPrintSpooler($idSale, 1);
 
             if ($sale->save()) {
-                $table = Mesa::findOne($sale -> mesa_id);
-                $table -> estado = 'disponible';
-                if(!$table -> save()){
-                    throw new Exception('Error al actualizar mesa, intente nuevamente.');
+
+                if($params['isEdit'] && $sale -> mesa_id){
+                    $table = Mesa::findOne($sale->mesa_id);
+                    $table->estado = 'disponible';
+                    if (!$table->save()) {
+                        throw new Exception('Error al actualizar mesa, intente nuevamente.');
+                    }
                 }
+
+                /* Agregar descuento */
+                $discount = $params['discount'];
+                if ($discount['valor'] > 0 || $discount['isEdit']) {
+                    $model = new VentaDescuento();
+
+                    $discountModel = VentaDescuento::findOne($discount['id']);
+                    if($discountModel && $discount['valor'] !== $discountModel->valor){
+                        //eliminar y crar uno nuevo, crear notifiacion
+                        $message = 'Se ha modificado el descuento ' . $discountModel['valor'] . ' por el valor ' . $discount['valor'] . ' del pedido #' . $sale->numero_pedido . ' por el usuario: ' . $sale->usuario_id;
+                        $this->createNotification($message);
+
+                        if($discount['valor'] !== 0){
+                            $model = $discountModel; 
+                        }else{
+                            $discountModel -> delete();
+                        }
+                    }
+
+                    if(!$discount['tipo_descuento_id']){
+                        $discount['tipo_descuento_id'] = 1;
+                    }
+
+                    $model->load($discount, '');
+                    $model->venta_id = $sale->id;
+                    if (!$model->save()) {
+                        throw new Exception(json_encode($model->errors));
+                    }
+                }
+
                 Yii::$app->getResponse()->setStatusCode(201);
                 $response = [
                     'success' => true,
@@ -807,49 +852,45 @@ class VentaController extends \yii\web\Controller
             } else {
                 throw new Exception('Error al actualizar la venta, intente nuevamente.');
             }
-        }catch(Exception $e){
+        } catch (Exception $e) {
             $transaction->rollBack();
             Yii::$app->getResponse()->setStatusCode(422, 'Data Validation Failed.');
             $response = [
                 'success' => false,
-                'message' => $e -> getMessage(),
+                'message' => $e->getMessage(),
             ];
         }
         return $response;
     }
 
-    public function actionServe($idSale, $type){
-        $sale = Venta::findOne($idSale);
-        if( $sale ){
-            if($type === 'kitchen'){
-                $sale -> finalizado = true;
-            }else{
-                $sale -> finalizado_bar = true;
-            }
-            if( $sale -> save()){
+    public function actionServe($idSale, $idArea)
+    {
+        $salePrinterArea = VentaAreaImpresion::find()
+            ->where(['area_impresion_id' => $idArea, 'venta_id' => $idSale])
+            ->one();
+
+        if ($salePrinterArea) {
+            $salePrinterArea->finalizado = true;
+            if($salePrinterArea->save()){
                 $response = [
                     'success' => true,
-                    'message' => 'Venta servida'
+                    'message' => 'Venta actualizada'
                 ];
             }else{
                 $response = [
                     'success' => false,
-                    'message' => 'existen parametros incorrectos',
-                    'errors' => $sale -> errors
+                    'message' => 'Error al actualizar la venta'
                 ];
             }
-        }else{
-            $response = [
-                'success' => false,
-                'message' => 'No existe la venta',
-            ];
         }
+     
         return $response;
     }
 
 
-    public function actionChangeStateOrderDetails($idSale, $type){
-        $type = $type === 'kitchen' ? 'comida' : 'bebida';
+    public function actionChangeStateOrderDetails($idSale, $idPrinterArea)
+    {
+        //$type = $type === 'kitchen' ? 'comida' : 'bebida';
         $params = Yii::$app->getRequest()->getBodyParams();
         $state = $params['state'];
 
@@ -861,38 +902,53 @@ class VentaController extends \yii\web\Controller
         $newState = $states[$state];
         DetalleVenta::updateAll(
             ['estado' => $newState], // Define el nuevo estado según tus necesidades
-            ['exists', (new \yii\db\Query())->select('id')->from('producto')
-            ->where(['and', 'producto.id = detalle_venta.producto_id', 
-            ['venta_id' => $idSale],
-            ['detalle_venta.estado' => $state],
-            ['producto.tipo' => $type],
-            ])]
+            ['and',
+                ['venta_id' => $idSale],
+                ['estado' => $state],
+                ['exists', (new \yii\db\Query())
+                    ->select('id')
+                    ->from('producto')
+                    ->where('producto.id = detalle_venta.producto_id')
+                    ->andWhere(['producto.area_impresion_id' => $idPrinterArea])
+                ]
+            ]
         );
-            
+        
         $response = [
             'success' => true,
-            'message' => 'Pedidos actualizados'
+            'message' => 'Pedidos actualizados',
+
         ];
         return $response;
     }
 
-    public function actionChangeStateSampleOrder($idSaleDetail){
-        $SaleDetail = DetalleVenta::findOne($idSaleDetail);
-        $params = Yii::$app -> getRequest() -> getBodyParams();
-        if($SaleDetail){
-            $SaleDetail -> estado = $params['state'];
-            if($SaleDetail -> save()){
-            $response = [
-                'success' => true,
-                'message' => 'Pedidos actualizados'
-            ];
+    public function actionChangeStateSampleOrder($idSaleDetail)
+    {
+        $params = Yii::$app->getRequest()->getBodyParams();
+        $saleDetail = DetalleVenta::findOne($idSaleDetail);
+        if ($saleDetail) {
+            if($saleDetail -> detalle_venta_id){
+                //si tiene un parent
+                $saleDetailParent = DetalleVenta::findOne($saleDetail -> detalle_venta_id);
+                $saleDetailParent->estado = $params['state'];
+                $saleDetailParent->save();
             }else{
+                //si tiene hijos
+                DetalleVenta::updateAll(['estado' => $params['state']], ['detalle_venta_id' => $saleDetail["id"]]);
+            }
+            $saleDetail->estado = $params['state'];
+            if ($saleDetail->save()) {
+                $response = [
+                    'success' => true,
+                    'message' => 'Pedidos actualizados'
+                ];
+            } else {
                 $response = [
                     'success' => false,
                     'message' => 'Existen parametros en los parametros'
                 ];
             }
-        }else{
+        } else {
             $response = [
                 'success' => false,
                 'message' => 'No existen detalle de venta'
@@ -902,73 +958,31 @@ class VentaController extends \yii\web\Controller
         return $response;
     }
 
-    public function actionGetTotalSaleMonth($month, $year){
+   
 
-        $expresion = 'DATE(DATE_TRUNC(\'month\', fecha)) as dateMonth';
-        $monthNumber = 'extract ( month from fecha) ';
-        $query = Venta::find()
-            ->select([
-                new Expression($expresion),
-                'SUM(cantidad_total) as totalVentas',
-            ])
-            ->where(['estado' => 'pagado', 'EXTRACT(Year FROM fecha)' => $year])
-            ->andWhere(['=' ,new Expression($monthNumber), intval($month)])
-            ->groupBy(['DATE(DATE_TRUNC(\'month\', fecha))'])
-            ->asArray()
-            ->one();
-        //echo $query->createCommand()->getRawSql();
-
-        
-        $query2 = new Query();
-
-        $reportGlobal =  $query2
-                ->distinct()
-                ->select(['cg.nombre', 'SUM(total) OVER (PARTITION BY categoria_gasto_id) as TotalCantidad'])
-                ->from(['registro_gasto rg'])
-                ->innerJoin('gasto g', 'rg.gasto_id = g.id')
-                ->innerJoin('categoria_gasto cg', 'cg.id = g.categoria_gasto_id')
-                ->where([ 'estado' => 'pagado','EXTRACT(MONTH FROM fecha)' => $month])
-                ->andWhere(['EXTRACT(year from fecha)' => $year])
-                ->all();
-        if($query || $reportGlobal){
-            $response = [
-                'success' => true,
-                'message' => 'Reportes global',
-                'sales' => $query,
-                'reportGlobal' => $reportGlobal
-            ];
-         }else{
-            $response = [
-                'success' => false,
-                'message' => 'No existe reportes',
-                'sales' => $query,
-            ];
-         }  
-        return $response;
-    }
-
-    public function actionChangeTable( $idTableOld, $idTableNew){
+    public function actionChangeTable($idTableOld, $idTableNew)
+    {
         $sale = Venta::find()
-                        ->where(['mesa_id' => $idTableOld, 'venta.estado' => 'consumiendo' ])
-                        -> one();
-        if($sale){
-            $sale -> mesa_id = $idTableNew;
+            ->where(['mesa_id' => $idTableOld, 'venta.estado' => 'consumiendo'])
+            ->one();
+        if ($sale) {
+            $sale->mesa_id = $idTableNew;
             $tableNew = Mesa::findOne($idTableNew);
             $tableOld = Mesa::findOne($idTableOld);
-            $tableNew -> estado = 'ocupado';
-            $tableOld -> estado = 'disponible';
-            if($sale -> save() && $tableNew -> save() && $tableOld -> save()){
+            $tableNew->estado = 'ocupado';
+            $tableOld->estado = 'disponible';
+            if ($sale->save() && $tableNew->save() && $tableOld->save()) {
                 $response = [
                     'success' => true,
                     'message' => 'Cambio exitoso'
                 ];
-            }else{
+            } else {
                 $response = [
                     'success' => false,
                     'message' => 'Ocurrio un error'
                 ];
             }
-        }else{
+        } else {
             $response = [
                 'success' => false,
                 'message' => 'No hay pedidos'
@@ -977,27 +991,46 @@ class VentaController extends \yii\web\Controller
         return $response;
     }
 
-    public function actionOrders($idUser, $idPeriod){
+    public function actionOrders($idUser, $idPeriod)
+    {
         $period = Periodo::findOne($idPeriod);
 
         $orders = Usuario::find()
-                    ->select(['detalle_venta.id', 'venta.numero_pedido','mesa.nombre as mesa' ,'detalle_venta.cantidad', 'detalle_venta.estado', 'producto.nombre', 'detalle_venta.create_ts'])
-                    ->where(['id' => $idUser])
-                    ->innerJoin('venta', 'venta.usuario_id = usuario.id')
-                    ->innerJoin('mesa', 'mesa.id = venta.mesa_id')
-                    ->innerJoin('detalle_venta', 'detalle_venta.venta_id = venta.id')
-                    ->where(['<>', 'detalle_venta.estado', 'entregado'])
-                    ->andWhere(['venta.usuario_id' => $idUser])
-                    ->andWhere(['>=', 'fecha', $period->fecha_inicio])
-                    ->innerJoin('producto', 'producto.id = detalle_venta.producto_id')
-                    ->asArray()
-                    ->orderBy(['create_ts' => SORT_DESC])
-                    ->all();
+            ->select(['detalle_venta.id', 'venta.numero_pedido', 'mesa.nombre as mesa', 'detalle_venta.cantidad', 'detalle_venta.estado', 'producto.nombre', 'detalle_venta.create_ts'])
+            ->where(['id' => $idUser])
+            ->innerJoin('venta', 'venta.usuario_id = usuario.id')
+            ->innerJoin('mesa', 'mesa.id = venta.mesa_id')
+            ->innerJoin('detalle_venta', 'detalle_venta.venta_id = venta.id')
+            ->where(['<>', 'detalle_venta.estado', 'entregado'])
+            ->andWhere(['venta.usuario_id' => $idUser])
+            ->andWhere(['>=', 'fecha', $period->fecha_inicio])
+            ->innerJoin('producto', 'producto.id = detalle_venta.producto_id')
+            ->asArray()
+            ->orderBy(['create_ts' => SORT_DESC])
+            ->all();
 
         $response = [
             'success' => true,
             'orders' => $orders
         ];
+
+        return $response;
+    }
+
+    public function actionConfirmCredit($idSale){
+        $sale = Venta::findOne($idSale);
+        $sale->estado = 'pagado';
+        if($sale->save()){
+            $response = [
+                'success' => true,
+                'message' => 'Pago exitoso'
+            ];
+        }else{
+            $response = [
+                'success' => false,
+                'message' => 'Ocurrio un error'
+            ];
+        }
 
         return $response;
     }

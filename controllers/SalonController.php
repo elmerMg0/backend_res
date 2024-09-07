@@ -59,41 +59,67 @@ class SalonController extends \yii\web\Controller
             $file -> saveAs(Yii::getAlias('@app/web/upload/').$fileName);
             $lounge -> url_image = $fileName;
         }
-
-        if($lounge -> save()){
-            /* Creamos los espacios segun el nrofilas y columnas */
-            $nroTables = $data['nro_filas']* $data['nro_columnas'];
-            for($i = 0; $i < $nroTables; $i++){
-                $table = new Mesa();
-                $table -> salon_id = $lounge -> id;
-                $table -> nombre = strval( $i + 1);
-                if(!$table -> save()){
-                    return  [
-                        'success' => false,
-                        'message' => 'Existen errores en los campos',
-                        'errors' => $table->errors
-                    ];
+        $transaction = Yii::$app->db->beginTransaction();
+        try {
+            if($lounge -> save()){
+                /* Creamos los espacios segun el nrofilas y columnas */
+                $nroTables = $data['nro_filas']* $data['nro_columnas'];
+                for($i = 0; $i < $nroTables; $i++){
+                    $table = new Mesa();
+                    $table -> salon_id = $lounge -> id;
+                    $table -> nombre = strval( $i + 1);
+                    $table -> tipo = 'SHAPE1';
+                    if(!$table -> save()){
+                        return  [
+                            'success' => false,
+                            'message' => 'Existen errores en los campos',
+                            'errors' => $table->errors
+                        ];
+                    }
                 }
+                $response = [
+                    'success' => true,
+                    'message' => 'Salon creado exitosamente',
+                    'lounge' => $lounge
+                ];
+            }else{
+                $response = [
+                    'success' => false,
+                    'message' => 'Existen errores en los campos',
+                    'errors' => $lounge->errors
+                ];
             }
-            $response = [
-                'success' => true,
-                'message' => 'Salon creado exitosamente',
-                'lounge' => $lounge
-            ];
-        }else{
+            $transaction -> commit();
+        } catch (\Exception $e) {
+            $transaction->rollBack();
             $response = [
                 'success' => false,
                 'message' => 'Existen errores en los campos',
-                'errors' => $lounge->errors
+                'errors' => $e->getMessage()
             ];
         }
+        return $response;
+    }
+
+
+    public function actionFullLounges (){
+        
+        $lounges = Salon::find()
+                        ->select(['id', 'nombre'])
+                        ->orderBy(['id' => SORT_ASC])
+                        ->all();
+        $response = [
+            'success' => true,
+            'message' => 'Lista de salones',
+            'records' => $lounges
+        ];
         return $response;
     }
 
     public function actionGetLounges ($estado = null){
         
         $lounges = Salon::find()
-                        ->where(['<>', 'nombre', 'SALON_BASE'])
+                        ->where(['<>', 'nombre', 'Llevar'])
                         ->andFilterWhere(['estado' => $estado])
                         ->orderBy(['id' => SORT_ASC])
                         ->all();
