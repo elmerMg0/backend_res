@@ -33,6 +33,7 @@ class AreaImpresion extends \yii\db\ActiveRecord
         return [
             [['nombre'], 'required'],
             [['nombre'], 'string', 'max' => 30],
+            [['nombre'], 'unique'],
         ];
     }
 

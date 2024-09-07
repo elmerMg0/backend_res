@@ -142,13 +142,13 @@ class AreaVentaController extends \yii\web\Controller
 
             if ($saleArea->save()) {
                 /* Actualizamos las mesas */
-                if(!empty($data['hastables'])){
+                if (!empty($data['hastables'])) {
                     $nroTables = $data['nro_filas'] * $data['nro_columnas'];
                     $lastTable = Mesa::find()->orderBy(['id' => SORT_DESC])->one();
                     for ($i = 1; $i <= $nroTables; $i++) {
                         $table = new Mesa();
                         $table->area_venta_id = $saleArea->id;
-                        $table->nombre = strval($lastTable -> id + $i);
+                        $table->nombre = strval($lastTable->id + $i);
                         $table->tipo = 'SHAPE1';
                         if (!$table->save()) {
                             return  [

@@ -10,7 +10,7 @@ class AreaImpresionController extends \yii\web\Controller
 {
     public function behaviors()
     {
-    	$behaviors = parent::behaviors();
+        $behaviors = parent::behaviors();
         $behaviors["verbs"] = [
             "class" => \yii\filters\VerbFilter::class,
             "actions" => [
@@ -34,16 +34,16 @@ class AreaImpresionController extends \yii\web\Controller
             'only' => ['get-product', 'products'], // acciones a las que se aplicará el control
             'except' => [],    // acciones a las que no se aplicará el control
             'rules' => [
-                 [
+                [
                     'allow' => true, // permitido o no permitido
-                    'actions' => ['index','update','delete','create', 'products', 'get-product'], // acciones que siguen esta regla
+                    'actions' => ['index', 'update', 'delete', 'create', 'products', 'get-product'], // acciones que siguen esta regla
                     'roles' => ['administrador', 'mesero', 'configurador', 'cajero'] // control por roles  permisos
-                ], 
+                ],
                 //…
-	    ],
-	];
+            ],
+        ];
 
-        return $behaviors; 
+        return $behaviors;
     }
 
     public function beforeAction($action)
@@ -58,10 +58,11 @@ class AreaImpresionController extends \yii\web\Controller
         return parent::beforeAction($action);
     }
 
-    public function actionIndex(){
+    public function actionIndex()
+    {
         $area = AreaImpresion::find()
-                            ->orderBy(['id' => SORT_DESC])
-                            ->all();
+            ->orderBy(['id' => SORT_DESC])
+            ->all();
 
         $response = [
             'success' => true,
@@ -72,18 +73,19 @@ class AreaImpresionController extends \yii\web\Controller
         return $response;
     }
 
-    public function actionCreate(){
+    public function actionCreate()
+    {
         $params = Yii::$app->getRequest()->getBodyParams();
         $area = new AreaImpresion();
-        $area -> load($params, '');
+        $area->load($params, '');
 
-        if($area->save()){
+        if ($area->save()) {
             $response = [
                 'success' => true,
                 'message' => 'Area creada con exito',
                 'records' => $area
             ];
-        }else{
+        } else {
             $response = [
                 'success' => false,
                 'message' => 'Area no creada',
@@ -94,17 +96,18 @@ class AreaImpresionController extends \yii\web\Controller
         return $response;
     }
 
-    public function actionUpdate($id){
+    public function actionUpdate($id)
+    {
         $params = Yii::$app->getRequest()->getBodyParams();
         $area = AreaImpresion::findOne($id);
-        $area -> load($params, '');
-        if($area->save()){
+        $area->load($params, '');
+        if ($area->save()) {
             $response = [
                 'success' => true,
                 'message' => 'Area actualizada con exito',
                 'records' => $area
             ];
-        }else{
+        } else {
             $response = [
                 'success' => false,
                 'message' => 'Area no actualizada',
@@ -118,20 +121,19 @@ class AreaImpresionController extends \yii\web\Controller
     {
         $printerArea = AreaImpresion::findOne($id);
         if ($printerArea) {
-            try{
+            try {
                 if ($printerArea->delete()) {
                     $response = [
                         'success' => true,
                         'message' => 'Area eliminado correctamente',
                     ];
                 }
-            }catch(Exception $e){
+            } catch (Exception $e) {
                 $response = [
                     'success' => false,
                     'message' => 'No se puede eliminar el área porque tiene registros relacionados'
                 ];
             }
-            
         } else {
             $response = [
                 'success' => false,
