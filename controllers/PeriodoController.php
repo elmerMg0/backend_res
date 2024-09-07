@@ -2,12 +2,16 @@
 
 namespace app\controllers;
 
-use app\models\DetalleVenta;
+use app\models\ClasificacionGrupo;
+use app\models\Gasto;
+use app\models\Inventario;
 use Yii;
 use app\models\Periodo;
 use app\models\RegistroGasto;
+use app\models\TipoPago;
 use app\models\Usuario;
 use app\models\Venta;
+use app\services\PeriodoService;
 
 class PeriodoController extends \yii\web\Controller
 {
@@ -21,7 +25,7 @@ class PeriodoController extends \yii\web\Controller
                 'close-period' => ['POST'],
                 'get-detail-period' => ['GET'],
                 'get-detail-sale-by-user' => ['GET']
-            ]   
+            ]
         ];
 
         $behaviors['authenticator'] = [
@@ -31,7 +35,7 @@ class PeriodoController extends \yii\web\Controller
 
         $behaviors['access'] = [
             'class' => \yii\filters\AccessControl::class,
-            'only' => ['get-detail-period','start-period', 'close-period'], // acciones a las que se aplicará el control
+            'only' => ['get-detail-period', 'start-period', 'close-period'], // acciones a las que se aplicará el control
             'except' => [''],    // acciones a las que no se aplicará el control
             'rules' => [
                 [
@@ -60,7 +64,7 @@ class PeriodoController extends \yii\web\Controller
 
         /* Validar que no pueda agregar otro periodo si ya existe uno. */
         $exists = Periodo::find()->where(['usuario_id' => $userId, 'estado' => true])->all();
-        if(!$exists){
+        if (!$exists) {
             $params = Yii::$app->getRequest()->getBodyParams();
             $period = new Periodo();
             date_default_timezone_set('America/La_Paz');
@@ -81,7 +85,7 @@ class PeriodoController extends \yii\web\Controller
                         'totalSaleTransfer' => 0,
                         'totalSale' => 0,
                         'totalSaleApp' => 0
-                        ]   
+                    ]
                 ];
             } else {
                 $response = [
@@ -90,43 +94,24 @@ class PeriodoController extends \yii\web\Controller
                     'errors' => $period->errors
                 ];
             }
-         }else{
-            $response = [
-            'success' => false,
-            'message' => 'Ya existe un perido activo, actualice la pagina por favor.'
-            ];
-          }
-        return $response;
-    }
-
-    public function actionClosePeriod( $idPeriod, $idUser)
-    {
-        $params = Yii::$app->getRequest()->getBodyParams();
-        $period = Periodo::findOne($idPeriod);
-         date_default_timezone_set('America/La_Paz');
-        $period -> fecha_fin = date('Y-m-d H:i:s');
-        $period->estado = false;
-
-        $totalSale = Venta::find()
-                ->where(['>=', 'fecha', $period->fecha_inicio])
-                ->andWhere(['usuario_id' => $idUser, 'estado' => 'pagado'])
-                ->sum('cantidad_total');
-
-        $period->total_ventas = $totalSale;
-        $period->total_cierre_caja = $params['totalCierreCaja'];
-        if ($period->save()) {
-            $response = [
-                'success' => true,
-                'message' => 'Periodo cerrado con exito!',
-                'period' => $period
-            ];
         } else {
             $response = [
                 'success' => false,
-                'message' => 'Existen parametros incorrectos',
-                'errors' => $period->errors
+                'message' => 'Ya existe un perido activo, actualice la pagina por favor.'
             ];
         }
+        return $response;
+    }
+
+    public function actionClosePeriod($idPeriod, $idUser)
+    {
+
+        $params = Yii::$app->getRequest()->getBodyParams();
+        $totalCierreCaja = $params['totalCierreCaja'];
+
+        $periodoService = new PeriodoService();
+        $response = $periodoService->closePeriod($idPeriod, $idUser, $totalCierreCaja);
+
         return $response;
     }
 
@@ -134,39 +119,34 @@ class PeriodoController extends \yii\web\Controller
     {
         $period = Periodo::findOne($idPeriod);
         if ($period) {
-             $user = Usuario::findOne($idUser);
+            $user = Usuario::findOne($idUser);
             if ($user) {
-                //vetnas totales hasta el momento 
-                $totalSaleCash = Venta::find()
-                    ->where(['>=', 'fecha', $period->fecha_inicio])
-                    ->andWhere([ 'usuario_id' => $user->id, 'tipo_pago' => 'efectivo', 'estado' => 'pagado', 'tipo' => 'local'])
-                    ->sum('cantidad_total');
 
-                $totalSaleCard = Venta::find()
-                    ->where(['>=', 'fecha', $period->fecha_inicio])
-                    ->andWhere(['usuario_id' => $user->id, 'tipo_pago' => 'tarjeta', 'estado' => 'pagado','tipo' => 'local'])
-                    ->sum('cantidad_total');
-
-                $totalSaleTransfer = Venta::find()
-                    ->where(['>=', 'fecha', $period->fecha_inicio])
-                    ->andWhere(['usuario_id' => $user->id, 'tipo_pago' => 'codigoQr', 'estado' => 'pagado', 'tipo' => 'local'])
-                    ->sum('cantidad_total');
-
-                $totalSaleApp = Venta::find()
-                    ->where(['>=', 'fecha', $period->fecha_inicio])
-                    ->andWhere(['usuario_id' => $user->id, 'estado' => 'pagado', 'tipo' => 'pedidoApp'])
-                    ->sum('cantidad_total');
-
+                $paymentTypes = TipoPago::find()
+                                            ->where(['estado' => true])
+                                            ->all();
+                $quantityBypaymentTypes = [];
+                for($i = 0; $i < count($paymentTypes); $i++){
+                    $total = Venta::find()
+                                ->where(['>=', 'fecha', $period->fecha_inicio])
+                                ->andWhere(['usuario_id' => $user->id, 'tipo_pago_id' => $paymentTypes[$i]->id])
+                                ->andWhere(['<>', 'estado', 'cancelado'])
+                                ->sum('cantidad_total');
+                    $quantityBypaymentTypes [] = [
+                        'paymentType' => $paymentTypes[$i]['descripcion'],
+                        'totalSale' => $total
+                    ];
+                }                                            
                 $totalSale = Venta::find()
                     ->where(['>=', 'fecha', $period->fecha_inicio])
-                    ->andWhere(['usuario_id' => $user->id , 'estado' => 'pagado'])
+                    ->andWhere(['usuario_id' => $user->id, 'estado' => 'pagado'])
                     ->sum('cantidad_total');
 
-                $expenses = RegistroGasto::find()
-                    ->where(['usuario_id' => $idUser, 'estado' => 'pagado'])
-                    ->andWhere(['>=', 'fecha', $period-> fecha_inicio])
+                $expenses = Gasto::find()
+                    ->where(['usuario_id' => $idUser, 'pagado' => true])
+                    ->andWhere(['>=', 'fecha', $period->fecha_inicio])
                     ->sum('total');
-                
+
                 /* Obtener si existen ventas no pagadas */
                 $existSalesOpen = Venta::find()
                     ->where(['>=', 'fecha', $period->fecha_inicio])
@@ -179,15 +159,12 @@ class PeriodoController extends \yii\web\Controller
                     'info' => [
                         'fechaInicio' => $period->fecha_inicio,
                         'cajaInicial' => $period->caja_inicial,
-                        'totalSaleCash' => $totalSaleCash ? $totalSaleCash : 0,
-                        'totalSaleCard' => $totalSaleCard ? $totalSaleCard : 0,
-                        'totalSaleTransfer' => $totalSaleTransfer ? $totalSaleTransfer : 0,
-                        'totalSale' => $totalSale ? $totalSale: 0,
-                        'totalSaleApp' => $totalSaleApp ? $totalSaleApp : 0,
+                        'quantityBypaymentTypes' => $quantityBypaymentTypes,
                         'totalExpenses' => $expenses ? $expenses : 0,
-                        'existSalesOpen' => $existSalesOpen
-                        ]   
-                    ];
+                        'existSalesOpen' => $existSalesOpen,
+                        'totalSale' => $totalSale
+                    ]
+                ];
             } else {
                 $response = [
                     'success' => false,
@@ -205,18 +182,19 @@ class PeriodoController extends \yii\web\Controller
         return $response;
     }
 
-  
-    public function actionExistsPeriodActiveById( $idUser ){
+
+    public function actionExistsPeriodActiveById($idUser)
+    {
         $period = Periodo::find()
-                            ->where(['estado' => true, 'usuario_id' => $idUser])
-                            ->one();
-        if($period){
+            ->where(['estado' => true, 'usuario_id' => $idUser])
+            ->one();
+        if ($period) {
             $response = [
                 'success' => true,
                 'message' => 'Periodo activo',
                 'period' => $period
             ];
-        }else {
+        } else {
             $response = [
                 'success' => true,
                 'message' => 'Periodo activo',
@@ -226,62 +204,63 @@ class PeriodoController extends \yii\web\Controller
         return $response;
     }
 
-    public function actionGetDetailSaleByUser($idUser){
-        $period = Periodo::find() 
-                        -> where(['usuario_id' => $idUser])
-                        ->orderBy(['fecha_inicio' => SORT_DESC])
-                        ->one();
+    public function actionGetDetailSaleByUser($idUser)
+    {
+        $period = Periodo::find()
+            ->where(['usuario_id' => $idUser])
+            ->orderBy(['fecha_inicio' => SORT_DESC])
+            ->one();
 
         if ($period) {
-             $user = Usuario::findOne($idUser);
+            $user = Usuario::findOne($idUser);
             if ($user) {
                 //vetnas totales hasta el momento 
+                $grupClassication = ClasificacionGrupo::find()
+                                                ->where(['estado' => true])
+                                                ->all();
+                $grupClassicationList = [];
+                for($i = 0; $i < count($grupClassication); $i++){
+                    $total = Venta::find()
+                    ->select(['sum(producto.precio_venta*detalle_venta.cantidad) as total'])
+                    ->where(['>=', 'fecha', $period->fecha_inicio])
+                    ->andWhere(['venta.estado' => 'pagado','usuario_id' => $idUser, 'clasificacion_grupo.id' => $grupClassication[$i]->id])
+                    ->innerJoin('detalle_venta', 'detalle_venta.venta_id=venta.id')
+                    ->innerJoin('producto', 'producto.id= detalle_venta.producto_id')
+                    ->innerJoin('categoria', 'categoria.id=producto.categoria_id')
+                    ->innerJoin('clasificacion_grupo', 'clasificacion_grupo.id=categoria.clasificacion_grupo_id')
+                    ->andWhere(['<>', 'detalle_venta.estado', 'cancelado'])
+                    ->asArray()
+                    ->one();
+
+                    $grupClassicationList[] = [
+                        'name' => $grupClassication[$i]->descripcion,
+                        'total' => $total['total']
+                    ];
+                }
+
                 $sales = Venta::find()
-                        ->select(['SUM(detalle_venta.cantidad)', 'producto.nombre', 'sum(producto.precio_venta*detalle_venta.cantidad) as total'])
-                        ->innerJoin('detalle_venta', 'detalle_venta.venta_id=venta.id')
-                        ->innerJoin('producto', 'producto.id= detalle_venta.producto_id')
-                        ->where(['>=', 'fecha', $period-> fecha_inicio])
-                        ->andWhere(['usuario_id' => $idUser])
-                        ->andWhere(['venta.estado' => 'pagado'])
-                        ->andWhere(['<>', 'detalle_venta.estado','cancelado'])
-                        ->groupBy(['producto_id', 'producto.nombre'])
-                        ->asArray()
-                        ->all();
+                    ->select(['SUM(detalle_venta.cantidad)', 'producto.nombre', 'sum(producto.precio_venta*detalle_venta.cantidad) as total'])
+                    ->innerJoin('detalle_venta', 'detalle_venta.venta_id=venta.id')
+                    ->innerJoin('producto', 'producto.id= detalle_venta.producto_id')
+                    ->where(['>=', 'fecha', $period->fecha_inicio])
+                    ->andWhere(['usuario_id' => $idUser])
+                    ->andWhere(['venta.estado' => 'pagado'])
+                    ->andWhere(['<>', 'detalle_venta.estado', 'cancelado'])
+                    ->groupBy(['producto_id', 'producto.nombre'])
+                    ->asArray()
+                    ->all();
 
-                $salesDrinks = Venta::find()
-                        ->select(['sum(producto.precio_venta*detalle_venta.cantidad) as total'])
-                        ->where(['>=', 'fecha', $period-> fecha_inicio])
-                        ->andWhere(['venta.estado' => 'pagado', 'producto.tipo' => 'bebida'])
-                        ->innerJoin('detalle_venta', 'detalle_venta.venta_id=venta.id')
-                        ->innerJoin('producto', 'producto.id= detalle_venta.producto_id')
-                        ->andWhere(['usuario_id' => $idUser])
-                        ->andWhere(['<>', 'detalle_venta.estado','cancelado'])
-                        ->groupBy(['producto.tipo'])
-                        ->asArray()
-                        ->one();
+               
 
-                $salesFoods = Venta::find()
-                        ->select(['sum(producto.precio_venta*detalle_venta.cantidad) as total'])
-                        ->where(['>=', 'fecha', $period-> fecha_inicio])
-                        ->andWhere(['venta.estado' => 'pagado', 'producto.tipo' => 'comida'])
-                        ->innerJoin('detalle_venta', 'detalle_venta.venta_id=venta.id')
-                        ->innerJoin('producto', 'producto.id= detalle_venta.producto_id')
-                        ->andWhere(['usuario_id' => $idUser])
-                        ->andWhere(['<>', 'detalle_venta.estado','cancelado'])
-                        ->groupBy(['producto.tipo'])
-                        ->asArray()
-                        ->one();
-              
                 $response = [
                     'success' => true,
                     'message' => 'detalle de periodo por usuario',
                     'info' => [
                         'fechaInicio' => $period->fecha_inicio,
                         'sales' => $sales,
-                        'salesDrinks' => $salesDrinks,
-                        'salesFoods' =>  $salesFoods
-                        ]   
-                    ];
+                        'grupClassicationList' => $grupClassicationList,
+                    ]
+                ];
             } else {
                 $response = [
                     'success' => false,
