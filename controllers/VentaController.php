@@ -2,6 +2,7 @@
 
 namespace app\controllers;
 
+use app\models\AreaImpresion;
 use app\models\AsignacionImpresora;
 use app\models\Cliente;
 use app\models\ColaImpresion;
@@ -801,11 +802,15 @@ class VentaController extends \yii\web\Controller
         $db = Yii::$app->db;
         $transaction = $db->beginTransaction();
         try {
-            if (!$params['printed'] && !$params['isEdit']) $this->createPrintSpooler($idSale, 1);
+            if (!$params['printed'] && !$params['isEdit']){
+                $printerCaja = AreaImpresion::find()
+                                            ->where(['nombre' => 'Caja'])
+                                            ->one();
+                if($printerCaja)$this->createPrintSpooler($idSale, $printerCaja->id);
+            }
 
             if ($sale->save()) {
-
-                if($params['isEdit'] && $sale -> mesa_id){
+                if($sale -> mesa_id && !$params['isEdit']){
                     $table = Mesa::findOne($sale->mesa_id);
                     $table->estado = 'disponible';
                     if (!$table->save()) {
@@ -815,7 +820,7 @@ class VentaController extends \yii\web\Controller
 
                 /* Agregar descuento */
                 $discount = $params['discount'];
-                if ($discount['valor'] > 0 || $discount['isEdit']) {
+                if ($discount['valor'] > 0 || $params['isEdit']) {
                     $model = new VentaDescuento();
 
                     $discountModel = VentaDescuento::findOne($discount['id']);
