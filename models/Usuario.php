@@ -14,9 +14,14 @@ use Yii;
  * @property string $nombres
  * @property string|null $url_image
  * @property string $tipo
- * @property string $estado
+ * @property bool $estado
  *
+ * @property ArqueoInventario[] $arqueoInventarios
+ * @property Compra[] $compras
+ * @property MovimientoAlmacen[] $movimientoAlmacens
  * @property Periodo[] $periodos
+ * @property RegistroGasto[] $registroGastos
+ * @property TraspasoAlmacen[] $traspasoAlmacens
  * @property Venta[] $ventas
  */
 class Usuario extends \yii\db\ActiveRecord
@@ -37,9 +42,10 @@ class Usuario extends \yii\db\ActiveRecord
         return [
             [['username', 'nombres', 'tipo', 'estado'], 'required'],
             [['password_hash', 'access_token'], 'string'],
+            [['estado'], 'boolean'],
             [['username', 'url_image', 'tipo'], 'string', 'max' => 50],
             [['nombres'], 'string', 'max' => 80],
-            [['estado'], 'string', 'max' => 40],
+            [['username'], 'unique'],
         ];
     }
 
@@ -61,6 +67,36 @@ class Usuario extends \yii\db\ActiveRecord
     }
 
     /**
+     * Gets query for [[ArqueoInventarios]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getArqueoInventarios()
+    {
+        return $this->hasMany(ArqueoInventario::class, ['usuario_id' => 'id']);
+    }
+
+    /**
+     * Gets query for [[Compras]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getCompras()
+    {
+        return $this->hasMany(Compra::class, ['usuario_id' => 'id']);
+    }
+
+    /**
+     * Gets query for [[MovimientoAlmacens]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getMovimientoAlmacens()
+    {
+        return $this->hasMany(MovimientoAlmacen::class, ['usuario_id' => 'id']);
+    }
+
+    /**
      * Gets query for [[Periodos]].
      *
      * @return \yii\db\ActiveQuery
@@ -68,6 +104,26 @@ class Usuario extends \yii\db\ActiveRecord
     public function getPeriodos()
     {
         return $this->hasMany(Periodo::class, ['usuario_id' => 'id']);
+    }
+
+    /**
+     * Gets query for [[RegistroGastos]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getRegistroGastos()
+    {
+        return $this->hasMany(RegistroGasto::class, ['usuario_id' => 'id']);
+    }
+
+    /**
+     * Gets query for [[TraspasoAlmacens]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getTraspasoAlmacens()
+    {
+        return $this->hasMany(TraspasoAlmacen::class, ['usuario_id' => 'id']);
     }
 
     /**

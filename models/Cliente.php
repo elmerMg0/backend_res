@@ -9,10 +9,11 @@ use Yii;
  *
  * @property int $id
  * @property string $nombre
- * @property int|null $celular
+ * @property string|null $celular
  * @property string|null $direccion
  * @property string|null $descripcion_domicilio
  * @property string $fecha_crecion
+ * @property string|null $google_maps_link
  *
  * @property Venta[] $ventas
  */
@@ -33,11 +34,10 @@ class Cliente extends \yii\db\ActiveRecord
     {
         return [
             [['nombre', 'fecha_crecion'], 'required'],
-            [['celular'], 'default', 'value' => null],
-            [['celular'], 'integer'],
+            [['direccion', 'descripcion_domicilio', 'google_maps_link'], 'string'],
             [['fecha_crecion'], 'safe'],
-            [['nombre', 'direccion'], 'string', 'max' => 80],
-            [['descripcion_domicilio'], 'string', 'max' => 100],
+            [['nombre'], 'string', 'max' => 80],
+            [['celular'], 'string', 'max' => 8],
         ];
     }
 
@@ -53,6 +53,7 @@ class Cliente extends \yii\db\ActiveRecord
             'direccion' => 'Direccion',
             'descripcion_domicilio' => 'Descripcion Domicilio',
             'fecha_crecion' => 'Fecha Crecion',
+            'google_maps_link' => 'Google Maps Link',
         ];
     }
 

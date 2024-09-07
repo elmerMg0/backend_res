@@ -10,11 +10,11 @@ use Yii;
  * @property int $id
  * @property string $estado
  * @property bool $habilitado
- * @property int $salon_id
+ * @property int $area_venta_id
  * @property string $nombre
  * @property string $tipo
  *
- * @property Salon $salon
+ * @property AreaVenta $areaVenta
  * @property Venta[] $ventas
  */
 class Mesa extends \yii\db\ActiveRecord
@@ -34,13 +34,13 @@ class Mesa extends \yii\db\ActiveRecord
     {
         return [
             [['habilitado'], 'boolean'],
-            [['salon_id', 'nombre', 'tipo'], 'required'],
-            [['salon_id'], 'default', 'value' => null],
-            [['salon_id'], 'integer'],
+            [['area_venta_id', 'nombre', 'tipo'], 'required'],
+            [['area_venta_id'], 'default', 'value' => null],
+            [['area_venta_id'], 'integer'],
             [['estado'], 'string', 'max' => 25],
             [['nombre'], 'string', 'max' => 20],
             [['tipo'], 'string', 'max' => 15],
-            [['salon_id'], 'exist', 'skipOnError' => true, 'targetClass' => Salon::class, 'targetAttribute' => ['salon_id' => 'id']],
+            [['area_venta_id'], 'exist', 'skipOnError' => true, 'targetClass' => AreaVenta::class, 'targetAttribute' => ['area_venta_id' => 'id']],
         ];
     }
 
@@ -53,20 +53,20 @@ class Mesa extends \yii\db\ActiveRecord
             'id' => 'ID',
             'estado' => 'Estado',
             'habilitado' => 'Habilitado',
-            'salon_id' => 'Salon ID',
+            'area_venta_id' => 'Area Venta ID',
             'nombre' => 'Nombre',
             'tipo' => 'Tipo',
         ];
     }
 
     /**
-     * Gets query for [[Salon]].
+     * Gets query for [[AreaVenta]].
      *
      * @return \yii\db\ActiveQuery
      */
-    public function getSalon()
+    public function getAreaVenta()
     {
-        return $this->hasOne(Salon::class, ['id' => 'salon_id']);
+        return $this->hasOne(AreaVenta::class, ['id' => 'area_venta_id']);
     }
 
     /**

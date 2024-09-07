@@ -3,6 +3,7 @@
 namespace app\controllers;
 
 use app\models\Empresa;
+use app\models\Licencia;
 use yii\helpers\Json;
 use Yii;
 use Exception;
@@ -18,8 +19,8 @@ class EmpresaController extends \yii\web\Controller
             'actions' => [
                 'login' => ['POST'],
                 'create-user' => ['POST'],
-                'update' => ['POST']
-
+                'update' => ['POST'],
+                'license' => ['GET'],
             ]
         ];
         return $behaviors;
@@ -46,7 +47,7 @@ class EmpresaController extends \yii\web\Controller
         } else {
             $response = [
                 'success' => false,
-                'data' => $company
+                'data' => $company,
             ];
         }
         return $response;
@@ -58,7 +59,7 @@ class EmpresaController extends \yii\web\Controller
         $id = isset($id) ? $id : null;
         if ($id) {
             $company = Empresa::findOne($id);
-        }else{
+        } else {
             $company = new Empresa();
         }
         $params = Json::decode(Yii::$app->request->post('body'));
@@ -68,17 +69,17 @@ class EmpresaController extends \yii\web\Controller
         if ($image) {
             $image_url = $company->image_url;
             $imageOld = Yii::getAlias('@app/web/upload/' . $image_url);
-            if(file_exists($imageOld) && $image_url){
+            if (file_exists($imageOld) && $image_url) {
                 unlink($imageOld);
                 /* Eliminar */
             }
-            
-            $fileName = uniqid().'.'.$image->getExtension();
+
+            $fileName = uniqid() . '.' . $image->getExtension();
             $image->saveAs(Yii::getAlias('@app/web/upload/') . $fileName);
             $imageNew = Yii::getAlias('@app/web/upload/' . $fileName);
-            if(file_exists($imageNew)){
-                $company -> image_url = $fileName;
-            }else{
+            if (file_exists($imageNew)) {
+                $company->image_url = $fileName;
+            } else {
                 return $response = [
                     'success' => false,
                     'message' => 'Ocurrio un error!',
@@ -113,5 +114,18 @@ class EmpresaController extends \yii\web\Controller
     public function actionIndex()
     {
         return $this->render('index');
+    }
+
+    public function actionLicense()
+    {
+        $licence = Licencia::find()
+            ->select(['fecha_vencimiento', 'tipo_licencia', 'estado', 'fecha_creacion'])
+            ->one();
+
+        $response = [
+            'success' => true,
+            'record' => $licence
+        ];
+        return $response;
     }
 }
