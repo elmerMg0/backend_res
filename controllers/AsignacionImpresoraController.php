@@ -2,9 +2,10 @@
 
 namespace app\controllers;
 
+use app\models\AsignacionImpresora;
 use app\models\Impresora;
 use Yii;
-class ImpresoraController extends \yii\web\Controller
+class AsignacionImpresoraController extends \yii\web\Controller
 {
     public function behaviors()
     {
@@ -40,7 +41,12 @@ class ImpresoraController extends \yii\web\Controller
 
     public function actionIndex()
     {
-        $printers = Impresora::find()->all();
+        $printers = AsignacionImpresora::find()
+                                        ->select(['asignacion_impresora.*', 'area_impresion.nombre'])
+                                        ->innerJoin('area_impresion', 'area_impresion.id = asignacion_impresora.area_impresion_id')
+                                        ->asArray()
+                                        ->orderBy(['asignacion_impresora.id' => SORT_DESC])
+                                        ->all();
         $response = [
             'success' => true,
             'message' => 'Lista de impresoras',
@@ -51,7 +57,7 @@ class ImpresoraController extends \yii\web\Controller
 
     public function actionCreate(){
         $params = Yii::$app->getRequest()->getBodyParams();
-        $printer = new Impresora();
+        $printer = new AsignacionImpresora();
         $printer -> load($params, '');
         if($printer -> save()){
             $response = [
@@ -69,7 +75,7 @@ class ImpresoraController extends \yii\web\Controller
     }
 
     public function actionDelete( $idPrinter ){
-        $printer = Impresora::findOne($idPrinter);
+        $printer = AsignacionImpresora::findOne($idPrinter);
         if($printer -> delete()){
             $response = [
                 'success' => true,
