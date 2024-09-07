@@ -16,6 +16,7 @@ use Yii;
  * @property int|null $credito
  * @property bool $estado
  *
+ * @property Gasto[] $gastos
  * @property Presentacion[] $presentacions
  */
 class Proveedor extends \yii\db\ActiveRecord
@@ -60,6 +61,16 @@ class Proveedor extends \yii\db\ActiveRecord
             'credito' => 'Credito',
             'estado' => 'Estado',
         ];
+    }
+
+    /**
+     * Gets query for [[Gastos]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getGastos()
+    {
+        return $this->hasMany(Gasto::class, ['proveedor_id' => 'id']);
     }
 
     /**
