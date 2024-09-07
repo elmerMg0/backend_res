@@ -10,6 +10,7 @@ use Yii;
  * @property int $id
  * @property string $nombre
  * @property string|null $descripcion
+ * @property bool $estado
  *
  * @property Gasto[] $gastos
  */
@@ -30,8 +31,9 @@ class CategoriaGasto extends \yii\db\ActiveRecord
     {
         return [
             [['nombre'], 'required'],
-            [['nombre'], 'string', 'max' => 25],
-            [['descripcion'], 'string', 'max' => 80],
+            [['descripcion'], 'string'],
+            [['estado'], 'boolean'],
+            [['nombre'], 'string', 'max' => 50],
         ];
     }
 
@@ -44,6 +46,7 @@ class CategoriaGasto extends \yii\db\ActiveRecord
             'id' => 'ID',
             'nombre' => 'Nombre',
             'descripcion' => 'Descripcion',
+            'estado' => 'Estado',
         ];
     }
 
