@@ -8,14 +8,12 @@ use Yii;
  * This is the model class for table "inventario".
  *
  * @property int $id
- * @property string $fecha
- * @property int $stock
- * @property int|null $nuevo_stock
- * @property int|null $total
- * @property int $producto_id
- * @property bool|null $last_one
+ * @property int $insumo_id
+ * @property int $almacen_id
+ * @property float $cantidad
  *
- * @property Producto $producto
+ * @property Almacen $almacen
+ * @property Insumo $insumo
  */
 class Inventario extends \yii\db\ActiveRecord
 {
@@ -33,12 +31,12 @@ class Inventario extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['fecha', 'stock', 'producto_id'], 'required'],
-            [['fecha'], 'safe'],
-            [['stock', 'nuevo_stock', 'total', 'producto_id'], 'default', 'value' => null],
-            [['stock', 'nuevo_stock', 'total', 'producto_id'], 'integer'],
-            [['last_one'], 'boolean'],
-            [['producto_id'], 'exist', 'skipOnError' => true, 'targetClass' => Producto::class, 'targetAttribute' => ['producto_id' => 'id']],
+            [['insumo_id', 'almacen_id', 'cantidad'], 'required'],
+            [['insumo_id', 'almacen_id'], 'default', 'value' => null],
+            [['insumo_id', 'almacen_id'], 'integer'],
+            [['cantidad'], 'number'],
+            [['almacen_id'], 'exist', 'skipOnError' => true, 'targetClass' => Almacen::class, 'targetAttribute' => ['almacen_id' => 'id']],
+            [['insumo_id'], 'exist', 'skipOnError' => true, 'targetClass' => Insumo::class, 'targetAttribute' => ['insumo_id' => 'id']],
         ];
     }
 
@@ -49,22 +47,29 @@ class Inventario extends \yii\db\ActiveRecord
     {
         return [
             'id' => 'ID',
-            'fecha' => 'Fecha',
-            'stock' => 'Stock',
-            'nuevo_stock' => 'Nuevo Stock',
-            'total' => 'Total',
-            'producto_id' => 'Producto ID',
-            'last_one' => 'Last One',
+            'insumo_id' => 'Insumo ID',
+            'almacen_id' => 'Almacen ID',
+            'cantidad' => 'Cantidad',
         ];
     }
 
     /**
-     * Gets query for [[Producto]].
+     * Gets query for [[Almacen]].
      *
      * @return \yii\db\ActiveQuery
      */
-    public function getProducto()
+    public function getAlmacen()
     {
-        return $this->hasOne(Producto::class, ['id' => 'producto_id']);
+        return $this->hasOne(Almacen::class, ['id' => 'almacen_id']);
+    }
+
+    /**
+     * Gets query for [[Insumo]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getInsumo()
+    {
+        return $this->hasOne(Insumo::class, ['id' => 'insumo_id']);
     }
 }
