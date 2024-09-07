@@ -38,12 +38,11 @@ class CommentController extends \yii\web\Controller
         return parent::beforeAction($action);
     }
 
-    public function actionIndex($idProduct)
+    public function actionIndex($idProduct = null)
     {
-        $idProduct = $idProduct ? $idProduct : null;
         $comments = Comentario::find() 
-                                -> where(['producto_id' => $idProduct])
-                                -> orderBy(['id' => SORT_DESC])
+                                ->filterWhere(['producto_id' => $idProduct])
+                                ->orderBy(['id' => SORT_DESC])
                                 ->all();
         $response = [
             'success' => true,
@@ -57,7 +56,8 @@ class CommentController extends \yii\web\Controller
     public function actionCreate()
     {
         $model = new Comentario();
-        $model->load(Yii::$app->request->post(), '');
+        $params = Yii::$app->request->getBodyParams();
+        $model->load($params, '');
         if($model->save()){
             $response = [
                 'success' => true,
@@ -105,12 +105,20 @@ class CommentController extends \yii\web\Controller
     {
         $model = Comentario::findOne($idComment);
         if($model){
-            $model->delete();
-            $response = [
-                'success' => true,
-                'message' => 'Comentario eliminado exitosamente',
-                'comment' => $model
-            ];
+            try{
+                $model->delete();
+                $response = [
+                    'success' => true,
+                    'message' => 'Comentario eliminado exitosamente',
+                    'comment' => $model
+                ];
+            }catch(\Exception $e){
+                $response = [
+                    'success' => false,
+                    'message' => 'El comentario tiene registros asociados, no se puede eliminar',
+                    'errors' => $model->errors()
+                ];
+            }   
         }else{
             $response = [
                 'success' => false,

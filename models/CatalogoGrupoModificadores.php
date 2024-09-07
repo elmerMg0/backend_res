@@ -5,22 +5,21 @@ namespace app\models;
 use Yii;
 
 /**
- * This is the model class for table "comentario".
+ * This is the model class for table "catalogo_grupo_modificadores".
  *
  * @property int $id
  * @property string $descripcion
- * @property int|null $producto_id
  *
- * @property Producto $producto
+ * @property GrupoModificadores[] $grupoModificadores
  */
-class Comentario extends \yii\db\ActiveRecord
+class CatalogoGrupoModificadores extends \yii\db\ActiveRecord
 {
     /**
      * {@inheritdoc}
      */
     public static function tableName()
     {
-        return 'comentario';
+        return 'catalogo_grupo_modificadores';
     }
 
     /**
@@ -30,10 +29,7 @@ class Comentario extends \yii\db\ActiveRecord
     {
         return [
             [['descripcion'], 'required'],
-            [['producto_id'], 'default', 'value' => null],
-            [['producto_id'], 'integer'],
             [['descripcion'], 'string', 'max' => 25],
-            [['producto_id'], 'exist', 'skipOnError' => true, 'targetClass' => Producto::class, 'targetAttribute' => ['producto_id' => 'id']],
         ];
     }
 
@@ -45,17 +41,16 @@ class Comentario extends \yii\db\ActiveRecord
         return [
             'id' => 'ID',
             'descripcion' => 'Descripcion',
-            'producto_id' => 'Producto ID',
         ];
     }
 
     /**
-     * Gets query for [[Producto]].
+     * Gets query for [[GrupoModificadores]].
      *
      * @return \yii\db\ActiveQuery
      */
-    public function getProducto()
+    public function getGrupoModificadores()
     {
-        return $this->hasOne(Producto::class, ['id' => 'producto_id']);
+        return $this->hasMany(GrupoModificadores::class, ['catalogo_grupo_modificadores_id' => 'id']);
     }
 }
