@@ -14,7 +14,12 @@ use Yii;
  * @property bool $estado
  *
  * @property AsignacionAreaAlmacen[] $asignacionAreaAlmacens
+ * @property DetalleCompra[] $detalleCompras
+ * @property InventarioPres[] $inventarioPres
  * @property Inventario[] $inventarios
+ * @property MovimientoAlmacen[] $movimientoAlmacens
+ * @property TraspasoAlmacen[] $traspasoAlmacens
+ * @property TraspasoAlmacen[] $traspasoAlmacens0
  */
 class Almacen extends \yii\db\ActiveRecord
 {
@@ -65,6 +70,26 @@ class Almacen extends \yii\db\ActiveRecord
     }
 
     /**
+     * Gets query for [[DetalleCompras]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getDetalleCompras()
+    {
+        return $this->hasMany(DetalleCompra::class, ['almacen_id' => 'id']);
+    }
+
+    /**
+     * Gets query for [[InventarioPres]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getInventarioPres()
+    {
+        return $this->hasMany(InventarioPres::class, ['almacen_id' => 'id']);
+    }
+
+    /**
      * Gets query for [[Inventarios]].
      *
      * @return \yii\db\ActiveQuery
@@ -72,5 +97,35 @@ class Almacen extends \yii\db\ActiveRecord
     public function getInventarios()
     {
         return $this->hasMany(Inventario::class, ['almacen_id' => 'id']);
+    }
+
+    /**
+     * Gets query for [[MovimientoAlmacens]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getMovimientoAlmacens()
+    {
+        return $this->hasMany(MovimientoAlmacen::class, ['almacen_id' => 'id']);
+    }
+
+    /**
+     * Gets query for [[TraspasoAlmacens]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getTraspasoAlmacens()
+    {
+        return $this->hasMany(TraspasoAlmacen::class, ['almacen_origen_id' => 'id']);
+    }
+
+    /**
+     * Gets query for [[TraspasoAlmacens0]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getTraspasoAlmacens0()
+    {
+        return $this->hasMany(TraspasoAlmacen::class, ['almacen_destino_id' => 'id']);
     }
 }

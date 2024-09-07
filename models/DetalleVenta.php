@@ -5,24 +5,18 @@ namespace app\models;
 use Yii;
 
 /**
- * This is the model class for table "detalle_venta".
+ * This is the model class for table "detalle_compra".
  *
  * @property int $id
- * @property int $cantidad
- * @property int $producto_id
- * @property int $venta_id
- * @property string $estado
- * @property bool|null $impreso
- * @property string|null $create_ts
- * @property float|null $precio_venta
- * @property float|null $costo_compra
- * @property string|null $nota
- * @property int|null $detalle_venta_id
+ * @property int $presentacion_id
+ * @property int $compra_id
+ * @property float $cantidad
+ * @property int $almacen_id
+ * @property float $costo_unitario
  *
- * @property DetalleVenta $detalleVenta
- * @property DetalleVenta[] $detalleVentas
- * @property Producto $producto
- * @property Venta $venta
+ * @property Almacen $almacen
+ * @property Compra $compra
+ * @property Presentacion $presentacion
  */
 class DetalleVenta extends \yii\db\ActiveRecord
 {
@@ -31,7 +25,7 @@ class DetalleVenta extends \yii\db\ActiveRecord
      */
     public static function tableName()
     {
-        return 'detalle_venta';
+        return 'detalle_compra';
     }
 
     /**
@@ -40,17 +34,13 @@ class DetalleVenta extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['cantidad', 'producto_id', 'estado'], 'required'],
-            [['cantidad', 'producto_id', 'detalle_venta_id'], 'default', 'value' => null],
-            [['cantidad', 'producto_id', 'detalle_venta_id'], 'integer'],
-            [['impreso'], 'boolean'],
-            [['create_ts'], 'safe'],
-            [['precio_venta', 'costo_compra'], 'number'],
-            [['estado'], 'string', 'max' => 20],
-            [['nota'], 'string', 'max' => 50],
-            [['detalle_venta_id'], 'exist', 'skipOnError' => true, 'targetClass' => DetalleVenta::class, 'targetAttribute' => ['detalle_venta_id' => 'id']],
-            [['producto_id'], 'exist', 'skipOnError' => true, 'targetClass' => Producto::class, 'targetAttribute' => ['producto_id' => 'id']],
-            [['venta_id'], 'exist', 'skipOnError' => true, 'targetClass' => Venta::class, 'targetAttribute' => ['venta_id' => 'id']],
+            [['presentacion_id', 'compra_id', 'cantidad', 'almacen_id', 'costo_unitario'], 'required'],
+            [['presentacion_id', 'compra_id', 'almacen_id'], 'default', 'value' => null],
+            [['presentacion_id', 'compra_id', 'almacen_id'], 'integer'],
+            [['cantidad', 'costo_unitario'], 'number'],
+            [['almacen_id'], 'exist', 'skipOnError' => true, 'targetClass' => Almacen::class, 'targetAttribute' => ['almacen_id' => 'id']],
+            [['compra_id'], 'exist', 'skipOnError' => true, 'targetClass' => Compra::class, 'targetAttribute' => ['compra_id' => 'id']],
+            [['presentacion_id'], 'exist', 'skipOnError' => true, 'targetClass' => Presentacion::class, 'targetAttribute' => ['presentacion_id' => 'id']],
         ];
     }
 
@@ -61,56 +51,41 @@ class DetalleVenta extends \yii\db\ActiveRecord
     {
         return [
             'id' => 'ID',
+            'presentacion_id' => 'Presentacion ID',
+            'compra_id' => 'Compra ID',
             'cantidad' => 'Cantidad',
-            'producto_id' => 'Producto ID',
-            'venta_id' => 'Venta ID',
-            'estado' => 'Estado',
-            'impreso' => 'Impreso',
-            'create_ts' => 'Create Ts',
-            'precio_venta' => 'Precio Venta',
-            'costo_compra' => 'Costo Compra',
-            'nota' => 'Nota',
-            'detalle_venta_id' => 'Detalle Venta ID',
+            'almacen_id' => 'Almacen ID',
+            'costo_unitario' => 'Costo Unitario',
         ];
     }
 
     /**
-     * Gets query for [[DetalleVenta]].
+     * Gets query for [[Almacen]].
      *
      * @return \yii\db\ActiveQuery
      */
-    public function getDetalleVenta()
+    public function getAlmacen()
     {
-        return $this->hasOne(DetalleVenta::class, ['id' => 'detalle_venta_id']);
+        return $this->hasOne(Almacen::class, ['id' => 'almacen_id']);
     }
 
     /**
-     * Gets query for [[DetalleVentas]].
+     * Gets query for [[Compra]].
      *
      * @return \yii\db\ActiveQuery
      */
-    public function getDetalleVentas()
+    public function getCompra()
     {
-        return $this->hasMany(DetalleVenta::class, ['detalle_venta_id' => 'id']);
+        return $this->hasOne(Compra::class, ['id' => 'compra_id']);
     }
 
     /**
-     * Gets query for [[Producto]].
+     * Gets query for [[Presentacion]].
      *
      * @return \yii\db\ActiveQuery
      */
-    public function getProducto()
+    public function getPresentacion()
     {
-        return $this->hasOne(Producto::class, ['id' => 'producto_id']);
-    }
-
-    /**
-     * Gets query for [[Venta]].
-     *
-     * @return \yii\db\ActiveQuery
-     */
-    public function getVenta()
-    {
-        return $this->hasOne(Venta::class, ['id' => 'venta_id']);
+        return $this->hasOne(Presentacion::class, ['id' => 'presentacion_id']);
     }
 }

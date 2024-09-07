@@ -89,7 +89,7 @@ class ApiController extends \yii\web\Controller{
         $query = Categoria::find()
                     ->where(['categoria.estado' => 'Activo', 'categoria.en_ecommerce' => true])
                     ->with(['productos' => function ($query) {
-                        $query->andWhere(['estado' => 'Activo', 'en_ecommerce' => true]);
+                        $query->andWhere(['estado' => true, 'en_ecommerce' => true]);
                     }])
                     ->orderBy(['id' => 'SORT_ASC'])
                     ->asArray()
@@ -188,5 +188,20 @@ class ApiController extends \yii\web\Controller{
             ];
         }
         return $response;
+    }
+
+    public function actionPing(){
+        $start = microtime(true);
+
+        // Medir el tiempo de finalización
+        $end = microtime(true);
+        $processingTime = ($end - $start) * 1000; // Tiempo en milisegundos
+
+        // Devolver la respuesta con el tiempo de procesamiento
+        return [
+            'status' => 'success',
+            'message' => 'Pong',
+            'processing_time' => $processingTime,
+        ];
     }
 }

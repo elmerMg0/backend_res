@@ -2,10 +2,10 @@
 
 namespace app\controllers;
 
-use app\models\Notificacion;
+use app\models\ClasificacionGrupo;
 use Yii;
 
-class NotificacionController extends \yii\web\Controller
+class ClasificacionGrupoController extends \yii\web\Controller
 {
     public function behaviors()
     {
@@ -14,7 +14,11 @@ class NotificacionController extends \yii\web\Controller
             "class" => \yii\filters\VerbFilter::class,
             "actions" => [
                 'index' => ['get'],
-                'delete' => ['get'],
+                'create' => ['post'],
+                'update' => ['put', 'post'],
+                'delete' => ['delete'],
+                'get-category' => ['get'],
+
             ]
         ];
         $behaviors['authenticator'] = [         	
@@ -36,31 +40,26 @@ class NotificacionController extends \yii\web\Controller
         return parent::beforeAction($action);
     }
 
-    public function actionIndex(){
-        $notifications = Notificacion::find()
-                                ->where(['leido' => false]) 
-                                ->orderBy(['id' => SORT_DESC])    
-                                ->all();
-        $response = [
-            'success' => true,
-            'message' => 'Listado de notificaciones',
-            'data' => $notifications
-        ];
+    public function actionGroupsClassification () {
+        $records = ClasificacionGrupo::find()
+                      ->where(['estado' => true])
+                      ->orderBy(['id' => 'SORT_ASC'])             
+                      ->all();
 
+        if($records){
+            $response = [
+                'success' => true,
+                'message' => 'Lista de clasificaciones de grupo de insumos',
+                'records' => $records,
+            ];
+        }else{
+            $response = [
+                'success' => false,
+                'message' => 'No existen registros',
+                'records' => [],
+            ];
+        }
         return $response;
     }
 
-    public function actionDelete($id){
-        $notification = Notificacion::findOne($id);
-        $notification -> leido = true;
-        $notification -> save();
-
-        $response = [
-            'success' => true,
-            'message' => 'Notificación leida',
-            'data' => $notification
-        ];
-
-        return $response;
-    }
 }
