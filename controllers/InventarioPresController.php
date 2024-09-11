@@ -95,7 +95,7 @@ class InventarioPresController extends \yii\web\Controller
         $listIn = [];
         for ($i = 0; $i < count($presentations); $i++) {
             $model  = InventarioPres::find()
-                ->select(['inventario_pres.*', 'presentacion.ultimo_costo', 'presentacion.descripcion'])
+                ->select(['inventario_pres.*', 'presentacion.ultimo_costo', 'presentacion.costo_promedio', 'presentacion.descripcion'])
                 ->where(['presentacion_id' => $presentations[$i]['id'], 'almacen_id' => $idWarehouse])
                 ->innerJoin('presentacion', 'presentacion.id = inventario_pres.presentacion_id')
                 ->asArray()

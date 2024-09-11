@@ -74,7 +74,7 @@ class VentaController extends \yii\web\Controller
                 [
                     'allow' => true, // permitido o no permitido
                     'actions' => ['index'], // acciones que siguen esta regla
-                    'roles' => ['cocina', 'bar'] // control por roles  permisos
+                    'roles' => ['monitor'] // control por roles  permisos
                 ],
             ],
         ];
@@ -725,7 +725,8 @@ class VentaController extends \yii\web\Controller
 
 
                 if ($detail["estado"] === 'cancelado') {
-                    DetalleVenta::updateAll(['estado' => 'cancelado'], ['id' => $detail["id"], 'detalle_venta_id' => $detail["id"]]);
+                    DetalleVenta::updateAll(['estado' => 'cancelado'], ['or', 'id = :id', 'detalle_venta_id = :id'], [':id' => $detail["id"]]);
+                    //DetalleVenta::updateAll(['estado' => 'cancelado'], ['or', 'id' => $detail["id"], 'detalle_venta_id' => $detail["id"]]);
                     $this->createNotification("Se cancelo el producto: " . $detail["nombre"] . " del pedido #" . $sale->numero_pedido . " por el usuario: " . $sale->usuario_id);
                 } else {
                     $filterDetail = array_filter($saleDetail, function ($det) use ($detail) {
@@ -823,16 +824,18 @@ class VentaController extends \yii\web\Controller
                 if ($discount['valor'] > 0 || $params['isEdit']) {
                     $model = new VentaDescuento();
 
-                    $discountModel = VentaDescuento::findOne($discount['id']);
-                    if($discountModel && $discount['valor'] !== $discountModel->valor){
-                        //eliminar y crar uno nuevo, crear notifiacion
-                        $message = 'Se ha modificado el descuento ' . $discountModel['valor'] . ' por el valor ' . $discount['valor'] . ' del pedido #' . $sale->numero_pedido . ' por el usuario: ' . $sale->usuario_id;
-                        $this->createNotification($message);
+                    if(isset($discount['id'])){
+                        $discountModel = VentaDescuento::findOne($discount['id']);
+                        if($discount['valor'] !== $discountModel->valor){
+                            //eliminar y crar uno nuevo, crear notifiacion
+                            $message = 'Se ha modificado el descuento ' . $discountModel['valor'] . ' por el valor ' . $discount['valor'] . ' del pedido #' . $sale->numero_pedido . ' por el usuario: ' . $sale->usuario_id;
+                            $this->createNotification($message);
 
-                        if($discount['valor'] !== 0){
-                            $model = $discountModel; 
-                        }else{
-                            $discountModel -> delete();
+                            if($discount['valor'] !== 0){
+                                $model = $discountModel; 
+                            }else{
+                                $discountModel -> delete();
+                            }
                         }
                     }
 
@@ -842,6 +845,7 @@ class VentaController extends \yii\web\Controller
 
                     $model->load($discount, '');
                     $model->venta_id = $sale->id;
+
                     if (!$model->save()) {
                         throw new Exception(json_encode($model->errors));
                     }
