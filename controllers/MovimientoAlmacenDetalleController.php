@@ -67,7 +67,7 @@ class MovimientoAlmacenDetalleController extends \yii\web\Controller
     public function actionDetails($idMovement)
     {
         $model = MovimientoAlmacenInsumo::find()
-            ->select(['movimiento_almacen_detalle.*', 'insumo.descripcion', 'unidad_medida.abreviatura'])
+            ->select(['movimiento_almacen_insumo.*', 'insumo.descripcion', 'unidad_medida.abreviatura'])
             ->where(['movimiento_almacen_id' => $idMovement])
             ->innerJoin('insumo', 'insumo.id = insumo_id')
             ->innerJoin('unidad_medida', 'insumo.unidad_medida_id = unidad_medida.id')

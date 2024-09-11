@@ -149,8 +149,13 @@ class InsumoController extends \yii\web\Controller
         extract($params);
         $supplies = Insumo::findOne($idSupplies);
         $supplies->load($params, '');
-        $supplies->costo_promedio = number_format(($supplies->costo_promedio + floatval($ultimo_costo)) / 2, 2);
-        $supplies->ultimo_costo_c_merma = number_format( floatval($ultimo_costo) / (($performance - ($supplies -> porcentaje_merma / 100))), 2);
+        if($supplies -> costo_promedio === "0.00"){
+            $supplies->costo_promedio =  number_format(floatval($ultimo_costo), 2);
+        }else{
+            $supplies->costo_promedio = number_format(($supplies->costo_promedio + floatval($ultimo_costo)) / 2, 2);
+        }
+        
+        $supplies->ultimo_costo_c_merma = number_format(floatval($ultimo_costo) / (($performance - ($supplies -> porcentaje_merma / 100))), 2);
         return $supplies;
     }
 

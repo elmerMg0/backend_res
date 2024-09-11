@@ -68,7 +68,7 @@ class CompraService
                                 ->select(['receta.*', 'insumo.costo_promedio'])
                                 ->innerJoin('insumo', 'insumo.id = insumo_id')    
                                 ->where(['producto_id' => $item['producto_id']])
-                                ->sum('insumo.costo_promedio * receta.cantidad'); 
+                                ->sum('insumo.ultimo_costo_c_merma * receta.cantidad'); 
             if($saleCost > 0 && $product -> costo_compra != $saleCost){
                 $product->costo_compra = $saleCost;
                 if(!$product->save()){

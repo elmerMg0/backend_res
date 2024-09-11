@@ -167,7 +167,7 @@ class InventarioController extends \yii\web\Controller
         $listIn = [];
         for ($i = 0; $i < count($supplies); $i++) {
             $model  = Inventario::find()
-                ->select(['inventario.*', 'insumo.ultimo_costo', 'insumo.descripcion', 'unidad_medida.abreviatura as unidad_medida'])
+                ->select(['inventario.*', 'insumo.ultimo_costo', 'insumo.descripcion', 'unidad_medida.abreviatura as unidad_medida', 'insumo.costo_promedio'])
                 ->where(['insumo_id' => $supplies[$i]->id, 'almacen_id' => $idWarehouse])
                 ->innerJoin('insumo', 'insumo.id = inventario.insumo_id')
                 ->innerJoin('unidad_medida', 'unidad_medida.id = insumo.unidad_medida_id')

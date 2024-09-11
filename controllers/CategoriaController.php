@@ -311,7 +311,7 @@ class CategoriaController extends \yii\web\Controller
             ->with(['categorias' => function ($query) {
                 $query->with(['productos' => function ($query) {
                     $query
-                        ->select(['producto.id', 'producto.categoria_id', 'producto.nombre', 'producto.url_image', 'producto.precio_venta', 'producto.estado', 'producto.id as producto_id', 'producto.area_impresion_id'])
+                        ->select(['producto.id', 'producto.categoria_id', 'producto.nombre', 'producto.url_image', 'producto.precio_venta', 'producto.estado', 'producto.id as producto_id', 'producto.area_impresion_id', 'producto.costo_compra'])
                         ->andWhere(['estado' => true])
                         ->with('comentarios')
                         ->with(['grupoModificadores' => function ($query) {
@@ -334,7 +334,7 @@ class CategoriaController extends \yii\web\Controller
             }])
             ->with(['productos' => function ($query) {
                 $query
-                    ->select(['producto.id', 'producto.categoria_id', 'producto.nombre', 'producto.url_image', 'producto.precio_venta', 'producto.estado', 'producto.id as producto_id', 'producto.area_impresion_id'])
+                    ->select(['producto.id', 'producto.categoria_id', 'producto.nombre', 'producto.url_image', 'producto.precio_venta', 'producto.estado', 'producto.id as producto_id', 'producto.area_impresion_id', 'producto.costo_compra'])
                     ->andWhere(['estado' => true])
                     ->with('comentarios')
                     ->with(['paquetes0' => function ($query) {

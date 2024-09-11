@@ -88,7 +88,7 @@ class PresentacionController extends \yii\web\Controller
         extract($params);
         $supplies  = new InsumoController('', '');
         $lastCost = number_format($ultimo_costo / $rendimiento, 2);
-        $supplies = $supplies->updateSuppliesCost($idSupplies, ['ultimo_costo' => $lastCost], $rendimiento);
+        $supplies = $supplies->updateSuppliesCost($idSupplies, ['ultimo_costo' => $lastCost], 1);
         return $supplies;
     }
 
@@ -97,35 +97,34 @@ class PresentacionController extends \yii\web\Controller
         $presentation = new Presentacion();
         $params = Yii::$app->getRequest()->getBodyParams();
         extract($params);
+        $transaction = Yii::$app->db->beginTransaction();
         try {
             $presentation->load($params, '');
-            $presentation->costo_promedio = $ultimo_costo;
-            if ($ultimo_costo > 0) {
-
+            if (floatval($ultimo_costo) > 0) {
+                $presentation->costo_promedio = $ultimo_costo;
                 $supplies = $this->updateSuppliesCost($params, $insumo_id,);
-                $presentation->save();
+                if (!$supplies->save()) {
+                    throw new Exception(json_encode($supplies->errors));
+                } 
             }
-            if ($supplies->save()) {
-                Yii::$app->getResponse()->setStatusCode(201);
-                $response = [
-                    'success' => true,
-                    'message' => 'Presentación creado exitosamente',
-                    'record' => $presentation
-                ];
-            } else {
-                Yii::$app->getResponse()->setStatusCode(422, "Data Validation Failed.");
-                $response = [
-                    'success' => false,
-                    'message' => 'Existen errores en los campos',
-                    'errors' => $supplies->errors
-                ];
+
+            if(!$presentation->save()){
+                throw new Exception(json_encode($presentation->errors));
             }
+
+            $response = [
+                'success' => true,
+                'message' => 'Presentación creado exitosamente',
+                'record' => $presentation
+            ];
+            $transaction->commit();
         } catch (Exception $e) {
+            $transaction->rollBack();
             Yii::$app->getResponse()->setStatusCode(500);
             $response = [
                 'success' => false,
                 'message' => 'ocurrio un error',
-                'fileName' => $e->getMessage()
+                'error' => $e->getMessage()
             ];
         }
 
@@ -212,31 +211,6 @@ class PresentacionController extends \yii\web\Controller
         return $response;
     }
 
-    public function actionDisable($idPresentation)
-    {
-        $supplies = Presentacion::findOne($idPresentation);
-        if ($supplies) {
-            $supplies->estado = false;
-            if ($supplies->save()) {
-                $response = [
-                    'success' => true,
-                    'message' => 'Insumo actualizado'
-                ];
-            } else {
-                $response = [
-                    'success' => false,
-                    'message' => 'Ocurrio un error!'
-                ];
-            }
-        } else {
-            $response = [
-                'success' => false,
-                'message' => 'Ocurrio un error!'
-            ];
-        }
-        return $response;
-    }
-
     public function actionPresentations($estado = null)
     {
         $presentations = Presentacion::find()
@@ -297,6 +271,32 @@ class PresentacionController extends \yii\web\Controller
             'message' => 'Lista de Presentaciones',
             'records' => $presentations
         ];
+        return $response;
+    }
+
+    public function actionDelete($id)
+    {
+        $presentation = Presentacion::findOne($id);
+        if ($presentation) {
+
+            try {
+                $presentation->delete();
+                $response = [
+                        'success' => true,
+                        'message' => 'Presentación eliminado correctamente',
+                    ];
+            } catch (Exception $e) {
+                $response = [
+                    'success' => false,
+                    'message' => 'No se puede eliminar la Presentación porque tiene registros relacionados'
+                ];
+            }
+        } else {
+            $response = [
+                'success' => false,
+                'message' => 'Ocurrio un error!'
+            ];
+        }
         return $response;
     }
 }

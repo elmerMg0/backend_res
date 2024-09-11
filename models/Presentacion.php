@@ -10,8 +10,8 @@ use Yii;
  * @property int $id
  * @property int $insumo_id
  * @property string $descripcion
- * @property float $ultimo_costo
- * @property float $costo_promedio
+ * @property float|null $ultimo_costo
+ * @property float|null $costo_promedio
  * @property int $proveedor_id
  * @property float $rendimiento
  * @property bool $estado
