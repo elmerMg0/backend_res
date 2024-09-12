@@ -47,12 +47,22 @@ class CategoriaController extends \yii\web\Controller
         return parent::beforeAction($action);
     }
 
-    public function actionIndex($name, $pageSize = 5)
+    public function actionIndex($name = null, $categoryId = null)
     {
-        if ($name === 'undefined') $name = null;
+
+        $pageSize = 7;
+        $name = $name ?: null;
+        $categoryId = $categoryId ?: null;
+
         $query = Categoria::find()
-            ->where(['categoria_id' => null])
-            ->andFilterWhere(['LIKE', 'UPPER(nombre)',  strtoupper($name)]);
+            ->filterWhere(['LIKE', 'UPPER(nombre)',  strtoupper($name)])
+            ->andFilterWhere(['categoria_id' => $categoryId]);
+
+        if($categoryId){
+            $query->andWhere(['IS NOT' , 'categoria_id' , null]);
+        }else{
+            $query->andWhere(['categoria_id' => null]);
+        }
 
         $pagination = new Pagination([
             'defaultPageSize' => $pageSize,
@@ -413,38 +423,6 @@ class CategoriaController extends \yii\web\Controller
                 'message' => 'En este instante está fuera de los horarios de atención',
             ];
         }
-        return $response;
-    }
-
-    public function actionSubCategory()
-    {
-        $subCategories = Yii::$app->getRequest()->getBodyParams();
-
-        $transaction = Yii::$app->db->beginTransaction();
-        try {
-            foreach ($subCategories as $subCategory) {
-                $model = new Categoria();
-                if (isset($subCategory['id'])) {
-                    $model = Categoria::findOne($subCategory['id']);
-                }
-                $model->load($subCategory, '');
-                if (!$model->save()) {
-                    throw new \Exception(json_encode($model->errors));
-                }
-            }
-            $transaction->commit();
-            $response = [
-                'success' => true,
-                'message' => 'Sub categorias creadas exitosamente',
-            ];
-        } catch (\Exception $e) {
-            $transaction->rollBack();
-            $response = [
-                'success' => false,
-                'message' => $e->getMessage(),
-            ];
-        }
-
         return $response;
     }
 }
