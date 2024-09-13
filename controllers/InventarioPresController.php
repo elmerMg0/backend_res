@@ -125,7 +125,7 @@ class InventarioPresController extends \yii\web\Controller
     public function actionPresentations($estado = null)
     {
         $supplies = InventarioPres::find()
-            ->select(['inventario_pres.*', 'presentacion.descripcion', 'presentacion.ultimo_costo', 'unidad_medida.abreviatura as unidad_medida', 'presentacion.rendimiento'])
+            ->select(['inventario_pres.*', 'presentacion.descripcion', 'presentacion.ultimo_costo', 'unidad_medida.abreviatura as unidad_medida', 'presentacion.rendimiento', 'presentacion.insumo_id'])
             ->innerJoin('presentacion', 'presentacion.id = inventario_pres.presentacion_id')
             ->innerJoin('insumo', 'insumo.id = presentacion.insumo_id')
             ->innerJoin('unidad_medida', 'unidad_medida.id = insumo.unidad_medida_id')
