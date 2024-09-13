@@ -2,10 +2,7 @@
 
 namespace app\controllers;
 
-use app\models\Inventario;
-use app\models\InventarioPres;
 use app\models\TraspasoAlmacen;
-use app\models\TraspasoAlmacenInsumo;
 use Exception;
 use Yii;
 use yii\data\Pagination;
