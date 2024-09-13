@@ -14,10 +14,12 @@ use Yii;
  * @property int $usuario_id
  * @property int|null $concepto_mov_almacen_id
  * @property string|null $nota
+ * @property float|null $total
  *
  * @property Almacen $almacen
  * @property ConceptoMovAlmacen $conceptoMovAlmacen
  * @property MovimientoAlmacenInsumo[] $movimientoAlmacenInsumos
+ * @property MovimientoAlmacenPresentacion[] $movimientoAlmacenPresentacions
  * @property Usuario $usuario
  */
 class MovimientoAlmacen extends \yii\db\ActiveRecord
@@ -41,6 +43,7 @@ class MovimientoAlmacen extends \yii\db\ActiveRecord
             [['almacen_id', 'usuario_id', 'concepto_mov_almacen_id'], 'default', 'value' => null],
             [['almacen_id', 'usuario_id', 'concepto_mov_almacen_id'], 'integer'],
             [['estado'], 'boolean'],
+            [['total'], 'number'],
             [['nota'], 'string', 'max' => 80],
             [['almacen_id'], 'exist', 'skipOnError' => true, 'targetClass' => Almacen::class, 'targetAttribute' => ['almacen_id' => 'id']],
             [['concepto_mov_almacen_id'], 'exist', 'skipOnError' => true, 'targetClass' => ConceptoMovAlmacen::class, 'targetAttribute' => ['concepto_mov_almacen_id' => 'id']],
@@ -61,6 +64,7 @@ class MovimientoAlmacen extends \yii\db\ActiveRecord
             'usuario_id' => 'Usuario ID',
             'concepto_mov_almacen_id' => 'Concepto Mov Almacen ID',
             'nota' => 'Nota',
+            'total' => 'Total',
         ];
     }
 
@@ -92,6 +96,16 @@ class MovimientoAlmacen extends \yii\db\ActiveRecord
     public function getMovimientoAlmacenInsumos()
     {
         return $this->hasMany(MovimientoAlmacenInsumo::class, ['movimiento_almacen_id' => 'id']);
+    }
+
+    /**
+     * Gets query for [[MovimientoAlmacenPresentacions]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getMovimientoAlmacenPresentacions()
+    {
+        return $this->hasMany(MovimientoAlmacenPresentacion::class, ['movimiento_almacen_id' => 'id']);
     }
 
     /**

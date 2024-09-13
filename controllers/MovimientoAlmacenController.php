@@ -64,7 +64,7 @@ class MovimientoAlmacenController extends \yii\web\Controller
 
 
         $query = MovimientoAlmacen::find()
-            ->select(['movimiento_almacen.fecha', 'usuario.nombres as usuario', 'movimiento_almacen.id', 'almacen.descripcion as almacen', 'concepto_mov_almacen.descripcion as concepto', 'movimiento_almacen.nota', 'movimiento_almacen.almacen_id'])
+            ->select(['movimiento_almacen.fecha', 'usuario.nombres as usuario', 'movimiento_almacen.id', 'almacen.descripcion as almacen', 'concepto_mov_almacen.descripcion as concepto', 'movimiento_almacen.nota', 'movimiento_almacen.almacen_id', 'movimiento_almacen.total'])
             ->innerJoin('usuario', 'usuario.id = movimiento_almacen.usuario_id')
             ->innerJoin('almacen', 'almacen.id = movimiento_almacen.almacen_id')
             ->innerJoin('concepto_mov_almacen', 'concepto_mov_almacen.id = movimiento_almacen.concepto_mov_almacen_id')
@@ -138,18 +138,17 @@ class MovimientoAlmacenController extends \yii\web\Controller
             $warehouseMovementModel = $this->create($warehouseMovement);
             $model = $this->WarehouseMovementFactory($type);
             for ($i = 0; $i < count($movementDetails); $i++) {
+                /* Actualizar Inventario o inventarioPres */
                 $model->create([
                     ...$movementDetails[$i],
-                    'movimiento_almacen_id' => $warehouseMovementModel->id, 'costo_unitario' => $movementDetails[$i]['ultimo_costo']
-
-                    /* Actualizar Inventario o inventarioPres */
+                    'movimiento_almacen_id' => $warehouseMovementModel->id, 'costo_unitario' => $movementDetails[$i]['ultimo_costo'], 'cantidad' => $movementDetails[$i]['cantidad_movimiento']
                 ]);
 
                 //validar si es de SALIDA (-) o es de entrada (+)
                 $concept = ConceptoMovAlmacen::findOne($warehouseMovement['concepto_mov_almacen_id']);
                 $cantidad = 0;
 
-                $cantidad = $concept -> tipo ===  'ENTRADA' ? $movementDetails[$i]['cantidad'] : $movementDetails[$i]['cantidad_movimiento'] * -1;
+                $cantidad = $concept -> tipo ===  'ENTRADA' ? $movementDetails[$i]['cantidad_movimiento'] : $movementDetails[$i]['cantidad_movimiento'] * -1;
 
                 $inventaryModel = $this->inventaryFactory($type);
                 $inventaryModel->update(
