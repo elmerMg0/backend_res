@@ -89,7 +89,7 @@ class TraspasoAlmacenController extends \yii\web\Controller
             $totalPages = $pagination->getPageCount();
             $response = [
                 'success' => true,
-                'message' => 'lista de movimientos de invetarios ',
+                'message' => 'lista de movimientos de inventarios ',
                 'pageInfo' => [
                     'next' => $currentPage == $totalPages ? null  : $currentPage + 1,
                     'previus' => $currentPage == 1 ? null : $currentPage - 1,
@@ -171,7 +171,7 @@ class TraspasoAlmacenController extends \yii\web\Controller
                 */
 
                 /* Crear detalle de movimiento de almacen salida*/
-                $exitMovementDetail = $this->wareshouseMovementFactory($warehouseTransfer['destination']);
+                $exitMovementDetail = $this->wareshouseMovementFactory($warehouseTransfer['origin']);
                 $exitMovementDetail->create([
                     ...$transferDetails[$i],
                     'cantidad' => $transferDetails[$i]['cantidad_traspaso'],
@@ -188,7 +188,7 @@ class TraspasoAlmacenController extends \yii\web\Controller
 
 
                 //Crear detalle de movimiento de almacen entrada 
-                $entryMovementDetail = $this->wareshouseMovementFactory($warehouseTransfer['origin']);
+                $entryMovementDetail = $this->wareshouseMovementFactory($warehouseTransfer['destination']);
                 $entryMovementDetail->create([
                     ...$transferDetails[$i],
                     'cantidad' => $transferDetails[$i]['cantidad_traspaso'] * $rendimiento,

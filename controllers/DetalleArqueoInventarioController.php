@@ -2,12 +2,10 @@
 
 namespace app\controllers;
 
-use app\models\MovimientoAlmacenDetallePres;
-use app\models\MovimientoAlmacenPresentacion;
-use Exception;
+use app\models\DetalleArqueoInventario;
 use Yii;
 
-class MovimientoAlmacenDetallePresController extends \yii\web\Controller
+class DetalleArqueoInventarioController extends \yii\web\Controller
 {
     public function behaviors()
     {
@@ -15,7 +13,7 @@ class MovimientoAlmacenDetallePresController extends \yii\web\Controller
         $behaviors["verbs"] = [
             "class" => \yii\filters\VerbFilter::class,
             "actions" => [
-                'index' => ['get'],
+                'index' => ['post'],
                 'create' => ['post'],
                 'update' => ['put', 'post'],
             ]
@@ -51,35 +49,20 @@ class MovimientoAlmacenDetallePresController extends \yii\web\Controller
         return parent::beforeAction($action);
     }
 
-    public function create($params){
-        try{
-            $model = new MovimientoAlmacenPresentacion();    
-            $model->load($params, '');
-            if(!$model->save()){
-                throw new Exception(json_encode($model->errors));
-            }
-        } catch (Exception $e) {
-            throw new Exception($e->getMessage());
-        }
-        return $model;
-    }
-    
-    public function actionDetails($idMovement)
-    {
-        $model = MovimientoAlmacenPresentacion::find()
-            ->select(['movimiento_almacen_presentacion.*', 'presentacion.descripcion', 'unidad_medida.abreviatura'])
-            ->where(['movimiento_almacen_id' => $idMovement])
-            ->innerJoin('presentacion', 'presentacion.id = presentacion_id')
-            ->innerJoin('insumo', 'insumo.id = presentacion.insumo_id')
-            ->innerJoin('unidad_medida', 'insumo.unidad_medida_id = unidad_medida.id')
-            ->asArray()
-            ->all();
-
+    public function actionDetails($id){
+        $inventaryDetails = DetalleArqueoInventario::find()
+                            ->select(['insumo.descripcion', 'detalle_arqueo_inventario.*', 'unidad_medida.abreviatura as unidad_medida'])
+                            ->innerjoin('insumo', 'detalle_arqueo_inventario.insumo_id = insumo.id')
+                            ->innerjoin('unidad_medida', 'unidad_medida.id = insumo.unidad_medida_id')
+                            ->where(['arqueo_inventario_id' => $id])
+                            ->asArray()
+                            ->all();
         $response = [
             'success' => true,
-            'message' => 'Detalle de Movimiento Almacen',
-            'records' => $model
+            'message' => 'Detalle inventario',
+            'records' =>  $inventaryDetails
         ];
+
         return $response;
     }
 }

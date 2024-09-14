@@ -4,6 +4,7 @@ namespace app\controllers;
 
 use app\models\ArqueoInventario;
 use app\models\DetalleArqueoInventario;
+use app\models\DetallePresArqueoInventario;
 use app\services\InventaryService;
 use Yii;
 use yii\data\Pagination;
@@ -87,7 +88,7 @@ class ArqueoInventarioController extends \yii\web\Controller
             $totalPages = $pagination->getPageCount();
             $response = [
                 'success' => true,
-                'message' => 'lista de arqueo de invetarios ',
+                'message' => 'lista de arqueo de inventarios ',
                 'pageInfo' => [
                     'next' => $currentPage == $totalPages ? null  : $currentPage + 1,
                     'previus' => $currentPage == 1 ? null : $currentPage - 1,

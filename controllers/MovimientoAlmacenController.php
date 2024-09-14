@@ -91,7 +91,7 @@ class MovimientoAlmacenController extends \yii\web\Controller
             $totalPages = $pagination->getPageCount();
             $response = [
                 'success' => true,
-                'message' => 'lista de movimientos de invetarios ',
+                'message' => 'lista de movimientos de inventarios ',
                 'pageInfo' => [
                     'next' => $currentPage == $totalPages ? null  : $currentPage + 1,
                     'previus' => $currentPage == 1 ? null : $currentPage - 1,
