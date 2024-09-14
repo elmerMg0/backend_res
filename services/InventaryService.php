@@ -22,7 +22,7 @@ class InventaryService {
             $exitAdjustmentMovement = $this->createWarehouseMovement($inventaryAudit, $params['exitAdjustmentMovement'], 11);
 
             foreach ($params['inventariesList'] as $inventaryItem) {
-                $this->processInventaryItem($inventaryItem, $inventaryAudit, $entryAdjustmentMovement, $exitAdjustmentMovement, $params['type']);
+                $this->processInventaryItem($inventaryItem, $inventaryAudit -> id, $entryAdjustmentMovement, $exitAdjustmentMovement, $params['type']);
             }
 
             $transaction->commit();
@@ -62,10 +62,10 @@ class InventaryService {
         return null;
     }
 
-    private function processInventaryItem($inventaryItem, $inventaryAudit, $entryAdjustmentMovement, $exitAdjustmentMovement, $type) {
+    private function processInventaryItem($inventaryItem, $inventaryAuditId, $entryAdjustmentMovement, $exitAdjustmentMovement, $type) {
         $inventaryAuditDetail = $this->inventaryAuditFactory($type);
         $inventaryAuditDetail->load($inventaryItem, '');
-        $inventaryAuditDetail->arqueo_inventario_id = $inventaryAudit->id;
+        $inventaryAuditDetail->arqueo_inventario_id = $inventaryAuditId;
         $inventaryAuditDetail->teorico_almacen = $inventaryItem['cantidad'];
 
         if (!$inventaryAuditDetail->save()) {
