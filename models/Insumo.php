@@ -18,6 +18,8 @@ use Yii;
  * @property int $grupo_insumo_id
  * @property int $unidad_medida_id
  * @property bool $estado
+ * @property int|null $stock_maximo
+ * @property int|null $stock_minimo
  *
  * @property DetalleArqueoInventario[] $detalleArqueoInventarios
  * @property GrupoInsumo $grupoInsumo
@@ -47,8 +49,8 @@ class Insumo extends \yii\db\ActiveRecord
             [['descripcion', 'grupo_insumo_id', 'unidad_medida_id'], 'required'],
             [['ultimo_costo', 'costo_promedio', 'ultimo_costo_c_merma'], 'number'],
             [['inventariable', 'alerta_existencias', 'estado'], 'boolean'],
-            [['porcentaje_merma', 'grupo_insumo_id', 'unidad_medida_id'], 'default', 'value' => null],
-            [['porcentaje_merma', 'grupo_insumo_id', 'unidad_medida_id'], 'integer'],
+            [['porcentaje_merma', 'grupo_insumo_id', 'unidad_medida_id', 'stock_maximo', 'stock_minimo'], 'default', 'value' => null],
+            [['porcentaje_merma', 'grupo_insumo_id', 'unidad_medida_id', 'stock_maximo', 'stock_minimo'], 'integer'],
             [['descripcion'], 'string', 'max' => 50],
             [['grupo_insumo_id'], 'exist', 'skipOnError' => true, 'targetClass' => GrupoInsumo::class, 'targetAttribute' => ['grupo_insumo_id' => 'id']],
             [['unidad_medida_id'], 'exist', 'skipOnError' => true, 'targetClass' => UnidadMedida::class, 'targetAttribute' => ['unidad_medida_id' => 'id']],
@@ -72,6 +74,8 @@ class Insumo extends \yii\db\ActiveRecord
             'grupo_insumo_id' => 'Grupo Insumo ID',
             'unidad_medida_id' => 'Unidad Medida ID',
             'estado' => 'Estado',
+            'stock_maximo' => 'Stock Maximo',
+            'stock_minimo' => 'Stock Minimo',
         ];
     }
 

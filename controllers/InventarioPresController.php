@@ -125,7 +125,7 @@ class InventarioPresController extends \yii\web\Controller
     public function actionPresentations($estado = null)
     {
         $supplies = InventarioPres::find()
-            ->select(['inventario_pres.*', 'presentacion.descripcion', 'presentacion.ultimo_costo', 'unidad_medida.abreviatura as unidad_medida', 'presentacion.rendimiento', 'presentacion.insumo_id'])
+            ->select(['inventario_pres.*', 'presentacion.descripcion', 'presentacion.ultimo_costo', 'unidad_medida.abreviatura as unidad_medida', 'presentacion.rendimiento', 'presentacion.insumo_id', 'insumo.inventariable', 'insumo.alerta_existencias'])
             ->innerJoin('presentacion', 'presentacion.id = inventario_pres.presentacion_id')
             ->innerJoin('insumo', 'insumo.id = presentacion.insumo_id')
             ->innerJoin('unidad_medida', 'unidad_medida.id = insumo.unidad_medida_id')
@@ -149,7 +149,7 @@ class InventarioPresController extends \yii\web\Controller
                 ->one();
 
             if (!$model) {
-                $model = $this->create($presentacion_id, $almacen_id, $cantidad);
+                $model = $this->create($presentacion_id, $almacen_id);
             }
             $model->cantidad = $model->cantidad + floatval($cantidad);
             if ($model->save()) {
@@ -162,13 +162,12 @@ class InventarioPresController extends \yii\web\Controller
         }
     }
 
-    public function create($idSupplies, $idWarehouse, $cantidad)
+    public function create($idSupplies, $idWarehouse)
     {
         $model = new InventarioPres();
         $model->almacen_id = $idWarehouse;
         $model->presentacion_id = $idSupplies;
-        $model->cantidad = $cantidad;
-
+        $model->cantidad = 0;
         return $model;
     }
 }

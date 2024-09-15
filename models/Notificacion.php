@@ -28,7 +28,7 @@ class Notificacion extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['mensaje', 'leido'], 'required'],
+            [['mensaje'], 'required'],
             [['mensaje'], 'string'],
             [['leido'], 'boolean'],
             [['create_ts'], 'safe'],

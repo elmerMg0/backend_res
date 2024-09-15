@@ -1,6 +1,7 @@
 <?php
 namespace app\services;
 
+use app\controllers\InsumoController;
 use Yii;
 use app\models\Periodo;
 use app\models\Venta;
@@ -24,7 +25,8 @@ class PeriodoService
         $period->total_cierre_caja = $totalCierreCaja;
 
         $saleDetails = $this->fetchSaleDetails($period, $idUser);
-        $warehouseMovements = $this->processSaleDetails($saleDetails, $idUser);
+        $suppliesId = $this->processSaleDetails($saleDetails, $idUser);
+        $this -> validateStock($suppliesId);
 
         if ($period->save()) {
             return [
@@ -38,6 +40,13 @@ class PeriodoService
                 'message' => 'Existen parametros incorrectos',
                 'errors' => $period->errors
             ];
+        }
+    }
+
+    private function validateStock($suppliesId){
+        for($index = 0; $index < count($suppliesId); $index++){
+            $model = new InsumoController('', '');
+            $model -> validateStockMin($suppliesId[$index]);
         }
     }
 
@@ -72,12 +81,15 @@ class PeriodoService
     {
         $warehouseMovements = [];
         $transaction = Yii::$app->db->beginTransaction();
-        
+        $suppliesId = [];
         try {
             foreach ($saleDetails as $value) {
                 $this->updateInventory($value);
                 $model = $this->createWarehouseMovement($value, $idUser, $warehouseMovements);
                 $this->createWarehouseMovementDetail($value, $model);
+                if (!in_array($value['insumo_id'], $suppliesId)) {
+                    $suppliesId[] = $value['insumo_id'];
+                }
             }
             $transaction->commit();
         } catch (\Exception $e) {
@@ -85,7 +97,7 @@ class PeriodoService
             throw $e;
         }
 
-        return $warehouseMovements;
+        return $suppliesId;
     }
 
     private function updateInventory($value)
