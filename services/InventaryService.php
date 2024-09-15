@@ -1,6 +1,8 @@
 <?php
 
 namespace app\services;
+
+use app\controllers\InsumoController;
 use app\controllers\MovimientoAlmacenController;
 use app\controllers\MovimientoAlmacenDetalleController;
 use app\controllers\MovimientoAlmacenDetallePresController;
@@ -9,6 +11,7 @@ use app\models\DetalleArqueoInventario;
 use app\models\DetallePresArqueoInventario;
 use app\models\Inventario;
 use app\models\InventarioPres;
+use app\models\Presentacion;
 use Exception;
 use Yii;
 
@@ -24,6 +27,7 @@ class InventaryService {
             foreach ($params['inventariesList'] as $inventaryItem) {
                 $this->processInventaryItem($inventaryItem, $inventaryAudit -> id, $entryAdjustmentMovement, $exitAdjustmentMovement, $params['type']);
             }
+            $this->validateSock($params['inventariesList'], $params['type']);
 
             $transaction->commit();
             return [
@@ -79,13 +83,31 @@ class InventaryService {
             throw new \Exception('Error al actualizar el inventario');
         }
 
-        $diff = $inventaryItem['cantidad'] - $inventaryItem['fisico_almacen'];
-        if ($diff !== 0) {
+        $diff = floatval($inventaryItem['cantidad']) - floatval($inventaryItem['fisico_almacen']);
+        if ($diff != 0) {
             $movimientoAlmacenId = $diff > 0 ? $exitAdjustmentMovement->id : $entryAdjustmentMovement->id;
             $this->createWarehouseMovementDetail($inventaryItem, $movimientoAlmacenId, abs($diff), $type);
         }
     }
 
+    private function validateSock($inventaryItem, $type) {
+        $inventary = new InsumoController('', '');
+
+        $suppliesIds = [];
+        if($type === 'inventario'){
+            $suppliesIds = array_column($inventaryItem, 'insumo_id');
+        }else{
+            $presentationsIds = array_column($inventaryItem, 'presentacion_id');
+            $suppliesIds = Presentacion::find()
+                                ->select(['DISTINCT(insumo_id)'])
+                                ->where(['in', 'id', $presentationsIds])
+                                ->asArray()
+                                ->all();
+        }
+        for($i = 0; $i < count($suppliesIds); $i++){
+            $inventary -> validateStockMin($suppliesIds[$i]);
+        }
+    }
     private function createWarehouseMovementDetail($inventaryItem, $movimientoAlmacenId, $cantidad, $type) {
         $detailWarehouseMovement = $this->warehouseMovementFactory($type);
         $detailWarehouseMovement->create(array_merge($inventaryItem, [

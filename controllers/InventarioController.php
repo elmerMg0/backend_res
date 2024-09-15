@@ -189,7 +189,7 @@ class InventarioController extends \yii\web\Controller
     public function actionSupplies($estado = null)
     {
         $supplies = Inventario::find()
-            ->select(['inventario.*', 'insumo.descripcion', 'insumo.ultimo_costo', 'unidad_medida.abreviatura as unidad_medida'])
+            ->select(['inventario.*', 'insumo.descripcion', 'insumo.ultimo_costo', 'unidad_medida.abreviatura as unidad_medida', 'insumo.inventariable', 'insumo.alerta_existencias'])
             ->innerJoin('insumo', 'insumo.id = inventario.insumo_id')
             ->innerJoin('unidad_medida', 'unidad_medida.id = insumo.unidad_medida_id')
             ->filterWhere(['insumo.estado' => $estado])

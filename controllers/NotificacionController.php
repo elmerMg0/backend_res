@@ -3,6 +3,7 @@
 namespace app\controllers;
 
 use app\models\Notificacion;
+use Exception;
 use Yii;
 
 class NotificacionController extends \yii\web\Controller
@@ -61,6 +62,20 @@ class NotificacionController extends \yii\web\Controller
             'data' => $notification
         ];
 
+        return $response;
+    }
+    public function create($params){
+        try {
+            $model = new Notificacion();
+            $model->load($params, '');
+            $model->save();
+            if (!$model->save()) {
+                throw new Exception(json_encode($model->errors));
+            }
+            $response = $model;
+        } catch (Exception $e) {
+            throw new Exception($e->getMessage());
+        }
         return $response;
     }
 }

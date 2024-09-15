@@ -3,6 +3,9 @@
 namespace app\controllers;
 
 use app\models\Insumo;
+use app\models\Inventario;
+use app\models\InventarioPres;
+use app\models\Presentacion;
 use app\models\Receta;
 use Exception;
 use Yii;
@@ -47,7 +50,7 @@ class InsumoController extends \yii\web\Controller
     {
         $description = isset($description) ? $description : null;
         $query = Insumo::find()
-            ->select(['insumo.id', 'insumo.grupo_insumo_id', 'insumo.descripcion', 'insumo.estado', 'grupo_insumo.descripcion as grupo_insumo', 'unidad_medida.nombre as unidad_medida', 'ultimo_costo', 'inventariable', 'costo_promedio', 'porcentaje_merma', 'alerta_existencias', 'unidad_medida_id', 'ultimo_costo_c_merma'])
+            ->select(['insumo.id', 'insumo.grupo_insumo_id', 'insumo.descripcion', 'insumo.estado', 'grupo_insumo.descripcion as grupo_insumo', 'unidad_medida.nombre as unidad_medida', 'ultimo_costo', 'inventariable', 'costo_promedio', 'porcentaje_merma', 'alerta_existencias', 'unidad_medida_id', 'ultimo_costo_c_merma', 'insumo.stock_maximo', 'insumo.stock_minimo'])
             ->innerJoin('grupo_insumo', 'grupo_insumo.id = insumo.grupo_insumo_id')
             ->innerJoin('unidad_medida', 'unidad_medida.id = insumo.unidad_medida_id')
             ->andFilterWhere(['LIKE', 'UPPER(insumo.descripcion)',  strtoupper($description)]);
@@ -263,5 +266,47 @@ class InsumoController extends \yii\web\Controller
             'records' => $records
         ];
         return $response;
+    }
+
+    public function validateStockMin($supplierId)
+    {
+        $supplies = Insumo::find()
+                            ->where(['insumo.id' => $supplierId])
+                            ->select(['insumo.*', 'unidad_medida.abreviatura as unidad_medida'])
+                            ->innerJoin('unidad_medida', 'insumo.unidad_medida_id = unidad_medida.id')
+                            ->asArray()
+                            ->one();
+
+        if(!$supplies ['alerta_existencias'])return;
+        
+        $totalStock = $this->totalStockQuantity($supplierId);
+        
+        if($totalStock < $supplies['stock_minimo']){
+            $this -> createNotification($totalStock, $supplies);
+        }
+    }
+
+    private function createNotification($totalStock, $supplies){
+        $model = new NotificacionController("", "");
+        $model -> create([
+            'mensaje' => 'Alerta de STOCK, el insumo ' . $supplies ['descripcion'] . ' tiene un stock minimo de ' . $supplies['stock_minimo'] . ' y actualmente tiene un stock de ' . $totalStock . ' ' . $supplies['unidad_medida'],  
+        ]);
+    }
+
+    private function totalStockQuantity($supplierId){
+        $presentationQuantity = InventarioPres::find()
+                        ->innerJoin('presentacion', 'presentacion.id = inventario_pres.presentacion_id')
+                        ->where([
+                            'presentacion_id' => Presentacion::find()
+                                ->select(['id'])
+                                ->where(['insumo_id' => $supplierId])
+                        ])
+                        ->sum('cantidad * rendimiento');
+        
+        $suppliesQuantity = Inventario::find()
+                        ->where(['insumo_id' => $supplierId])
+                        ->sum('cantidad');
+
+        return $suppliesQuantity + $presentationQuantity;
     }
 }

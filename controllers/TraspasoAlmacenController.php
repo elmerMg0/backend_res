@@ -193,7 +193,7 @@ class TraspasoAlmacenController extends \yii\web\Controller
                     ...$transferDetails[$i],
                     'cantidad' => $transferDetails[$i]['cantidad_traspaso'] * $rendimiento,
                     'movimiento_almacen_id' => $warehouseMovementEntry->id,
-                    'costo_unitario' => $transferDetails[$i]['ultimo_costo']
+                    'costo_unitario' => $transferDetails[$i]['ultimo_costo'] / $rendimiento
                 ]);
 
 
@@ -214,6 +214,32 @@ class TraspasoAlmacenController extends \yii\web\Controller
                         'almacen_id' => $warehouseTransfer['almacen_destino_id']
                     ]
                 );
+
+                //Actualizar inventario entrada si el item no maneja existencia
+                if(!$transferDetails[$i]['inventariable'] && $warehouseTransfer['destination'] === 'Centro de consumo'){
+                    $warehouseMovementExit = $warehouseMovement->create([
+                        'almacen_id' => $warehouseTransfer['almacen_destino_id'],
+                        'usuario_id' => $warehouseTransfer['usuario_id'],
+                        'concepto_mov_almacen_id' => 17,
+                    ]);
+        
+                    $entryMovementDetail->create([
+                        ...$transferDetails[$i],
+                        'cantidad' => $transferDetails[$i]['cantidad_traspaso'] * $rendimiento,
+                        'movimiento_almacen_id' => $warehouseMovementExit->id,
+                        'costo_unitario' => $transferDetails[$i]['ultimo_costo'] / $rendimiento
+                    ]);
+                    $inventaryModel->update(
+                        [
+                            ...$transferDetails[$i], 
+                            'cantidad' => -$transferDetails[$i]['cantidad_traspaso'] * $rendimiento,
+                            'almacen_id' => $warehouseTransfer['almacen_destino_id']
+                        ]
+                    );
+              
+                    $presentationController = new InsumoController('', '');
+                    $presentationController->validateStockMin($transferDetails[$i]['insumo_id']);
+                }
             }
 
             $transaction->commit();

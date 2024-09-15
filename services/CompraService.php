@@ -62,6 +62,8 @@ class CompraService
             return $carry;
         });
 
+        if(!$uniqueArray)return;
+
         foreach ($uniqueArray as $item) {
             $product = Producto::findOne($item['producto_id']);
             $saleCost = Receta::find() 
