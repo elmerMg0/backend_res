@@ -572,10 +572,14 @@ class VentaController extends \yii\web\Controller
             } else {
                 throw new Exception(json_encode($sale->errors));
             }
+            $user = Usuario::findOne($sale->usuario_id);
             $response = [
                 'success' => true,
                 'message' => 'Venta creada',
-                'data' => $sale,
+                'data' => [
+                    ...$sale,
+                    'usuario' => $user -> username,
+                ],
             ];
             $transaction->commit();
         } catch (Exception $e) {
@@ -628,6 +632,10 @@ class VentaController extends \yii\web\Controller
 
     private function createPrintSpooler($idSale, $idArea)
     {
+        //Si existe el area pero no tiene impresora
+        $printer = AsignacionImpresora::find()->where(['area_impresion_id' => $idArea])->one();
+        if (!$printer)return;
+
         $printerSpooler = new ColaImpresion();
         $printerSpooler->venta_id = $idSale;
         $printerSpooler->estado = false;
