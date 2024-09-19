@@ -2,6 +2,7 @@
 
 namespace app\controllers;
 
+use app\models\AsignacionImpresora;
 use app\models\ConfiguracionImpresora;
 use app\models\Empresa;
 use Yii;
@@ -35,12 +36,14 @@ class ConfiguracionImpresoraController extends \yii\web\Controller
     public function actionIndex()
     {
         $configuration = ConfiguracionImpresora::find()->one();
+        $assignedPrinters = AsignacionImpresora::find()->all();
         if ($configuration) {
             $company = Empresa::find()->one();
             $response = [
                 'success' => true,
                 'record' => $configuration,
-                'company' => $company
+                'company' => $company,
+                'assignedPrinters' => $assignedPrinters
             ];
         } else {
             $response = [
