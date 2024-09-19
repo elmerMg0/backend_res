@@ -69,7 +69,7 @@ class VentaController extends \yii\web\Controller
                 [
                     'allow' => true, // permitido o no permitido
                     'actions' => ['get-sale-detail', 'get-sale-detail-all'], // acciones que siguen esta regla
-                    'roles' => ['cajero'] // control por roles  permisos
+                    'roles' => ['cajero', 'mesero'] // control por roles  permisos
                 ],
                 [
                     'allow' => true, // permitido o no permitido
@@ -273,86 +273,6 @@ class VentaController extends \yii\web\Controller
         }
         return $response;
     }
-
-
-    public function actionGetSaleDetailAll($idPeriod, $idUser)
-    {
-        $period = Periodo::findOne($idPeriod);
-        $sales = Venta::find()
-            ->join('LEFT JOIN', 'usuario', 'usuario.id = venta.usuario_id')
-            ->Where(['usuario_id' => $idUser, 'venta.estado' => 'pendiente', 'venta.tipo' => 'pedidoApp'])
-            ->orWhere(['venta.estado' => 'enviado'])
-            ->andWhere(['>=', 'fecha', $period->fecha_inicio])
-            ->orderBy(['id' => SORT_DESC])
-            ->asArray()
-            ->all();
-
-
-        if ($sales) {
-            $response = [
-                'success' => true,
-                'message' => 'lista de clientes',
-                'sales' => $sales
-            ];
-        } else {
-            $response = [
-                'success' => false,
-                'message' => 'No existen ventas delivery app',
-                'sales' => []
-            ];
-        }
-        return $response;
-    }
-
-   /*  public function actionGetSaleDetailByPeriod($pageSize = 7)
-    {
-        $params = Yii::$app->getRequest()->getBodyParams();
-        $period = Periodo::findOne($params['idPeriod']);
-        $query = Venta::find()
-            ->select(['venta.*', 'usuario.username', 'mesa.nombre as mesa', 'cliente.nombre as cliente'])
-            ->join('LEFT JOIN', 'usuario', 'usuario.id = venta.usuario_id')
-            ->innerJoin('mesa', 'mesa.id=venta.mesa_id')
-            ->innerJoin('cliente', 'cliente.id=venta.cliente_id')
-            ->Where(['usuario_id' => $params['idUser']])
-            ->andWhere(['>=', 'fecha', $period->fecha_inicio])
-            ->orderBy(['venta.id' => SORT_DESC])
-            ->asArray();
-
-        $pagination = new Pagination([
-            'defaultPageSize' => $pageSize,
-            'totalCount' => $query->count()
-        ]);
-
-        $sales = $query
-            ->offset($pagination->offset)
-            ->limit($pagination->limit)
-            ->all();
-
-        if ($sales) {
-            $currentPage = $pagination->getPage() + 1;
-            $totalPages = $pagination->getPageCount();
-            $response = [
-                'success' => true,
-                'message' => 'lista de ventas',
-                'pageInfo' => [
-                    'next' => $currentPage == $totalPages ? null  : $currentPage + 1,
-                    'previus' => $currentPage == 1 ? null : $currentPage - 1,
-                    'count' => count($sales),
-                    'page' => $currentPage,
-                    'start' => $pagination->getOffset(),
-                    'totalPages' => $totalPages,
-                ],
-                'sales' => $sales
-            ];
-        } else {
-            $response = [
-                'success' => false,
-                'message' => 'Lista de ventas por dia',
-                'sales' => []
-            ];
-        }
-        return $response;
-    } */
 
     public function actionCancelSale($idSale)
     {
