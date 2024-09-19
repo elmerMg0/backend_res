@@ -99,10 +99,11 @@ class VentaController extends \yii\web\Controller
         extract($params);
 
         $query = Venta::find()
-            ->select(['venta.*', 'usuario.username', 'area_venta.nombre as area_venta'])
+            ->select(['venta.*', 'usuario.username', 'area_venta.nombre as area_venta', 'cliente.nombre as customer'])
             ->innerJoin('venta_area_impresion', 'venta.id = venta_area_impresion.venta_id')
             ->innerJoin('usuario', 'usuario.id = venta.usuario_id')
             ->innerJoin('area_venta', 'area_venta.id = venta.area_venta_id')
+            ->innerJoin('cliente', 'cliente.id = venta.cliente_id')
             ->where(['area_impresion_id' => $area, 'finalizado' => false])
             ->with(['detalleVentas' => function ($query) use ($area) {
                 $query
