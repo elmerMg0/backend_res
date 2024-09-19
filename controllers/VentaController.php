@@ -407,7 +407,7 @@ class VentaController extends \yii\web\Controller
         if($idSale){
             $state = null;
         }
-        $sale = Venta::find()->select(['venta.*', 'usuario.nombres as usuario', 'mesa.nombre as mesa'])
+        $sale = Venta::find()->select(['venta.*', 'usuario.username as usuario', 'mesa.nombre as mesa'])
             ->filterWhere(['venta.estado' => $state])
             ->andFilterWhere(['mesa_id' => $idTable])
             ->andFilterWhere(['venta.id' => $idSale])
@@ -699,11 +699,12 @@ class VentaController extends \yii\web\Controller
                 ->asArray()
                 ->all();
             $customer = Cliente::findOne($params['cliente_id']);
+            $user = Usuario::findOne($sale->usuario_id);
             $response = [
                 'success' => true,
                 'message' => 'Pedidos enviados.',
                 'orderDetailCurrently' => $saleDetailFull,
-                'sale' => [...$sale, 'customer' => $customer],
+                'sale' => [...$sale, 'customer' => $customer, 'usuario' => $user -> username],
                 'errors' => $errors
 
             ];
