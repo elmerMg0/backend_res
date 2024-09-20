@@ -230,18 +230,20 @@ class InsumoController extends \yii\web\Controller
     {
         $supplies = Insumo::findOne($idSupplies);
         if ($supplies) {
-            $supplies->estado = false;
-            if ($supplies->save()) {
+            try{
+                $supplies->delete();
                 $response = [
                     'success' => true,
                     'message' => 'Insumo actualizado'
                 ];
-            } else {
+            }catch(Exception $e){
                 $response = [
                     'success' => false,
-                    'message' => 'Ocurrio un error!'
+                    'message' => 'El insumo esta en uso',
+                    'error' => $e->getMessage()
                 ];
             }
+        
         } else {
             $response = [
                 'success' => false,

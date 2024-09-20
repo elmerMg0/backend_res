@@ -183,7 +183,7 @@ class ColaImpresionController extends \yii\web\Controller
                     'place' => $printer['area_impresion'] === 'Caja' ? 'Caja' : 'Servicio',
                     'username' => $query["username"],
                     'note' => $query['nota'],
-                    'isNew' => $isNew ? true : false,
+                    'is_new' => $isNew ? true : false,
                     'descuento' => $query['descuento'] ? $query['descuento'] : 0,
                     'tipo_area' => $query['mesa_id'] ? 'Comedor' : 'Rapido',
                     'area_venta' => $query['area_venta']
