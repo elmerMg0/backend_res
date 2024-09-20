@@ -139,7 +139,7 @@ class ColaImpresionController extends \yii\web\Controller
                 ->where(['venta.id' => $print->venta_id])
                 ->with(['detalleVentas' => function ($query) use ($print, $price) {
                     $query
-                        ->select(['detalle_venta.*', 'producto.nombre as nombreProducto'])
+                        ->select(['detalle_venta.*', 'producto.nombre'])
                         ->innerJoin('producto', 'producto.id = detalle_venta.producto_id')
                         ->where(['detalle_venta.impreso' => false])
                         ->andWhere([
