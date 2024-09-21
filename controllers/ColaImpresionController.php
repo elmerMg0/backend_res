@@ -129,7 +129,7 @@ class ColaImpresionController extends \yii\web\Controller
 
             //filtramos los productos compuestos que tiene valor 0 cuando se imprime en CAJA.    
             $price = $printer && $printer['area_impresion'] === 'Caja' ? 0 : null;
-
+            $printed = $printer && $printer['area_impresion'] === 'Caja' ? null : false;
             $query = Venta::find()
                 ->select(['venta.*', 'usuario.username', 'area_venta.nombre as area_venta', 'cliente.nombre as cliente', 'venta_descuento.valor as descuento'])
                 ->innerJoin('venta_area_impresion', 'venta.id = venta_area_impresion.venta_id')
@@ -138,11 +138,10 @@ class ColaImpresionController extends \yii\web\Controller
                 ->innerJoin('area_venta', 'area_venta.id = venta.area_venta_id')
                 ->leftJoin('venta_descuento', 'venta.id = venta_descuento.venta_id')
                 ->where(['venta.id' => $print->venta_id])
-                ->with(['detalleVentas' => function ($query) use ($print, $price) {
+                ->with(['detalleVentas' => function ($query) use ($print, $price, $printed) {
                     $query
                         ->select(['detalle_venta.*', 'producto.nombre'])
                         ->innerJoin('producto', 'producto.id = detalle_venta.producto_id')
-                        ->where(['detalle_venta.impreso' => false])
                         ->andWhere([
                             'OR',
                             ['producto.area_impresion_id' => $print->area_impresion_id], // Incluye productos con el área de impresión actual
@@ -160,6 +159,7 @@ class ColaImpresionController extends \yii\web\Controller
                             ]
                         ])
                         ->andFilterWhere(['>', 'detalle_venta.precio_venta', $price])
+                        ->where(['detalle_venta.impreso' => $printed])
                         ->orderBy([
                             new \yii\db\Expression('COALESCE(detalle_venta.detalle_venta_id, detalle_venta.id) DESC'), // Ordena por el detalle principal o su propio ID si es un producto principal
                             new \yii\db\Expression('detalle_venta.detalle_venta_id IS NOT NULL ASC'),   // Asegura que los productos principales se muestren antes que sus modificadores
