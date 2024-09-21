@@ -7,6 +7,7 @@ use app\models\ColaImpresion;
 use app\models\ConfiguracionImpresora;
 use app\models\DetalleVenta;
 use app\models\DetalleVentaImprimir;
+use app\models\Empresa;
 use app\models\Impresora;
 use app\models\Venta;
 use Yii;
@@ -202,12 +203,13 @@ class ColaImpresionController extends \yii\web\Controller
         }
 
         $configuration = ConfiguracionImpresora::find()->one();
+        $company = Empresa::find()->one();
         $response = [
             'success' => true,
             'message' => 'Cola de impresions',
             'printSpooler' => [
                 'printSpooler' => $printSpooler,
-                'configuration' => $configuration
+                'configuration' => [...$configuration, 'bussines_name' => $company->nombre, 'phone' => $company->telefono]
             ]
         ];
         return $response;
