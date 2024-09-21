@@ -209,7 +209,7 @@ class ColaImpresionController extends \yii\web\Controller
             'message' => 'Cola de impresions',
             'printSpooler' => [
                 'printSpooler' => $printSpooler,
-                'configuration' => [...$configuration, 'bussines_name' => $company->nombre, 'phone' => $company->telefono]
+                'configuration' => [...$configuration, 'bussines_name' => $company->nombre, 'phone' => $company->celular]
             ]
         ];
         return $response;
