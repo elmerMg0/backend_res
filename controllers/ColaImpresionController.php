@@ -188,7 +188,7 @@ class ColaImpresionController extends \yii\web\Controller
                     'note' => $query['nota'],
                     'is_new' => $isNew ? true : false,
                     'descuento' => $query['descuento'] ? $query['descuento'] : 0,
-                    'tipo_area' => $query['mesa_id'] ? 'Comedor' : 'Rapido',
+                    'tipo_area_venta' => $query['mesa_id'] ? 'Comedor' : 'Rapido',
                     'area_venta' => $query['area_venta']
 
                 ];
