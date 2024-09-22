@@ -141,6 +141,7 @@ class ColaImpresionController extends \yii\web\Controller
                         $query
                             ->select(['detalle_venta.*', 'producto.nombre', 'CAST(detalle_venta.precio_venta AS DOUBLE PRECISION) as precio_venta'])
                             ->innerJoin('producto', 'producto.id = detalle_venta.producto_id')
+                            ->where(['<>', 'detalle_venta.estado', 'cancelado'])
                             ->filterWhere(['detalle_venta.impreso' => $printed])
                             ->andFilterWhere(['>', 'detalle_venta.precio_venta', $price]);
 
