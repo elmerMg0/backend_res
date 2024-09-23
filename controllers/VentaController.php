@@ -476,7 +476,13 @@ class VentaController extends \yii\web\Controller
                         }
                     }
                 }
-                $this->createPrintSpooler($sale->id, 1);
+
+                if(!$params['printed']){
+                    $printerCaja = AreaImpresion::find()
+                    ->where(['nombre' => 'Caja'])
+                    ->one();
+                    if($printerCaja)$this->createPrintSpooler($sale -> id, $printerCaja->id);
+                }
                 /* Agregar descuento     */
                 $discount = $params['discount'];
                 if ($discount['valor'] > 0) {

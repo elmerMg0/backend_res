@@ -10,7 +10,7 @@ use Yii;
  * @property int $id
  * @property string $fecha_inicio
  * @property string|null $fecha_fin
- * @property int|null $caja_inicial
+ * @property float|null $caja_inicial
  * @property bool $estado
  * @property float|null $total_ventas
  * @property float|null $total_cierre_caja
@@ -35,11 +35,11 @@ class Periodo extends \yii\db\ActiveRecord
     {
         return [
             [['fecha_inicio', 'fecha_fin'], 'safe'],
-            [['caja_inicial', 'usuario_id'], 'default', 'value' => null],
-            [['caja_inicial', 'usuario_id'], 'integer'],
+            [['caja_inicial', 'total_ventas', 'total_cierre_caja'], 'number'],
             [['estado', 'usuario_id'], 'required'],
             [['estado'], 'boolean'],
-            [['total_ventas', 'total_cierre_caja'], 'number'],
+            [['usuario_id'], 'default', 'value' => null],
+            [['usuario_id'], 'integer'],
             [['usuario_id'], 'exist', 'skipOnError' => true, 'targetClass' => Usuario::class, 'targetAttribute' => ['usuario_id' => 'id']],
         ];
     }

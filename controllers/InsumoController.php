@@ -234,7 +234,7 @@ class InsumoController extends \yii\web\Controller
                 $supplies->delete();
                 $response = [
                     'success' => true,
-                    'message' => 'Insumo actualizado'
+                    'message' => 'Insumo eliminado correctamente',
                 ];
             }catch(Exception $e){
                 $response = [
