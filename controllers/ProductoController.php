@@ -122,14 +122,6 @@ class ProductoController extends \yii\web\Controller
 
             try {
                 $product->load($data, '');
-                $categoryGasto = CategoriaGasto::find()->where(['nombre' => 'Costo de Ventas'])->one();
-                if ($categoryGasto) {
-                    $expense = new Gasto();
-                    $expense->nombre = $product->nombre;
-                    $expense->categoria_gasto_id = $categoryGasto->id;
-                    $expense->save();
-                }
-
                 if ($product->save()) {
                     Yii::$app->getResponse()->setStatusCode(201);
                     $transaction->commit();
@@ -157,7 +149,7 @@ class ProductoController extends \yii\web\Controller
             Yii::$app->getResponse()->setStatusCode(404);
             $response = [
                 'success' => false,
-                'message' => 'Categoria no encontrada',
+                'message' => 'Producto no encontrada',
             ];
         }
         return $response;
@@ -257,7 +249,7 @@ class ProductoController extends \yii\web\Controller
             Yii::$app->getResponse()->setStatusCode(404);
             $response = [
                 'success' => false,
-                'message' => 'No existe el Categoria',
+                'message' => 'No existe el producto',
                 'record' => $product
             ];
         }
