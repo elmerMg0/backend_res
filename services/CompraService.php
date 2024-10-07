@@ -114,8 +114,8 @@ class CompraService
         /* update insumo cost */
         $supplies = new InsumoController('', '');
         $suppliesModel = $supplies->updateSuppliesCost($presentation['insumo_id'], [
-            'ultimo_costo' => $presentation['ultimo_costo'],
-        ]);
+            'ultimo_costo' => $presentation['ultimo_costo'] / $presentation['rendimiento'],
+        ], $presentation['rendimiento']);
         $suppliesModel -> save();
 
         $warehouse = Almacen::findOne($presentation['almacen_id']);
