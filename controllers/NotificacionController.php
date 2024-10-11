@@ -68,6 +68,7 @@ class NotificacionController extends \yii\web\Controller
         try {
             $model = new Notificacion();
             $model->load($params, '');
+            $model->leido = false;
             $model->save();
             if (!$model->save()) {
                 throw new Exception(json_encode($model->errors));

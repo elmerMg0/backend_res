@@ -65,13 +65,15 @@ class ProductoController extends \yii\web\Controller
         return parent::beforeAction($action);
     }
 
-    public function actionIndex($name, $pageSize = 5)
+    public function actionIndex($name, $categoryId , $pageSize = 5)
     {
         if ($name === 'undefined') $name = null;
         $query = Producto::find()
             ->select(['producto.*', 'categoria.nombre As nombre_categoria'])
             ->innerJoin('categoria', 'categoria.id = producto.categoria_id')
-            ->andFilterWhere(['LIKE', 'UPPER(producto.nombre)',  strtoupper($name)]);
+            ->filterWhere(['LIKE', 'UPPER(producto.nombre)',  strtoupper($name)])
+            ->andFilterWhere(['=', 'producto.categoria_id', $categoryId])
+            ->orFilterWhere(['categoria.categoria_id' => $categoryId]);
 
         $pagination = new Pagination([
             'defaultPageSize' => $pageSize,
