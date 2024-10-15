@@ -132,10 +132,11 @@ class AlmacenController extends \yii\web\Controller
         return $response;
     }
 
-    public function actionWarehouses($idCompany = null, $estado = null)
+    public function actionWarehouses($idCompany = null, $estado = null, $type = null)
     {
         $warehouses = Almacen::find()
             ->filterWhere(['estado' => $estado])
+            ->andFilterWhere(['tipo' => $type])
             ->all();
         $response = [
             'success' => true,
