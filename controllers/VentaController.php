@@ -551,6 +551,8 @@ class VentaController extends \yii\web\Controller
         $saleDetail->estado = $isSent ? 'enviado' : 'cancelado';
         $saleDetail->impreso = $printed;
         $saleDetail->detalle_venta_id = $idParent;
+        date_default_timezone_set('America/La_Paz');
+        $saleDetail->create_ts = date('Y-m-d H:i:s');
         if (!$saleDetail->save()) {
             throw new Exception('Ocurrió un error, intente de nuevo' . json_encode($saleDetail->errors));
         }
