@@ -62,11 +62,11 @@ class ReportController extends \yii\web\Controller
         $dateStart = isset($params['dateStart']) ? $params['dateStart'] :  null;
         $dateEnd = isset($params['dateEnd']) ? $params['dateEnd'] : null;
         $detail = DetalleVenta::find()
-                    ->select(['sum(cantidad) as cantidad','producto.precio_venta' ,'producto.nombre', 'producto.id'])
+                    ->select(['sum(cantidad) as cantidad','detalle_venta.precio_venta' ,'producto.nombre', 'producto.id'])
                     ->innerJoin('producto', 'producto.id=detalle_venta.producto_id')
                     ->innerJoin('categoria', 'categoria.id=producto.categoria_id')
                     ->innerJoin('clasificacion_grupo', 'clasificacion_grupo.id=categoria.clasificacion_grupo_id')
-                    ->groupBy(['producto_id', 'producto.nombre', 'producto.id', 'producto.precio_venta'])
+                    ->groupBy(['producto_id', 'producto.nombre', 'producto.id', 'detalle_venta.precio_venta'])
                     ->orderBy(['cantidad' => SORT_DESC])
                     ->where(['<>', 'detalle_venta.estado', 'cancelado'])
                     ->andFilterWhere(['clasificacion_grupo.id' => $type])
