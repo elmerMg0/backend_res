@@ -93,7 +93,7 @@ class VentaController extends \yii\web\Controller
         return parent::beforeAction($action);
     }
 
-    public function actionIndex($area)
+    public function actionIndex($area = null)
     {
         $params = Yii::$app->getRequest()->getBodyParams();
         extract($params);
@@ -104,53 +104,54 @@ class VentaController extends \yii\web\Controller
             ->innerJoin('usuario', 'usuario.id = venta.usuario_id')
             ->innerJoin('area_venta', 'area_venta.id = venta.area_venta_id')
             ->innerJoin('cliente', 'cliente.id = venta.cliente_id')
-            ->where(['area_impresion_id' => $area, 'finalizado' => false])
-            ->with(['detalleVentas' => function ($query) use ($area) {
+            ->where(['finalizado' => false]);
+    
+            if (!empty($area)) {
+                $query->andWhere(['area_impresion_id' => $area]);
+            }
+        
+            $query->with(['detalleVentas' => function ($query) use ($area) {
                 $query
                     ->select(['detalle_venta.*', 'producto.nombre as nombreProducto', 'producto.area_impresion_id'])
                     ->innerJoin('producto', 'producto.id = detalle_venta.producto_id')
-                    ->where(['detalle_venta.detalle_venta_id' => null])
-                    ->andWhere([
-                        'OR',
-                        ['producto.area_impresion_id' => $area], // Incluye productos con el área de impresión actual
+                ->where(['detalle_venta.detalle_venta_id' => null]);
+            if (!empty($area)) {
+                $query->andWhere([
+                    'OR',
+                    ['producto.area_impresion_id' => $area], // Productos del área actual
+                    [
+                        'AND',
+                        ['detalle_venta.detalle_venta_id' => null], // Padres sin área de impresión
                         [
-                            'AND',
-                            ['detalle_venta.detalle_venta_id' => null],   // Padres sin área de impresión
-                            [
-                                'EXISTS',
-                                (new \yii\db\Query())
-                                    ->from('detalle_venta dv2')
-                                    ->innerJoin('producto p2', 'p2.id = dv2.producto_id')
-                                    ->where('dv2.detalle_venta_id = detalle_venta.id')
-                                    ->andWhere(['p2.area_impresion_id' => $area])  // Verifica que tienen al menos un hijo con área de impresión
-                            ]
+                            'EXISTS',
+                            (new \yii\db\Query())
+                                ->from('detalle_venta dv2')
+                                ->innerJoin('producto p2', 'p2.id = dv2.producto_id')
+                                ->where('dv2.detalle_venta_id = detalle_venta.id')
+                                ->andWhere(['p2.area_impresion_id' => $area]) // Hijos con área de impresión actual
                         ]
-                    ])
-
-                    ->with(['detalleVentas' => function ($query) use ($area) {
-                        $query
-                            ->select(['detalle_venta.*', 'producto.nombre as nombreProducto', 'producto.area_impresion_id'])
-                            ->innerJoin('producto', 'producto.id = detalle_venta.producto_id')
-                            ->where(['producto.area_impresion_id' => $area]);
-                    }])
-                   /*  ->orderBy([
-                        new \yii\db\Expression('COALESCE(detalle_venta.detalle_venta_id, detalle_venta.id) DESC'), // Ordena por el detalle principal o su propio ID si es un producto principal
-                        new \yii\db\Expression('detalle_venta.detalle_venta_id IS NOT NULL ASC'),   // Asegura que los productos principales se muestren antes que sus modificadores
-                        'detalle_venta.id' => SORT_DESC, // Ordena por ID para mantener el orden de inserción
-                    ])  */
-                    ->orderBy(['id' => SORT_DESC])
-                    ->asArray();
+                    ]
+                ]);
+            }
+            $query->with(['detalleVentas' => function ($query) use ($area) {
+                $query
+                    ->select(['detalle_venta.*', 'producto.nombre as nombreProducto', 'producto.area_impresion_id'])
+                    ->innerJoin('producto', 'producto.id = detalle_venta.producto_id');
+                if (!empty($area)) {
+                    $query->filterWhere(['producto.area_impresion_id' => $area]);
+                }
             }])
-            ->orderBy(['venta.id' => SORT_DESC])
-            ->asArray()
-            ->all();
-
-        $response = [
+            ->orderBy(['id' => SORT_DESC])
+            ->asArray();
+        }]);
+        $query->orderBy(['venta.id' => SORT_DESC]);
+        $orders = $query->asArray()->all();
+        
+        return [
             "success" => true,
             'message' => 'Lista de pedidos',
-            'orders' => $query
+            'orders' => $orders
         ];
-        return $response;
     }
 
     /* Retorna la lista de ventas del periodo */
