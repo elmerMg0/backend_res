@@ -40,8 +40,9 @@ class CommentController extends \yii\web\Controller
 
     public function actionIndex($idProduct = null)
     {
+        $idProduct = isset($idProduct) && $idProduct ? $idProduct : null;
         $comments = Comentario::find() 
-                                ->filterWhere(['producto_id' => $idProduct])
+                                ->where(['producto_id' => $idProduct])  
                                 ->orderBy(['id' => SORT_DESC])
                                 ->all();
         $response = [
