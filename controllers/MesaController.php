@@ -74,6 +74,15 @@ class MesaController extends \yii\web\Controller
         $table = Mesa::findOne($idTable);
         if ($table) {
             $params = Yii::$app->getRequest()->getBodyParams();
+
+            if($table->estado == 'ocupado'){
+                $response = [
+                    'success' => false,
+                    'message' => 'La mesa esta siendo usada',
+                ];
+                return $response;
+            }
+            
             $table->load($params, '');
             if ($table->save()) {
                 $response = [
@@ -88,7 +97,6 @@ class MesaController extends \yii\web\Controller
                     'table' => []
                 ];
             }
-        } else {
         }
         return $response;
     }
