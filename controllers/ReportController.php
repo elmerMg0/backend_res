@@ -194,12 +194,20 @@ class ReportController extends \yii\web\Controller
             ->limit($paginationExpenses->limit)
             ->all(); */
 
+        $totalSalesSummationRef = Venta::find()
+                        ->select(['SUM(cantidad_total) AS total'])
+                        ->Where(['venta.estado' => 'pagado'])
+                        ->andWhere(['>=', 'fecha', $fechaInicio])
+                        ->andWhere(['<=', 'fecha', $fechaFinWhole])
+                        ->andFilterWhere(['usuario_id' => $usuarioId])
+                        ->sum('cantidad_total');
+
         if ($sales) {
             $currentPage = $pagination->getPage() + 1;
             $totalPages = $pagination->getPageCount();
             $response = [
                 'success' => true,
-                'message' => 'lista de clientes',
+                'message' => 'lista de ventas por dia',
                 'pageInfo' => [
                     'next' => $currentPage == $totalPages ? null  : $currentPage + 1,
                     'previus' => $currentPage == 1 ? null : $currentPage - 1,
@@ -209,6 +217,7 @@ class ReportController extends \yii\web\Controller
                     'totalPages' => $totalPages,
                 ],
                 'sales' => $sales,
+                'total' => $totalSalesSummationRef
           /*       'expenses' => $expenses */
             ];
         } else {
